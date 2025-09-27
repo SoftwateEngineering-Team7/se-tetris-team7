@@ -41,18 +41,17 @@ public class StartMenuView {
         AnchorPane.setRightAnchor(menuBox, 0.0);
 
         root.getChildren().addAll(titleLabel, menuBox);
-        
+
         buttonIndex = 0;
         gameStartButton.requestFocus();
     }
 
     public AnchorPane getRoot() {
         return root;
-    } 
+    }
 
     // Size Setter
-    public void setRootSize(int width, int height)
-    {
+    public void setRootSize(int width, int height) {
         root.setPrefSize(width, height);
     }
 
@@ -65,7 +64,7 @@ public class StartMenuView {
         settingButton.setPrefSize(width, height);
         exitButton.setPrefSize(width, height);
     }
-    
+
     // Text Setters
     public void setTitleText(String title) {
         titleLabel.setText(title);
@@ -92,7 +91,7 @@ public class StartMenuView {
         settingButton.setFont(font);
         exitButton.setFont(font);
     }
-    
+
     // Text Color Setter
 
     public void setTextColor(Color color) {
@@ -105,15 +104,19 @@ public class StartMenuView {
     // Action Handlers
 
     public void setActionHandlers(Runnable onGameStart, Runnable onSettings, Runnable onExit) {
+        gameStartButton.setMouseTransparent(true);
+        settingButton.setMouseTransparent(true);
+        exitButton.setMouseTransparent(true);
+
         gameStartButton.setOnAction(e -> onGameStart.run());
         settingButton.setOnAction(e -> onSettings.run());
         exitButton.setOnAction(e -> onExit.run());
     }
 
     // Button Navigation
-    public void setFocusButton(int move)
-    {
+    public void setFocusButton(int move) {
         buttonIndex = (buttonIndex + move + 3) % 3;
+
         switch (buttonIndex) {
             case 0 -> gameStartButton.requestFocus();
             case 1 -> settingButton.requestFocus();
@@ -121,8 +124,7 @@ public class StartMenuView {
         }
     }
 
-    public void buttonFire()
-    {
+    public void buttonFire() {
         switch (buttonIndex) {
             case 0 -> gameStartButton.fire();
             case 1 -> settingButton.fire();
