@@ -8,6 +8,7 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 repositories {
@@ -18,6 +19,26 @@ repositories {
 dependencies {
     // Use JUnit test framework.
     testImplementation libs.junit
+
+// Ensure JavaFX APIs are available at compile time
+    implementation "org.openjfx:javafx-controls:21"
+    implementation "org.openjfx:javafx-fxml:21"
+    implementation "org.openjfx:javafx-swing:21"
+
+    // Provide OS-specific JavaFX native runtime (Windows)
+    runtimeOnly "org.openjfx:javafx-base:21:win"
+    runtimeOnly "org.openjfx:javafx-graphics:21:win"
+    runtimeOnly "org.openjfx:javafx-controls:21:win"
+    runtimeOnly "org.openjfx:javafx-fxml:21:win"
+
+    // JavaFX for tests as well
+    testImplementation "org.openjfx:javafx-controls:21"
+    testImplementation "org.openjfx:javafx-fxml:21"
+    testImplementation "org.openjfx:javafx-swing:21"
+    testRuntimeOnly "org.openjfx:javafx-base:21:win"
+    testRuntimeOnly "org.openjfx:javafx-graphics:21:win"
+    testRuntimeOnly "org.openjfx:javafx-controls:21:win"
+    testRuntimeOnly "org.openjfx:javafx-fxml:21:win"
 
     // This dependency is used by the application.
     implementation libs.guava
@@ -33,4 +54,10 @@ java {
 application {
     // Define the main class for the application.
     mainClass = 'org.example.App'
+}
+
+javafx {
+    // Use JavaFX 21 (LTS) to match the JDK 21 toolchain
+    version = '21'
+    modules = [ 'javafx.controls', 'javafx.fxml','javafx.swing']  // 필요 모듈만
 }
