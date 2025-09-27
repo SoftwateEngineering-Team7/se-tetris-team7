@@ -1,32 +1,28 @@
 package org.tetris.menu.start.controller;
 
+import org.tetris.menu.start.model.StartMenuModel;
+import org.tetris.menu.start.view.StartMenuView;
+
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 public class StartMenuController {
     private final StartMenuModel model;
     private final StartMenuView view;
-    private final Runnable onGameStart;
-    private final Runnable onOpenSettings;
-    private final Runnable onExitGame;
+    private final UIRouter router;
 
-    public StartMenuController(StartMenuModel model,
-            StartMenuView view,
-            Runnable onGameStart,
-            Runnable onOpenSettings,
-            Runnable onExitGame) {
+    public StartMenuController(StartMenuModel model, StartMenuView view, UIRouter router) {
         this.model = model;
         this.view = view;
-        this.onGameStart = onGameStart;
-        this.onOpenSettings = onOpenSettings;
-        this.onExitGame = onExitGame;
+        this.router = router;
 
         setView();
     }
 
     private void setView() {
         // Text Set
-        view.setTitleText(model.getTitle());
+        view.setTitleText(model.getTitleText());
         view.setGameStartButtonText(model.getGameStartButtonText());
         view.setSettingButtonText(model.getSettingButtonText());
         view.setExitButtonText(model.getExitButtonText());
@@ -37,43 +33,41 @@ public class StartMenuController {
         view.setTextColor(model.getTextColor());
 
         // Size Set
-        view.setTitleSize((int)model.getTitleSize().getWidth(), (int)model.getTitleSize().getHeight());
-        view.setButtonSize((int)model.getButtonSize().getWidth(), (int)model.getButtonSize().getHeight());
+        view.setTitleSize((int) model.getTitleSize().getWidth(), (int) model.getTitleSize().getHeight());
+        view.setButtonSize((int) model.getButtonSize().getWidth(), (int) model.getButtonSize().getHeight());
 
         view.setActionHandlers(
-            this::gameStart,
-            this::openSettings,
-            this::exitGame
-        );
+                this::gameStart,
+                this::openSettings,
+                this::exitGame);
     }
 
     public void bindInput(Scene scene) {
-        scene.setOnKeyPressed(e -> {
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            if (e.getCode() == KeyCode.UP || e.getCode() == KeyCode.DOWN ||
+                    e.getCode() == KeyCode.SPACE || e.getCode() == KeyCode.ENTER) {
+                e.consume();
+            } // 기본 버튼 처리(자동 fire) 차단
+
             if (e.getCode() == KeyCode.UP) {
                 view.setFocusButton(-1);
             } else if (e.getCode() == KeyCode.DOWN) {
                 view.setFocusButton(1);
             } else if (e.getCode() == KeyCode.SPACE || e.getCode() == KeyCode.ENTER) {
-                view.buttonFire();
-            }
-            else {
-                // view에서 correct button 알려주는 거 해야함.
+                view.buttonFire(); // 키로만 실행
             }
         });
     };
 
-    private void gameStart()
-    {
-        onGameStart.run();
+    private void gameStart() {
+        router.showGamePlaceholder();
     }
 
-    private void openSettings()
-    {
-        onOpenSettings.run();
+    private void openSettings() {
+        router.showSettings();
     }
 
-    private void exitGame()
-    {
-        onExitGame.run();
+    private void exitGame() {
+        router.exitGame();
     }
 }
