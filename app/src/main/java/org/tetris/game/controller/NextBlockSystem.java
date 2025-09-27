@@ -1,28 +1,28 @@
-package org.tetris.game.model;
+// package org.tetris.game.model;
 
-class NextBlockSystem
-{
-	queue<Block> blockQueue
-	Block nextBlock;
+// class NextBlockSystem
+// {
+// 	queue<Block> blockQueue
+// 	Block nextBlock;
 	
-	Block GetNextBlock()
-	{
-		nextBlock = blockQueue.peek();
-		return nextBlock;
-	}
+// 	Block GetNextBlock()
+// 	{
+// 		nextBlock = blockQueue.peek();
+// 		return nextBlock;
+// 	}
 	
-	void Next()
-	{
-		blockQueue.remove()
-		nextBlock = blockQueue.peek()
-		// 필요하다면 Refresh window
+// 	void Next()
+// 	{
+// 		blockQueue.remove()
+// 		nextBlock = blockQueue.peek()
+// 		// 필요하다면 Refresh window
 	
-		var randomBlock
-		blockQueue.add(randomBlock)
-	}
+// 		var randomBlock
+// 		blockQueue.add(randomBlock)
+// 	}
 	
-	Pane GetNextBlockPane()
-	{
-		// UI
-	}
-}
+// 	Pane GetNextBlockPane()
+// 	{
+// 		// UI
+// 	}
+// }
