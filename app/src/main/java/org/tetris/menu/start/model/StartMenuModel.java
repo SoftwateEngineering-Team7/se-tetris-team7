@@ -1,36 +1,20 @@
 package org.tetris.menu.start.model;
 
-import org.tetris.game.model.GameColor;
-
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
 
 public class StartMenuModel {
-    public String getTitle() {
-        return "Tetris";
+    private int selectedIndex = 0;
+    private final int totalButtonCount; // 메뉴 항목 개수 (게임 시작, 설정, 종료)
+
+    public StartMenuModel(int buttonCount) {
+        selectedIndex = 0;
+        totalButtonCount = buttonCount;
     }
 
-    public String getGameStartText() {
-        return "게임 시작";
+    public void move(int delta) {
+        selectedIndex = Math.floorMod(selectedIndex + delta, totalButtonCount);
     }
 
-    public String getSettingsText() {
-        return "설정";
-    }
-
-    public String getExitText() {
-        return "종료";
-    }
-
-    public Font getTitleFont() {
-        return new Font("Arial", 60);
-    }
-
-    public Font getButtonFont() {
-        return new Font("Arial", 20);
-    }
-
-    public Color getTextColor() {
-        return GameColor.getTextColor();
+    public int getSelectedIndex() {
+        return selectedIndex;
     }
 }

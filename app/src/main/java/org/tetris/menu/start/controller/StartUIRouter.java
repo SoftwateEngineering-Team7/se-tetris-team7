@@ -18,17 +18,14 @@ public class StartUIRouter {
 
     public void showStartMenu() {
         var view = new StartMenuView();
-        var controller = view.getController(); // FXML에서 로드된 컨트롤러
-
-        controller.setRouter(this);
-        controller.setModel(new StartMenuModel());
-        controller.init();
-
+        var model = new StartMenuModel(3); // 메뉴 버튼 개수는 3개로 고정 (게임 시작, 설정, 종료)
         var scene = new Scene(view.getRoot(), 800, 600);
+        var controller = view.getController(); // FXML에서 로드된 컨트롤러
+        
+        controller.init(this, model); // Router와 Model 주입
+        
         stage.setScene(scene);
         stage.show();
-
-        // Scene이 설정된 후에 키 입력 바인딩
         controller.bindInput();
     }
 
