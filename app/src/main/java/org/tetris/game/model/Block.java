@@ -3,10 +3,12 @@ package org.tetris.game.model;
 public class Block {
     protected int[][] shape;
     protected Point pivot;
+    protected BlockType type;
 
-    public Block(int[][] shape, Point pivot) {
+    public Block(int[][] shape, Point pivot, BlockType type) {
         this.shape = shape;
         this.pivot = pivot;
+        this.type = type;
     }
 
     public int getShape(int r, int c) {

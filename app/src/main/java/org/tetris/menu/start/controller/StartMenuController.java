@@ -1,73 +1,118 @@
 package org.tetris.menu.start.controller;
 
 import org.tetris.menu.start.model.StartMenuModel;
-import org.tetris.menu.start.view.StartMenuView;
 
-import javafx.scene.Scene;
+import java.util.ArrayList;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.animation.Timeline;
+import javafx.animation.KeyFrame;
+import javafx.util.Duration;
 
 public class StartMenuController {
-    private final StartMenuModel model;
-    private final StartMenuView view;
-    private final UIRouter router;
+    @FXML
+    private AnchorPane root;
+    @FXML
+    private Label titleLabel;
+    @FXML
+    private Button gameStartButton, settingButton, exitButton;
+    @FXML
+    private Label wrongInputLabel; // 잘못된 키 입력 안내 라벨
 
-    public StartMenuController(StartMenuModel model, StartMenuView view, UIRouter router) {
-        this.model = model;
-        this.view = view;
+    private StartUIRouter router;
+    private StartMenuModel model;
+    private int focusIndex = 0;
+    private ArrayList<Button> buttons = new ArrayList<>();
+    private Timeline hideMessageTimeline; // 메시지 숨기기 타이머
+
+    // Router가 주입을 끝낸 뒤 호출
+    public void init(StartUIRouter router, StartMenuModel model) {
         this.router = router;
+        this.model = model; // model 설정 추가
 
-        setView();
+        buttons.add(gameStartButton);
+        buttons.add(settingButton);
+        buttons.add(exitButton);
+
+        for (var btn : buttons) {
+            btn.setFocusTraversable(false);
+        }
+
+        buttons.get(focusIndex).getStyleClass().add("highlighted"); // 첫 버튼 선택 표시
     }
 
-    private void setView() {
-        // Text Set
-        view.setTitleText(model.getTitleText());
-        view.setGameStartButtonText(model.getGameStartButtonText());
-        view.setSettingButtonText(model.getSettingButtonText());
-        view.setExitButtonText(model.getExitButtonText());
+    // 키 입력 바인딩 (Router가 Scene 만든 뒤 호출)
+    public void bindInput() {
+        // Scene이 null이 아닌지 확인
+        if (root.getScene() == null) {
+            System.err.println("Warning: Scene is null when trying to bind input");
+            return;
+        }
 
-        // Font Set
-        view.setTitleFont(model.getTitleFont());
-        view.setButtonFont(model.getButtonFont());
-        view.setTextColor(model.getTextColor());
+        root.setFocusTraversable(true);
+        root.requestFocus();
 
-        // Size Set
-        view.setTitleSize((int) model.getTitleSize().getWidth(), (int) model.getTitleSize().getHeight());
-        view.setButtonSize((int) model.getButtonSize().getWidth(), (int) model.getButtonSize().getHeight());
-
-        view.setActionHandlers(
-                this::gameStart,
-                this::openSettings,
-                this::exitGame);
+        // Scene 레벨에서 키 이벤트 처리 (더 안정적)
+        root.getScene().setOnKeyPressed(e -> {
+            handleKey(e);
+            e.consume(); // 이벤트 소비하여 다른 곳으로 전파 방지
+        }); 
     }
 
-    public void bindInput(Scene scene) {
-        scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-            if (e.getCode() == KeyCode.UP || e.getCode() == KeyCode.DOWN ||
-                    e.getCode() == KeyCode.SPACE || e.getCode() == KeyCode.ENTER) {
-                e.consume();
-            } // 기본 버튼 처리(자동 fire) 차단
+    private void handleKey(KeyEvent e) {
+        if (e.getCode() == KeyCode.UP)
+            setHightlightedButton(-1);
+        else if (e.getCode() == KeyCode.DOWN)
+            setHightlightedButton(+1);
+        else if (e.getCode() == KeyCode.SPACE || e.getCode() == KeyCode.ENTER)
+            fire();
+        else
+            showWrongInputLabel();
+    }
 
-            if (e.getCode() == KeyCode.UP) {
-                view.setFocusButton(-1);
-            } else if (e.getCode() == KeyCode.DOWN) {
-                view.setFocusButton(1);
-            } else if (e.getCode() == KeyCode.SPACE || e.getCode() == KeyCode.ENTER) {
-                view.buttonFire(); // 키로만 실행
-            }
-        });
-    };
+    private void showWrongInputLabel() {
+        wrongInputLabel.setVisible(true);
 
-    private void gameStart() {
+        // 기존 타이머가 실행 중이면 중지
+        if (hideMessageTimeline != null) {
+            hideMessageTimeline.stop();
+        }
+
+        // 새로운 타이머 시작 (마지막 잘못된 입력에서 2초)
+        hideMessageTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(2), e -> wrongInputLabel.setVisible(false)));
+        hideMessageTimeline.play();
+    }
+
+
+    private void setHightlightedButton(int move) {
+        // 선택된 버튼에 스타일 클래스 추가
+        buttons.get(model.getSelectedIndex()).getStyleClass().remove("highlighted");
+        model.move(move);
+        buttons.get(model.getSelectedIndex()).getStyleClass().add("highlighted");
+    }
+
+    private void fire() {
+        buttons.get(model.getSelectedIndex()).fire();
+    }
+
+    // FXML onAction
+    @FXML
+    private void onGameStart() {
         router.showGamePlaceholder();
     }
 
-    private void openSettings() {
+    @FXML
+    private void onSettings() {
         router.showSettings();
     }
 
-    private void exitGame() {
+    @FXML
+    private void onExit() {
         router.exitGame();
     }
 }

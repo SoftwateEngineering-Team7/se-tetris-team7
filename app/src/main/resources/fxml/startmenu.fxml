@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane fx:id="root" xmlns="http://javafx.com/javafx"
+    xmlns:fx="http://javafx.com/fxml"
+    fx:controller="org.tetris.menu.start.controller.StartMenuController"
+    prefWidth="800" prefHeight="600"
+    stylesheets="@../css/button-highlight.css">
+
+    <!-- 제목 라벨 -->
+    <Label fx:id="titleLabel"
+        text="Tetris"
+        textFill="Black"
+        AnchorPane.topAnchor="30.0"
+        AnchorPane.leftAnchor="0.0"
+        AnchorPane.rightAnchor="0.0"
+        style="-fx-alignment: center;">
+        <font>
+            <Font name="Arial" size="60" />
+        </font>
+    </Label>
+
+    <!-- 메뉴 버튼 박스 -->
+    <VBox fx:id="menuBox" spacing="40" alignment="CENTER"
+        AnchorPane.topAnchor="200.0"
+        AnchorPane.leftAnchor="0.0"
+        AnchorPane.rightAnchor="0.0">
+
+        <!-- 게임 시작 버튼 -->
+        <Button
+            fx:id="gameStartButton"
+            text="게임 시작"
+            onAction="#onGameStart"
+            prefWidth="200"
+            prefHeight="50"
+            textFill="Black">
+            <font>
+                <Font name="Arial" size="30" />
+            </font>
+        </Button>
+        <!-- 세팅 버튼 -->
+        <Button
+            fx:id="settingButton"
+            text="설정"
+            onAction="#onSettings"
+            prefWidth="200"
+            prefHeight="50"
+            textFill="Black">
+            <font>
+                <Font name="Arial" size="30" />
+            </font>
+        </Button>
+        <!-- 종료 버튼 -->
+        <Button
+            fx:id="exitButton"
+            text="종료"
+            onAction="#onExit"
+            prefWidth="200"
+            prefHeight="50"
+            textFill="Black">
+            <font>
+                <Font name="Arial" size="30" />
+            </font>
+        </Button>
+    </VBox>
+
+    <!-- 잘못된 키 입력 안내 라벨 -->
+    <Label fx:id="wrongInputLabel"
+        text="잘못된 키입니다&#10;올바른 키: ↑, ↓, Enter, Space"
+        visible="false"
+        textFill="Red"
+        AnchorPane.bottomAnchor="30.0"
+        AnchorPane.rightAnchor="30.0">
+        <font>
+            <Font name="Arial" size="20" />
+        </font>
+    </Label>
+
+</AnchorPane>
