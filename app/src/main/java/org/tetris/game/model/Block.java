@@ -1,5 +1,7 @@
 package org.tetris.game.model;
 
+import org.extension.Point;
+
 public class Block {
     protected int[][] shape;
     protected Point pivot;

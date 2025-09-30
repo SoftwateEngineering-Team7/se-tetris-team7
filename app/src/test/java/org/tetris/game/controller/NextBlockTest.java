@@ -18,8 +18,10 @@ public class NextBlockTest {
     public void setUp() {
         blockList = new ArrayList<Block>();
         // blockList.add(new Block(...)); // 필요한 블록들을 추가
-        blockList.add(new Block(new int[][] { {1, 1, 1}, {0, 1, 0} }, new Point(1, 1))); // T 블록 예시
-
+        blockList.add(new Block(new int[][]{
+            {1, 1, 1},
+            {0, 1, 0}
+        }, new Point(1, 1)));
     }
 
     @Test
