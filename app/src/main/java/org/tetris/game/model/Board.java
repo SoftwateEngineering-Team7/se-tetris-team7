@@ -1,14 +1,6 @@
 package org.tetris.game.model;
 
-class Point {
-    public int r;
-    public int c;
-
-    public Point(int r, int c) {
-        this.r = r;
-        this.c = c;
-    }
-}
+import org.extension.Point;
 
 public class Board {
     private final int HEIGHT = 20;
