@@ -4,7 +4,7 @@ import org.tetris.game.model.Point;
 
 public abstract class Block {
     protected int[][] shape;
-    protected Point pivot;
+    public Point pivot;
 
     public Block() {
         this.shape = new int[][] {
