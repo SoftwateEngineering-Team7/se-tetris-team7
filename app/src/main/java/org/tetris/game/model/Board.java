@@ -12,6 +12,7 @@ public class Board {
     private Point curPos;
     private Point initialPos;
 
+    // Board 생성자
     public Board() {
         board = new int[HEIGHT][WIDTH];
         for (int r = 0; r < HEIGHT; r++) {
@@ -26,6 +27,7 @@ public class Board {
         placeBlock(curPos);
     }
 
+    // 랜덤블럭 반환
     public Block getRandomBlock() {
         Random rnd = new Random();
         int block = rnd.nextInt(7);
@@ -49,6 +51,7 @@ public class Board {
 
     }
 
+    // 블럭 배치
     public boolean placeBlock(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
@@ -78,6 +81,7 @@ public class Board {
         }
     }
 
+    // 배치 시도 후 가능 여부 반환
     public boolean isValidPos(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
@@ -95,67 +99,87 @@ public class Board {
         return true;
     }
 
+    // 보드 크기 (22 * 11) 에 있는지 확인
     public boolean isInBound(int row, int col) {
         return row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH;
     }
 
+    // 기존 활성 블럭은 고정되고 활성 블럭에 새로운 랜덤블럭 반환
     public void setActiveToStaticBlock() {
         activeBlock = getRandomBlock();
         curPos = new Point(initialPos);
     }
 
+    // -------------------- 이동 관련 함수들 --------------------
+    // (이동할 좌표 p'을 생성하고 기존 블럭은 제거, p'에 배치가 가능하다면 curPos에 p'을 할당, 마지막으로 curPos에 블럭 배치
+    // 후 이동 여부 반환)
+
+    // 아래로 한칸 이동 함수
     public boolean moveDown() {
-        boolean result = false;
+        boolean isMoved = false;
         Point downPos = curPos.down();
         removeBlock(curPos);
 
         if (isValidPos(downPos)) {
             curPos = downPos;
-            result = true;
+            isMoved = true;
         }
 
         placeBlock(curPos);
-        return result;
+        return isMoved;
     }
 
-    public void moveRight() {
+    // 오른쪽 한칸 이동 함수
+    public boolean moveRight() {
+        boolean isMoved = false;
         Point rightPos = curPos.right();
         removeBlock(curPos);
 
         if (isValidPos(rightPos)) {
             curPos = rightPos;
+            isMoved = true;
         }
 
         placeBlock(curPos);
+        return isMoved;
     }
 
-    public void moveLeft() {
+    // 왼쪽 한칸 이동 함수
+    public boolean moveLeft() {
+        boolean isMoved = false;
         Point leftPos = curPos.left();
         removeBlock(curPos);
 
         if (isValidPos(leftPos)) {
             curPos = leftPos;
+            isMoved = true;
         }
 
         placeBlock(curPos);
+        return isMoved;
     }
 
+    // 매 임의의 시간마다 아래로 한칸 이동하는 함수 (이동이 불가하면 활성 블럭은 고정되고 새로운 블럭으로 반환)
     public void autoDown() {
         boolean isDown = moveDown();
         if (!isDown)
             setActiveToStaticBlock();
     }
 
-    public void rotate() {
+    // 시계방향 90도 회전 함수
+    public boolean rotate() {
+        boolean isMoved = false;
         removeBlock(curPos);
         activeBlock.rotateCW();
 
         if (isValidPos(curPos)) {
-            placeBlock(curPos);
+            isMoved = true;
         } else {
             activeBlock.rotateCCW();
-            placeBlock(curPos);
         }
+
+        placeBlock(curPos);
+        return isMoved;
     }
 
     public void printBoard() {
