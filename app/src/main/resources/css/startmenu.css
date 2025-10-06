@@ -1,0 +1,82 @@
+/* ===== 공통 색상 메모 =====
+   Sky Blue(I): #56B4E9
+   Orange-Red(Z): #D55E00
+   Blue(J): #0072B2
+   Yellow(O): #F0E442
+   Orange(L): #E69F00
+   Green(S): #009E73
+   Magenta(T): #CC79A7
+   배경: black, 기본 텍스트: white, 버튼 텍스트: black
+*/
+
+/* 전체 기본 텍스트는 흰색(버튼 제외) */
+.root,
+.label {
+    -fx-text-fill: white;
+}
+
+/* 제목(Title) */
+.title {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* ===== 버튼 ===== */
+.menu-button {
+    -fx-background-color: white;
+    /* 버튼 배경: 흰색 */
+    -fx-text-fill: black;
+    /* 버튼 텍스트: 검정 */
+    -fx-border-width: 2px;
+    -fx-padding: 0.6em 1.0em;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+/* 선택(하이라이트) 상태: 스카이블루 배경 */
+.menu-button.highlighted,
+.menu-button:hover {
+    -fx-background-color: #56B4E9;
+    -fx-text-fill: black;
+    -fx-border-color: #56B4E9;
+    -fx-border-width: 1px;
+}
+
+/* 오류/경고 라벨 */
+.label-error {
+    -fx-text-fill: #D55E00;
+    -fx-font-weight: bold;
+}
+
+/* ===== 스코어보드 ===== */
+.scoreboard-container {
+    -fx-padding: 12 12 12 12;
+    -fx-spacing: 8;
+    -fx-border-color: #E69F00;
+    -fx-border-width: 2px;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-background-color: "white";
+}
+
+.scoreboard-title {
+    -fx-text-fill: "black";
+    -fx-font-size: 1.2em;
+    -fx-font-weight: bold;
+}
+
+.score-row {
+    -fx-padding: 0.6em 0.8em;
+    -fx-background-color: transparent;
+    -fx-border-color: #56B4E9;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* ===== ScrollPane: 배경은 투명(부모의 검정 유지), 가로 스크롤 숨김 ===== */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane>.viewport {
+    -fx-background-color: transparent;
+}
