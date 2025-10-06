@@ -1,116 +1,84 @@
 package org.tetris.menu.start.view;
 
-import org.junit.Test;
-import org.junit.Before;
-import static org.junit.Assert.*;
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.tetris.menu.start.controller.StartMenuController;
 
-public class StartMenuViewTest {
-    
-    @Before
-    public void setUp() {
-        // JavaFX 환경이 없으므로 실제 StartMenuView 생성 없이 클래스 구조만 테스트
-        // 각 테스트에서 필요시 개별적으로 처리
-    }
-    
-    @Test
-    public void testViewCreation() {
-        // JavaFX 환경 없이 FXML 로딩이 실패하는 것이 정상적인 동작임을 테스트
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
+@DisplayName("StartMenuView 테스트")
+@ExtendWith(MockitoExtension.class)
+class StartMenuViewTest {
+
+    @Mock
+    private Parent mockRoot;
+
+    @Mock
+    private StartMenuController mockController;
+
+    /**
+     * JavaFX 컴포넌트를 테스트하기 전에 JavaFX 툴킷을 초기화합니다.
+     * 테스트가 여러 번 실행될 때 이미 툴킷이 실행 중일 수 있으므로 IllegalStateException을 처리합니다.
+     */
+    @BeforeAll
+    static void initJavaFX() {
         try {
-            new StartMenuView();
-            fail("JavaFX 환경 없이 StartMenuView 생성시 예외가 발생해야 합니다");
-        } catch (RuntimeException e) {
-            assertTrue("FXML 로딩 실패로 인한 예상된 RuntimeException", 
-                      e.getMessage() != null && e.getMessage().contains("Failed to load"));
-        } catch (ExceptionInInitializerError e) {
-            // JavaFX 초기화 오류는 예상됨
-            assertTrue("JavaFX 초기화 오류로 인한 예상된 ExceptionInInitializerError", true);
-        } catch (NoClassDefFoundError e) {
-            // JavaFX 클래스 로딩 오류도 예상됨
-            assertTrue("JavaFX 클래스 로딩 오류로 인한 예상된 NoClassDefFoundError", true);
-        } catch (Exception e) {
-            // JavaFX 환경 관련 모든 예외 허용
-            assertTrue("JavaFX 환경 부족으로 인한 예상된 예외: " + e.getClass().getSimpleName(), true);
-        }
-    }
-    
-    @Test
-    public void testControllerBinding() {
-        // FXML 파일에서 Controller가 올바르게 연결되는지 간접적으로 테스트
-        // StartMenuController 클래스가 존재하고 올바른 패키지에 있는지 확인
-        try {
-            Class<?> controllerClass = Class.forName("org.tetris.menu.start.controller.StartMenuController");
-            assertNotNull("StartMenuController 클래스가 존재해야 합니다", controllerClass);
-            assertEquals("Controller 클래스명이 올바른지 확인", 
-                        "org.tetris.menu.start.controller.StartMenuController", 
-                        controllerClass.getName());
-        } catch (ClassNotFoundException e) {
-            fail("StartMenuController 클래스를 찾을 수 없습니다");
-        }
-    }
-    
-    @Test
-    public void testBasicFunctionality() {
-        // 기본적인 클래스 구조 테스트
-        assertTrue("클래스명에 StartMenuView가 포함되어야 합니다", 
-                  StartMenuView.class.getName().contains("StartMenuView"));
-        
-        // StartMenuView 클래스에 필요한 메서드들이 있는지 확인
-        try {
-            StartMenuView.class.getDeclaredMethod("getRoot");
-            StartMenuView.class.getDeclaredMethod("getController");
-            assertTrue("필요한 메서드들이 존재합니다", true);
-        } catch (NoSuchMethodException e) {
-            fail("필요한 메서드들이 누락되었습니다: " + e.getMessage());
-        }
-    }
-    
-    @Test
-    public void testPackageStructure() {
-        // 패키지 구조 확인
-        String expectedPackage = "org.tetris.menu.start.view";
-        String actualPackage = StartMenuView.class.getPackage().getName();
-        assertEquals("패키지명이 일치해야 합니다", expectedPackage, actualPackage);
-    }
-    
-    @Test
-    public void testClassStructure() {
-        // 클래스의 기본 구조 테스트
-        assertNotNull("StartMenuView 클래스가 존재해야 합니다", StartMenuView.class);
-        
-        // 생성자가 존재하는지 확인
-        try {
-            StartMenuView.class.getConstructor();
-            assertTrue("기본 생성자가 존재합니다", true);
-        } catch (NoSuchMethodException e) {
-            fail("기본 생성자가 존재하지 않습니다");
-        }
-        
-        // 필드들이 존재하는지 확인
-        try {
-            StartMenuView.class.getDeclaredField("root");
-            StartMenuView.class.getDeclaredField("controller");
-            assertTrue("필요한 필드들이 존재합니다", true);
-        } catch (NoSuchFieldException e) {
-            fail("필요한 필드가 누락되었습니다: " + e.getMessage());
+            Platform.startup(() -> {
+            });
+        } catch (IllegalStateException e) {
+            // JavaFX Platform already started, no-op.
         }
     }
 
     @Test
-    public void testFXMLFileExists() {
-        // FXML 파일이 리소스에 존재하는지 확인
-        var fxmlResource = StartMenuView.class.getResource("/fxml/startmenu.fxml");
-        assertNotNull("startmenu.fxml 파일이 존재해야 합니다", fxmlResource);
+    @DisplayName("FXML 로딩 성공 시, root와 controller를 정상적으로 초기화한다")
+    void shouldInitializeRootAndControllerOnSuccess() {
+        // 이 컨텍스트 내에서 `new FXMLLoader()`가 호출되면, Mockito가 가짜 객체를 대신 주입합니다.
+        try (MockedConstruction<FXMLLoader> mockedLoader = Mockito.mockConstruction(FXMLLoader.class,
+                (mock, context) -> {
+                    when(mock.load()).thenReturn(mockRoot);
+                    when(mock.getController()).thenReturn(mockController);
+                })) {
+
+            // WHEN: 테스트 대상 객체를 생성합니다.
+            StartMenuView view = new StartMenuView();
+
+            // THEN: 생성된 View가 Mock 객체들로 올바르게 초기화되었는지 확인합니다.
+            assertEquals(mockRoot, view.getRoot(), "Root 객체가 정상적으로 주입되어야 합니다.");
+            assertEquals(mockController, view.getController(), "Controller 객체가 정상적으로 주입되어야 합니다.");
+        }
     }
 
     @Test
-    public void testFXMLLoaderCompatibility() {
-        // FXMLLoader 관련 import와 클래스 구조 테스트
-        try {
-            Class.forName("javafx.fxml.FXMLLoader");
-            Class.forName("javafx.scene.Parent");
-            assertTrue("JavaFX FXML 관련 클래스들이 사용 가능합니다", true);
-        } catch (ClassNotFoundException e) {
-            fail("JavaFX FXML 클래스를 찾을 수 없습니다: " + e.getMessage());
+    @DisplayName("FXML load() 실패 시, RuntimeException으로 전환하여 던진다")
+    void shouldThrowRuntimeExceptionWhenFxmlLoadFails() {
+        // 이 컨텍스트 내에서 `new FXMLLoader()`가 호출되면, Mockito가 가짜 객체를 대신 주입합니다.
+        try (MockedConstruction<FXMLLoader> mockedLoader = Mockito.mockConstruction(FXMLLoader.class,
+                (mock, context) -> {
+                    // FXMLLoader의 load() 메소드가 호출될 때 강제로 IOException을 발생시킵니다.
+                    when(mock.load()).thenThrow(new IOException("Test FXML load failure"));
+                })) {
+
+            // WHEN & THEN: StartMenuView 생성 시 RuntimeException이 발생하는지 검증합니다.
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                    StartMenuView::new,
+                    "FXML 로딩 실패 시 RuntimeException이 발생해야 합니다.");
+
+            // 추가 검증: 발생한 예외의 메시지와 원인(cause)이 예상과 일치하는지 확인합니다.
+            assertEquals("Failed to load start_menu.fxml", exception.getMessage());
+            assertTrue(exception.getCause() instanceof IOException, "원인 예외는 IOException이어야 합니다.");
         }
     }
 }
