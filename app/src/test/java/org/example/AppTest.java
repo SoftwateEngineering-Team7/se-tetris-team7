@@ -1,97 +1,54 @@
 package org.example;
 
-import org.junit.Test;
-import org.junit.BeforeClass;
-import static org.junit.Assert.*;
+import javafx.application.Platform;
+import javafx.stage.Stage;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
+import org.tetris.UIRouter;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
 /**
- * JavaFX App 클래스에 대한 단위 테스트
- * JavaFX 애플리케이션의 경우 UI 테스트는 별도의 통합 테스트로 분리하는 것이 일반적
+ * App.start(Stage)를 단위 테스트합니다.
+ * - JavaFX Toolkit 초기화
+ * - UIRouter 생성 가로채기(mockConstruction)
+ * - router.showStartMenu()와 stage.show() 호출 검증
  */
-public class AppTest {
+class AppTest {
 
-    @BeforeClass
-    public static void setUpClass() {
-        // JavaFX 툴킷을 헤드리스 모드로 초기화 (GUI 없이 테스트)
-        System.setProperty("testfx.robot", "glass");
-        System.setProperty("testfx.headless", "true");
-        System.setProperty("prism.order", "sw");
-        System.setProperty("prism.text", "t2k");
-        System.setProperty("java.awt.headless", "true");
-    }
-
-    @Test
-    public void testAppInstantiation() {
-        // App 인스턴스가 정상적으로 생성되는지 테스트
-        App app = new App();
-        assertNotNull("App 인스턴스가 null이 아니어야 합니다", app);
-        assertTrue("App은 JavaFX Application을 상속해야 합니다",
-                app instanceof javafx.application.Application);
-    }
-
-    @Test
-    public void testAppHasMainMethod() {
-        // main 메서드가 존재하는지 테스트
+    @BeforeAll
+    static void initFx() {
+        // JavaFX Application Thread 초기화(이미 초기화된 경우 예외 무시)
         try {
-            App.class.getDeclaredMethod("main", String[].class);
-            assertTrue("main 메서드가 존재합니다", true);
-        } catch (NoSuchMethodException e) {
-            fail("main 메서드가 존재하지 않습니다");
+            Platform.startup(() -> {
+            });
+        } catch (IllegalStateException ignore) {
         }
+        Platform.setImplicitExit(false);
     }
 
     @Test
-    public void testAppHasStartMethod() {
-        // start 메서드가 존재하는지 테스트 (JavaFX Application에서 필수)
-        try {
-            App.class.getDeclaredMethod("start", javafx.stage.Stage.class);
-            assertTrue("start 메서드가 존재합니다", true);
-        } catch (NoSuchMethodException e) {
-            fail("start 메서드가 존재하지 않습니다");
-        }
-    }
+    @DisplayName("start()는 UIRouter를 생성하고 showStartMenu() 호출 후 Stage.show()를 호출한다")
+    void start_shouldCreateRouter_showMenu_and_showStage() throws Exception {
+        Stage stage = Mockito.mock(Stage.class);
 
-    @Test
-    public void testAppPackage() {
-        // App 클래스가 올바른 패키지에 있는지 테스트
-        String expectedPackage = "org.example";
-        String actualPackage = App.class.getPackage().getName();
-        assertEquals("패키지명이 일치해야 합니다", expectedPackage, actualPackage);
-    }
+        // new UIRouter(stage) 생성 가로채기
+        try (MockedConstruction<UIRouter> mocked = Mockito.mockConstruction(UIRouter.class)) {
+            App app = new App();
+            app.start(stage);
 
-    @Test
-    public void testAppClassStructure() {
-        // App 클래스의 기본 구조 테스트
-        assertTrue("클래스명에 App이 포함되어야 합니다", 
-                  App.class.getName().contains("App"));
-        
-        // JavaFX Application을 상속하는지 확인
-        Class<?> superClass = App.class.getSuperclass();
-        assertEquals("App은 JavaFX Application을 상속해야 합니다",
-                    "javafx.application.Application", superClass.getName());
-    }
+            // UIRouter가 1회 생성되었는지 확인
+            assertEquals(1, mocked.constructed().size());
+            UIRouter routerMock = mocked.constructed().get(0);
 
-    @Test
-    public void testAppMethodsExist() {
-        // 필수 메서드들이 존재하는지 확인
-        boolean hasMain = false;
-        boolean hasStart = false;
-        
-        try {
-            App.class.getDeclaredMethod("main", String[].class);
-            hasMain = true;
-        } catch (NoSuchMethodException e) {
-            // main 메서드 없음
+            // 기대 호출 검증
+            verify(routerMock, times(1)).showStartMenu();
+            verify(stage, times(1)).show();
+            verifyNoMoreInteractions(routerMock);
         }
-        
-        try {
-            App.class.getDeclaredMethod("start", javafx.stage.Stage.class);
-            hasStart = true;
-        } catch (NoSuchMethodException e) {
-            // start 메서드 없음
-        }
-        
-        assertTrue("main 메서드가 존재해야 합니다", hasMain);
-        assertTrue("start 메서드가 존재해야 합니다", hasStart);
     }
 }
