@@ -39,6 +39,10 @@ dependencies {
     testRuntimeOnly "org.openjfx:javafx-controls:21:win"
     testRuntimeOnly "org.openjfx:javafx-fxml:21:win"
 
+    // TestFX for JavaFX GUI testing
+    testImplementation "org.testfx:testfx-core:4.0.18"
+    testImplementation "org.testfx:testfx-junit:4.0.18"
+
     // This dependency is used by the application.
     implementation libs.guava
 }
