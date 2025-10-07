@@ -8,6 +8,8 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 
+import javafx.collections.ObservableList;
+
 public class ScoreBoard
 {
     private final static String DEFAULT_HIGH_SCORE_PATH = "src/main/java/org/tetris/scoreboard/HighScore.csv";  
@@ -105,4 +107,8 @@ public class ScoreBoard
         }
     }
     // endregion
+
+    public ObservableList<ScoreInfo> getScoreList() {
+        return javafx.collections.FXCollections.observableArrayList(highScore);
+    }
 }

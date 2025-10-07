@@ -60,12 +60,22 @@ public class ScoreBoardView implements Initializable{
     @Override
     public void initialize(java.net.URL location, java.util.ResourceBundle resources)
     {
+        // TableColumn과 ScoreInfo 필드 바인딩
+        nameColumn.setCellValueFactory(cellData 
+            -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().name()));
+        scoreColumn.setCellValueFactory(cellData 
+            -> new javafx.beans.property.SimpleIntegerProperty(cellData.getValue().score()).asObject());
+        
+        scoreText.setText(String.valueOf(controller.finishScore));
+        scoreTable.setItems(controller.getScoreBoard().getScoreList());
         System.out.println("ScoreBoardView initialized");
     }
 
     @FXML
     private void onSubmitPressed()
     {
+        String playerName = nameField.getText();
+        controller.OnSubmitClick(playerName);
         System.out.println("Submit button pressed");
     }
     
