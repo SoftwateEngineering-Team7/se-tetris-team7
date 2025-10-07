@@ -33,7 +33,7 @@ public class ScoreBoard
     public ScoreBoard(int maxScores, String highScorePath){
         this.highScorePath = highScorePath;
         this.maxScores = maxScores;
-        highScore = new ArrayList<>();
+        highScore = readHighScore();
     }
 
     public ArrayList<ScoreInfo> getHighScore(){
@@ -58,6 +58,10 @@ public class ScoreBoard
                 }
                 return;
             }
+        }
+        
+        if(highScore.size() < maxScores) {
+            highScore.add(scoreInfo);
         }
     }
 
