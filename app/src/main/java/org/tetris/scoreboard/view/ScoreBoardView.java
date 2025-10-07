@@ -30,11 +30,15 @@ public class ScoreBoardView implements Initializable{
     @FXML private TextField nameField;
     @FXML private Button submitButton;
 
-    private final ScoreBoardController controller = new ScoreBoardController();
+    private final ScoreBoardController controller = new ScoreBoardController(0);
 
     private final Scene scene;
     private final Parent root; 
 
+    /**
+     * ScoreBoardView 객체를 생성합니다.
+     * FXML 파일을 로드하고 Scene을 초기화합니다.
+     */
     public ScoreBoardView(){
 
         root = loadFXML();
@@ -60,15 +64,15 @@ public class ScoreBoardView implements Initializable{
     @Override
     public void initialize(java.net.URL location, java.util.ResourceBundle resources)
     {
-        // TableColumn과 ScoreInfo 필드 바인딩
+        // name, score <-> ScoreInfo
         nameColumn.setCellValueFactory(cellData 
             -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().name()));
         scoreColumn.setCellValueFactory(cellData 
             -> new javafx.beans.property.SimpleIntegerProperty(cellData.getValue().score()).asObject());
         
-        scoreText.setText(String.valueOf(controller.finishScore));
+        scoreText.setText(String.valueOf(controller.getFinishScore()));
+        
         scoreTable.setItems(controller.getScoreBoard().getScoreList());
-        System.out.println("ScoreBoardView initialized");
     }
 
     @FXML
@@ -76,7 +80,6 @@ public class ScoreBoardView implements Initializable{
     {
         String playerName = nameField.getText();
         controller.OnSubmitClick(playerName);
-        System.out.println("Submit button pressed");
     }
     
 }
