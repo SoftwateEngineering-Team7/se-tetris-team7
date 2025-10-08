@@ -2,10 +2,11 @@ package org.tetris.game.model;
 
 import java.util.Random;
 import org.tetris.game.model.blocks.*;
+import org.tetris.game.model.utils.Point;
 
 public class Board {
-    private final int HEIGHT = 21;
-    private final int WIDTH = 12;
+    private final int HEIGHT;
+    private final int WIDTH;
 
     private int[][] board;
     public Block activeBlock;
@@ -14,6 +15,12 @@ public class Board {
 
     // Board 생성자
     public Board() {
+        this(21, 12);
+    }
+
+    public Board(int height, int width) {
+        HEIGHT = height;
+        WIDTH = width;
         board = new int[HEIGHT][WIDTH];
         for (int r = 0; r < HEIGHT; r++) {
             for (int c = 0; c < WIDTH; c++) {
@@ -52,7 +59,7 @@ public class Board {
     }
 
     // 블럭 배치
-    public boolean placeBlock(Point pos) {
+    public void placeBlock(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
                 if (activeBlock.getShape(r, c) == 1) {
@@ -64,7 +71,6 @@ public class Board {
                 }
             }
         }
-        return true;
     }
 
     public void removeBlock(Point pos) {
@@ -85,7 +91,7 @@ public class Board {
     public boolean isValidPos(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) == 1) {
+                if (activeBlock.getShape(r, c) != 0) {
                     int row = pos.r - activeBlock.pivot.r + r;
                     int col = pos.c - activeBlock.pivot.c + c;
 

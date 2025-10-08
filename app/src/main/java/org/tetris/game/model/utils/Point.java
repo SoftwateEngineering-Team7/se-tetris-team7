@@ -1,4 +1,4 @@
-package org.tetris.game.model;
+package org.tetris.game.model.utils;
 
 public class Point {
     public int r;
