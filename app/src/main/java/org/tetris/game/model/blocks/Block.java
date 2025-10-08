@@ -1,6 +1,6 @@
 package org.tetris.game.model.blocks;
 
-import org.tetris.game.model.utils.Point;
+import org.util.Point;
 
 public abstract class Block {
     protected int[][] shape;

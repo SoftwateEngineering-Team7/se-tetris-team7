@@ -4,11 +4,11 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 
-import org.extension.Point;
+import org.util.Point;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.tetris.game.model.Block;
+import org.tetris.game.model.blocks.*;
 
 public class NextBlockTest {
     // 테스트를 위한 블럭 리스트
@@ -18,10 +18,7 @@ public class NextBlockTest {
     public void setUp() {
         blockList = new ArrayList<Block>();
         // blockList.add(new Block(...)); // 필요한 블록들을 추가
-        blockList.add(new Block(new int[][]{
-            {1, 1, 1},
-            {0, 1, 0}
-        }, new Point(1, 1)));
+        blockList.add(new IBlock());
     }
 
     @Test

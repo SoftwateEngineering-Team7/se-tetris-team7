@@ -1,4 +1,4 @@
-package org.extension;
+package org.util;
 
 import static org.junit.Assert.*;
 
@@ -7,16 +7,14 @@ import org.junit.Test;
 public class PointTest {
 
     @Test
-    public void testPointToString()
-    {
+    public void testPointToString() {
         Point point = new Point(1, 2);
         String expected = "(1, 2)";
         assertEquals(expected, point.toString());
     }
 
     @Test
-    public void testPointEquals()
-    {
+    public void testPointEquals() {
         var point1 = new Point(1, 2);
         var point2 = new Point(1, 2);
         var point3 = new Point(2, 3);
@@ -26,8 +24,7 @@ public class PointTest {
     }
 
     @Test
-    public void testPointAdd()
-    {
+    public void testPointAdd() {
         var point = new Point(1, 2);
         var result = point.add(2, 3);
         var expected = new Point(3, 5);
@@ -36,11 +33,10 @@ public class PointTest {
 
         result = point.add(new Point(2, 3));
         assertEquals(expected, result);
-    } 
+    }
 
     @Test
-    public void testPointSubtract()
-    {
+    public void testPointSubtract() {
         var point = new Point(5, 7);
         var result = point.subtract(2, 3);
         var expected = new Point(3, 4);

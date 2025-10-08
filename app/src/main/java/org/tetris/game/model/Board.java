@@ -2,7 +2,7 @@ package org.tetris.game.model;
 
 import java.util.Random;
 import org.tetris.game.model.blocks.*;
-import org.tetris.game.model.utils.Point;
+import org.util.Point;
 
 public class Board {
     private final int HEIGHT;
