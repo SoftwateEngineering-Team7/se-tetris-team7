@@ -39,6 +39,4 @@ public class ScoreBoardController {
         scoreBoard.insert(new ScoreInfo(score, name));
         scoreBoard.writeHighScore();
     }
-
-
 }

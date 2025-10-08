@@ -12,19 +12,19 @@ import javafx.collections.ObservableList;
 
 public class ScoreBoard
 {
-    private final static String DEFAULT_HIGH_SCORE_PATH = "src/main/java/org/tetris/scoreboard/HighScore.csv";  
+    private final static String DEFAULT_HIGH_SCORE_LIST_PATH = "src/main/java/org/tetris/scoreboard/HighScore.csv";  
 
     private final String highScorePath;
     private final int maxScores;
 
-    private ArrayList<ScoreInfo> highScore;
+    private ArrayList<ScoreInfo> highScoreList;
     
     /**
      * 10개의 점수를 저장하는 ScoreBoard 객체를 생성합니다.
      * 기본 경로로 설정합니다.
      */
     public ScoreBoard(){
-        this(10, DEFAULT_HIGH_SCORE_PATH);
+        this(10, DEFAULT_HIGH_SCORE_LIST_PATH);
     }
 
     /**
@@ -35,11 +35,11 @@ public class ScoreBoard
     public ScoreBoard(int maxScores, String highScorePath){
         this.highScorePath = highScorePath;
         this.maxScores = maxScores;
-        highScore = readHighScore();
+        highScoreList = readHighScore();
     }
 
-    public ArrayList<ScoreInfo> getHighScore(){
-        return highScore;
+    public ArrayList<ScoreInfo> getHighScoreList(){
+        return highScoreList;
     }
 
     /**
@@ -47,23 +47,23 @@ public class ScoreBoard
      * @param scoreInfo 삽입할 점수 정보
      */
     public void insert(ScoreInfo scoreInfo){
-        if(highScore.isEmpty()) {
-            highScore.add(scoreInfo);
+        if(highScoreList.isEmpty()) {
+            highScoreList.add(scoreInfo);
             return;
         }
 
-        for(int i = 0; i < highScore.size(); i++) {
-            if(scoreInfo.score() > highScore.get(i).score()) {
-                highScore.add(i, scoreInfo);
-                if(highScore.size() > maxScores) {
-                    highScore.remove(maxScores);
+        for(int i = 0; i < highScoreList.size(); i++) {
+            if(scoreInfo.score() > highScoreList.get(i).score()) {
+                highScoreList.add(i, scoreInfo);
+                if(highScoreList.size() > maxScores) {
+                    highScoreList.remove(maxScores);
                 }
                 return;
             }
         }
         
-        if(highScore.size() < maxScores) {
-            highScore.add(scoreInfo);
+        if(highScoreList.size() < maxScores) {
+            highScoreList.add(scoreInfo);
         }
     }
 
@@ -98,7 +98,7 @@ public class ScoreBoard
     public void writeHighScore()
     {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(highScorePath))) {
-            for (ScoreInfo scoreInfo : highScore) {
+            for (ScoreInfo scoreInfo : highScoreList) {
                 bw.write(scoreInfo.score() + "," + scoreInfo.name());
                 bw.newLine();
             }
@@ -109,6 +109,6 @@ public class ScoreBoard
     // endregion
 
     public ObservableList<ScoreInfo> getScoreList() {
-        return javafx.collections.FXCollections.observableArrayList(highScore);
+        return javafx.collections.FXCollections.observableArrayList(highScoreList);
     }
 }

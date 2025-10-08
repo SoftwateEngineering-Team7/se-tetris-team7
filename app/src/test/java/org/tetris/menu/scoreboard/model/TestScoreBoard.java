@@ -22,7 +22,7 @@ public class TestScoreBoard {
         scoreBoard.insert(new ScoreInfo(200, "TEST2"));
         scoreBoard.insert(new ScoreInfo(150, "TEST3"));
 
-        var highScore = scoreBoard.getHighScore();
+        var highScore = scoreBoard.getHighScoreList();
 
         assertEquals(2, highScore.size());
         assertEquals(200, highScore.get(0).score());
