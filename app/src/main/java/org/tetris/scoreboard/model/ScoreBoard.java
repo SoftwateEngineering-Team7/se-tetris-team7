@@ -35,7 +35,7 @@ public class ScoreBoard
     public ScoreBoard(int maxScores, String highScorePath){
         this.highScorePath = highScorePath;
         this.maxScores = maxScores;
-        highScoreList = readHighScore();
+        highScoreList = readHighScoreList();
     }
 
     public ArrayList<ScoreInfo> getHighScoreList(){
@@ -72,7 +72,7 @@ public class ScoreBoard
      * highScorePath 경로에서 최고 점수를 읽어옵니다.
      * @return 읽어온 최고 점수 리스트
      */
-    public ArrayList<ScoreInfo> readHighScore()
+    public ArrayList<ScoreInfo> readHighScoreList()
     {
         ArrayList<ScoreInfo> scoreList = new ArrayList<>();
 
@@ -95,7 +95,7 @@ public class ScoreBoard
     /**
      * 현재 최고 점수 리스트를 highScorePath 경로에 저장합니다.
      */
-    public void writeHighScore()
+    public void writeHighScoreList()
     {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(highScorePath))) {
             for (ScoreInfo scoreInfo : highScoreList) {

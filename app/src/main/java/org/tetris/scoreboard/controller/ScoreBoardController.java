@@ -37,6 +37,6 @@ public class ScoreBoardController {
     private void submitCurrentScore(int score, String name)
     {
         scoreBoard.insert(new ScoreInfo(score, name));
-        scoreBoard.writeHighScore();
+        scoreBoard.writeHighScoreList();
     }
 }

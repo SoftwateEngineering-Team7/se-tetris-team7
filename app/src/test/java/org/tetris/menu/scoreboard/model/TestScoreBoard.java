@@ -34,7 +34,7 @@ public class TestScoreBoard {
     @Test
     public void testReadHighScore() {
         scoreBoard = new ScoreBoard(2, testReadFilePath);
-        var scores = scoreBoard.readHighScore();
+        var scores = scoreBoard.readHighScoreList();
 
         assertEquals(100, scores.get(0).score());
         assertEquals("TEST", scores.get(0).name());
@@ -47,9 +47,9 @@ public class TestScoreBoard {
         var playerName = "TEST_WRITE";
 
         scoreBoard.insert(new ScoreInfo(randomScore, playerName));
-        scoreBoard.writeHighScore();
+        scoreBoard.writeHighScoreList();
 
-        var scores = scoreBoard.readHighScore();
+        var scores = scoreBoard.readHighScoreList();
 
         assertEquals(randomScore, scores.get(0).score());
         assertEquals(playerName, scores.get(0).name());
