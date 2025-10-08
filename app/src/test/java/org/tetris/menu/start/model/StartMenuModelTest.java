@@ -1,88 +1,79 @@
 package org.tetris.menu.start.model;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.Test;
+import org.junit.Before;
+import static org.junit.Assert.*;
 
-@DisplayName("StartMenuModel 테스트")
-class StartMenuModelTest {
-
+public class StartMenuModelTest {
+    
     private StartMenuModel model;
-    private final int BUTTON_COUNT = 3;
-
-    @BeforeEach
-    void setUp() {
-        // 각 테스트가 실행되기 전에 모델을 3개의 버튼으로 초기화합니다.
-        model = new StartMenuModel(BUTTON_COUNT);
+    
+    @Before
+    public void setUp() {
+        model = new StartMenuModel(3); // 3개 버튼 (게임 시작, 설정, 종료)
     }
-
+    
     @Test
-    @DisplayName("모델 생성 시 selectedIndex는 0으로 초기화되어야 한다")
-    void modelShouldBeInitializedWithIndexZero() {
-        assertNotNull(model, "모델은 null이 아니어야 합니다.");
-        assertEquals(0, model.getSelectedIndex(), "초기 선택 인덱스는 0이어야 합니다.");
+    public void testModelCreation() {
+        assertNotNull("모델이 null이 아니어야 합니다", model);
+        assertEquals("초기 선택 인덱스는 0이어야 합니다", 0, model.getSelectedIndex());
     }
-
+    
     @Test
-    @DisplayName("move(1) 호출 시 인덱스가 1씩 증가해야 한다")
-    void moveDownShouldIncrementIndex() {
-        // Act & Assert
+    public void testMoveDown() {
+        assertEquals("초기 인덱스는 0이어야 합니다", 0, model.getSelectedIndex());
+        
         model.move(1);
-        assertEquals(1, model.getSelectedIndex(), "아래로 1칸 이동 시 인덱스는 1이어야 합니다.");
-
+        assertEquals("인덱스가 1로 이어야 합니다", 1, model.getSelectedIndex());
+        
         model.move(1);
-        assertEquals(2, model.getSelectedIndex(), "아래로 1칸 더 이동 시 인덱스는 2여야 합니다.");
+        assertEquals("인덱스가 2로 이어야 합니다", 2, model.getSelectedIndex());
     }
-
+    
     @Test
-    @DisplayName("마지막 인덱스에서 아래로 이동하면 첫 인덱스(0)로 순환해야 한다")
-    void moveDownShouldWrapAroundFromEndToStart() {
-        // Arrange: 마지막 인덱스(2)로 이동합니다.
-        model.move(1);
-        model.move(1);
-        assertEquals(2, model.getSelectedIndex(), "테스트 준비: 마지막 인덱스로 이동해야 합니다.");
-
-        // Act: 마지막 인덱스에서 아래로 이동합니다.
-        model.move(1);
-
-        // Assert: 인덱스가 0으로 순환했는지 확인합니다.
-        assertEquals(0, model.getSelectedIndex(), "마지막 인덱스에서 아래로 이동하면 0으로 순환해야 합니다.");
+    public void testMoveWrapAround() {
+        // 마지막에서 아래로 이동하면 처음으로 순환
+        model.move(1); // 0 -> 1
+        model.move(1); // 1 -> 2
+        model.move(1); // 2 -> 0 (순환)
+        assertEquals("인덱스가 2에서 순환하여 0이어야 합니다(순환)", 0, model.getSelectedIndex());
+        
+        // 첫번째에서 위로 이동하면 마지막으로 순환
+        model.move(-1); // 0 -> 2 (역순환)
+        assertEquals("인덱스가 1로 이어야 합니다", 2, model.getSelectedIndex());
+        
+        model.move(-1); // 2 -> 1
+        assertEquals("인덱스가 0으로 이어야 합니다", 1, model.getSelectedIndex());
     }
-
+    
     @Test
-    @DisplayName("move(-1) 호출 시 인덱스가 1씩 감소해야 한다")
-    void moveUpShouldDecrementIndex() {
-        // Arrange: 인덱스를 2로 설정합니다.
-        model.move(1);
-        model.move(1);
-        assertEquals(2, model.getSelectedIndex(), "테스트 준비: 인덱스를 2로 설정해야 합니다.");
-
-        // Act & Assert
+    public void testMoveUp() {
+        // 첫번째에서 위로 이동하면 마지막으로 순환
+        assertEquals("초기 상태에서 다음으로 이동하면 0으로 이어야 합니다", 0, model.getSelectedIndex());
+        
         model.move(-1);
-        assertEquals(1, model.getSelectedIndex(), "위로 1칸 이동 시 인덱스는 1이어야 합니다.");
-
-        model.move(-1);
-        assertEquals(0, model.getSelectedIndex(), "위로 1칸 더 이동 시 인덱스는 0이어야 합니다.");
+        assertEquals("첫번째에서 위 이전으로 이동하면 2로 이어야 합니다", 2, model.getSelectedIndex());
     }
-
+    
     @Test
-    @DisplayName("첫 인덱스에서 위로 이동하면 마지막 인덱스(2)로 순환해야 한다")
-    void moveUpShouldWrapAroundFromStartToEnd() {
-        model.move(-1);
-        assertEquals(2, model.getSelectedIndex(), "첫 인덱스에서 위로 이동하면 마지막 인덱스(2)로 순환해야 합니다.");
-    }
-
-    @Test
-    @DisplayName("setSelectedIndex() 호출 시 인덱스가 올바르게 설정되어야 한다")
-    void setSelectedIndexShouldUpdateIndex() {
-        model.setSelectedIndex(1);
-        assertEquals(1, model.getSelectedIndex(), "인덱스를 1로 설정해야 합니다.");
-
-        model.setSelectedIndex(2);
-        assertEquals(2, model.getSelectedIndex(), "인덱스를 2로 설정해야 합니다.");
-
-        model.setSelectedIndex(0);
-        assertEquals(0, model.getSelectedIndex(), "인덱스를 0으로 설정해야 합니다.");
+    public void testDifferentButtonCounts() {
+        // 2개 버튼 모델 테스트
+        StartMenuModel model2 = new StartMenuModel(2);
+        assertEquals("2개 버튼 모델의 초기 인덱스는 0이어야 합니다", 0, model2.getSelectedIndex());
+        
+        model2.move(1);
+        assertEquals("인덱스가 1로 이어야 합니다", 1, model2.getSelectedIndex());
+        
+        model2.move(1);
+        assertEquals("2개 버튼에서 순환하면 0으로 이어야 합니다", 0, model2.getSelectedIndex());
+        
+        // 5개 버튼 모델 테스트
+        StartMenuModel model5 = new StartMenuModel(5);
+        for (int i = 0; i < 5; i++) {
+            assertEquals("5개 버튼 모델에서 인덱스가 " + i + "이어야 합니다", i, model5.getSelectedIndex());
+            model5.move(1);
+        }
+        
+        assertEquals("5개 버튼에서 5번 이동하면 0으로 순환해야 합니다", 0, model5.getSelectedIndex());
     }
 }
