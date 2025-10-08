@@ -17,4 +17,8 @@ public class StartMenuModel {
     public int getSelectedIndex() {
         return selectedIndex;
     }
+    
+    public void setSelectedIndex(int idx) {
+        this.selectedIndex = Math.floorMod(idx, totalButtonCount);
+    }
 }
