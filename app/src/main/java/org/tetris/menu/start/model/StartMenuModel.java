@@ -1,7 +1,8 @@
 package org.tetris.menu.start.model;
 
+import org.tetris.shared.BaseModel;
 
-public class StartMenuModel {
+public class StartMenuModel extends BaseModel {
     private int selectedIndex = 0;
     private final int totalButtonCount; // 메뉴 항목 개수 (게임 시작, 설정, 종료)
 

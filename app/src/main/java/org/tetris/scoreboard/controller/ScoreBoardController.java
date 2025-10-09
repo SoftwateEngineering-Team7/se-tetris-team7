@@ -2,19 +2,13 @@ package org.tetris.scoreboard.controller;
 
 import org.tetris.scoreboard.model.ScoreBoard;
 import org.tetris.scoreboard.model.ScoreInfo;
+public class ScoreBoardController extends BaseController<ScoreBoard> {
 
-public class ScoreBoardController {
-    private final ScoreBoard scoreBoard;
     private int finishScore;
 
-    /**
-     * ScoreBoardController 객체를 생성합니다.
-     * ScoreBoard 모델을 초기화합니다.
-     */
-    public ScoreBoardController(int finishScore)
+    public ScoreBoardController(ScoreBoard scoreBoard)
     {
-        scoreBoard = new ScoreBoard();
-        this.finishScore = finishScore;
+        super( scoreBoard );
     }
 
     public int getFinishScore(){
