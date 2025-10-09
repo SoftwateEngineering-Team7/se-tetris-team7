@@ -14,7 +14,6 @@
 
 <StackPane fx:id="root" xmlns="http://javafx.com/javafx"
     xmlns:fx="http://javafx.com/fxml"
-    fx:controller="org.tetris.menu.start.controller.StartMenuController"
     prefWidth="800" prefHeight="600"
     stylesheets="@../css/startmenu.css"
     style="-fx-background-color: black;">
