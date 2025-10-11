@@ -159,10 +159,11 @@ public class Board {
         }
         
         // 아이템의 경우 L이 포함된 경우를 추가하면 됨.
-        // 중복 제거 -> 아래는 아이템의 경우를 위해서 추가된 함수.
+        // L을 추가로 넣게 될 경우 생기는 중복 제거 로직
         java.util.Set<Integer> uniqueRows = new java.util.HashSet<>(fullRows);
         fullRows = new java.util.ArrayList<>(uniqueRows);
-
+        // hashset에 넣으면 순서 보장x
+        java.util.Collections.sort(fullRows); // 오름차순 정렬
         return fullRows;
     }
 
