@@ -1,5 +1,6 @@
 package org.tetris.game.model;
 
+import java.util.List;
 import java.util.Random;
 import org.tetris.game.model.blocks.*;
 import org.util.Point;
@@ -115,6 +116,77 @@ public class Board {
         activeBlock = getRandomBlock();
         curPos = new Point(initialPos);
     }
+    
+    // 새로운 블럭을 생성하고 배치, 배치 불가시 false 반환 (게임오버)
+    public boolean spawnNextBlock() {
+        activeBlock = getRandomBlock();
+        curPos = new Point(initialPos);
+        if (!isValidPos(curPos))
+            return false; // 게임오버
+        placeBlock(curPos);
+        return true;
+    }
+
+    // 전제 활성 블록이 null이 아니여야 하고, curPos도 활성 블록 놓인 위치가 유지되어야 함
+    // 현재 활성 블록이 놓인 위치에서 가득 찬 줄들을 찾아서 반환
+    // 블록의 shape가 걸쳐있는 row들만 검사
+    public List<Integer> findFullRows() {
+        List<Integer> fullRows = new java.util.ArrayList<>();
+
+        // 현재 블록이 차지하는 row 범위 계산
+        int minRow = curPos.r - activeBlock.pivot.r;
+        int maxRow = minRow + activeBlock.height() - 1;
+        
+        // 블록이 걸쳐있는 row들을 검사
+        for (int r = minRow; r <= maxRow; r++) {
+            // 범위를 벗어나거나 바닥(row 20)이면 스킵
+            if (r < 0 || r >= HEIGHT - 1) {
+                continue;
+            }
+            
+            // 해당 row가 가득 찼는지 검사
+            boolean isFull = true;
+            for (int c = 1; c < WIDTH - 1; c++) {
+                if (board[r][c] == 0) {
+                    isFull = false;
+                    break;
+                }
+            }
+            
+            if (isFull) {
+                fullRows.add(r);
+            }
+        }
+        
+        // 아이템의 경우 L이 포함된 경우를 추가하면 됨.
+        // 중복 제거 -> 아래는 아이템의 경우를 위해서 추가된 함수.
+        java.util.Set<Integer> uniqueRows = new java.util.HashSet<>(fullRows);
+        fullRows = new java.util.ArrayList<>(uniqueRows);
+
+        return fullRows;
+    }
+
+    // 가득 찬 줄들을 제거하고 위의 블록들을 아래로 내림
+    public void clearRowsAndCollapse(List<Integer> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        
+        // 각 가득 찬 줄을 제거하고 위의 줄들을 아래로 이동
+        for (int fullRow : rows) {
+            // fullRow부터 위로 올라가면서 한 칸씩 아래로 복사
+            for (int r = fullRow; r > 0; r--) {
+                for (int c = 1; c < WIDTH - 1; c++) {
+                    board[r][c] = board[r - 1][c];
+                }
+            }
+            
+            // 맨 위 줄(row 0)은 비움 (벽 제외)
+            for (int c = 1; c < WIDTH - 1; c++) {
+                board[0][c] = 0;
+            }
+        }
+    }
 
     // -------------------- 이동 관련 함수들 --------------------
     // (이동할 좌표 p'을 생성하고 기존 블럭은 제거, p'에 배치가 가능하다면 curPos에 p'을 할당, 마지막으로 curPos에 블럭 배치
@@ -135,6 +207,24 @@ public class Board {
         return isMoved;
     }
 
+    // 아래로 한칸 이동 함수
+    // 반드시 canMoveDown()이 true일 때만 호출되어야 함
+    public void moveToDown() {
+        Point downPos = curPos.down();
+        removeBlock(curPos);
+        curPos = downPos;
+        placeBlock(curPos);
+    }
+
+    // 아래 이동 가능한지만 검사하는 함수
+    public boolean canMoveDown() {
+        removeBlock(curPos);
+        Point downPos = curPos.down();
+        boolean isMovable = isValidPos(downPos); // 아래 위치가 유효한지 검사
+        placeBlock(curPos);
+        return isMovable;
+    }
+
     // 오른쪽 한칸 이동 함수
     public boolean moveRight() {
         boolean isMoved = false;
@@ -150,6 +240,24 @@ public class Board {
         return isMoved;
     }
 
+    // 오른쪽 한칸 이동 함수
+    // 반드시 canMoveRight()이 true일 때만 호출되어야 함
+    public void moveToRight() {
+        Point rightPos = curPos.right();
+        removeBlock(curPos);
+        curPos = rightPos;
+        placeBlock(curPos);
+    }
+
+    // 오른쪽 이동 가능한지만 검사하는 함수
+    public boolean canMoveRight() {
+        removeBlock(curPos);
+        Point rightPos = curPos.right();
+        boolean isMovable = isValidPos(rightPos); // 오른쪽 위치가 유효한지 검사
+        placeBlock(curPos);
+        return isMovable;
+    }
+
     // 왼쪽 한칸 이동 함수
     public boolean moveLeft() {
         boolean isMoved = false;
@@ -163,6 +271,23 @@ public class Board {
 
         placeBlock(curPos);
         return isMoved;
+    }
+
+    // 왼쪽 한칸 이동 함수
+    public void moveToLeft() {
+        Point leftPos = curPos.left();
+        removeBlock(curPos);
+        curPos = leftPos;
+        placeBlock(curPos);
+    }
+
+    // 왼쪽 이동 가능한지만 검사하는 함수
+    public boolean canMoveLeft() {
+        removeBlock(curPos);
+        Point leftPos = curPos.left();
+        boolean isMovable = isValidPos(leftPos); // 왼쪽 위치가 유효한지 검사
+        placeBlock(curPos);
+        return isMovable;
     }
 
     // 매 임의의 시간마다 아래로 한칸 이동하는 함수 (이동이 불가하면 활성 블럭은 고정되고 새로운 블럭으로 반환)
@@ -187,6 +312,36 @@ public class Board {
         placeBlock(curPos);
         return isMoved;
     }
+
+    public void rotateToClockwise(boolean isClockwise) {
+        removeBlock(curPos);
+        if(isClockwise)
+            activeBlock.rotateCW();
+        else
+            activeBlock.rotateCCW();
+
+        placeBlock(curPos);
+    }
+
+    // rotate가 가능한지 검사
+    public boolean canRotate(boolean isClockwise) {
+        removeBlock(curPos);
+        if(isClockwise) {
+            activeBlock.rotateCW();
+            boolean isValid = isValidPos(curPos);
+            activeBlock.rotateCCW();
+            placeBlock(curPos);
+            return isValid;
+            } else {
+                activeBlock.rotateCCW();
+                boolean isValid = isValidPos(curPos);
+                activeBlock.rotateCW();
+                placeBlock(curPos);
+                return isValid;
+            }
+    }
+
+
 
     public void printBoard() {
         for (int r = 0; r < HEIGHT; r++) {
