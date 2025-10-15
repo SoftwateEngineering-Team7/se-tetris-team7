@@ -15,10 +15,10 @@ public abstract class Block {
         this.pivot = pivot;
         this.color = color;
 
-        GetLength();
+        setLength();
     }
 
-    private void GetLength() {
+    private void setLength() {
         this.length = new Point(shape.length, shape[0].length);
     }
 
@@ -48,7 +48,7 @@ public abstract class Block {
         pivot = new Point(newRow, newCol);
 
         shape = rotated;
-        GetLength();
+        setLength();
     }
 
     public void rotateCCW() {
@@ -64,7 +64,7 @@ public abstract class Block {
         pivot = new Point(newRow, newCol);
 
         shape = rotated;
-        GetLength();
+        setLength();
     }
 
     public GameColor getColor() {
