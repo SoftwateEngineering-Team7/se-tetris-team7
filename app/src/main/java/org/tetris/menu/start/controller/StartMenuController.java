@@ -1,7 +1,10 @@
 package org.tetris.menu.start.controller;
 
-import org.tetris.UIRouter;
+import org.tetris.Router;
+
 import org.tetris.menu.start.model.StartMenuModel;
+import org.tetris.shared.BaseController;
+import org.tetris.shared.RouterAware;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +28,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-public class StartMenuController {
-
+public class StartMenuController extends BaseController<StartMenuModel> implements RouterAware {
     @FXML
     private StackPane root;
     @FXML
@@ -42,13 +44,17 @@ public class StartMenuController {
     @FXML
     private VBox scoreboardBox; // 스코어보드 내 실제 점수 행 컨테이너
 
-    private UIRouter router;
+    private Router router;
     private StartMenuModel model;
     private final ArrayList<Button> buttons = new ArrayList<>();
     private Timeline hideMessageTimeline;
 
+    @Override
+    public void setRouter(Router router) {
+        this.router = router;
+    }
     // Router가 주입을 끝낸 뒤 호출
-    public void init(UIRouter router, StartMenuModel model) {
+    public void init(Router router, StartMenuModel model) {
         this.router = router;
         this.model = model;
 
