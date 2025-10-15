@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 
+import org.util.Point;
 import org.junit.Before;
 import org.junit.Test;
 
