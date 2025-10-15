@@ -172,6 +172,13 @@ public class Board {
             setActiveToStaticBlock();
     }
 
+    public void hardDrop() {
+        while (isValidPos(curPos.down()))
+            curPos = curPos.down();
+        placeBlock(curPos);
+        setActiveToStaticBlock();
+    }
+
     // 시계방향 90도 회전 함수
     public boolean rotate() {
         boolean isMoved = false;
