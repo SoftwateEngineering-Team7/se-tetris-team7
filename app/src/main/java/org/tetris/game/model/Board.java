@@ -58,6 +58,14 @@ public class Board {
 
     }
 
+    public int getCell(Point point) {
+        return board[point.r][point.c];
+    }
+
+    public int getCell(int r, int c) {
+        return board[r][c];
+    }
+
     // 블럭 배치
     public void placeBlock(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
