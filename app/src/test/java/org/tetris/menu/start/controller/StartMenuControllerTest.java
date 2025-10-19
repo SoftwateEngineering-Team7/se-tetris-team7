@@ -178,9 +178,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         // 초기 상태: 첫 번째 버튼 하이라이트
         int initialIndex = getHighlightedIndex();
         assertTrue("첫 번째 버튼이 하이라이트 인덱스여야 합니다 (actual: " + initialIndex + ")", initialIndex == 0);
-
-        // DOWN 키 입력
-        System.out.println("\nDOWN 키 입력...");
+        
         press(KeyCode.DOWN).release(KeyCode.DOWN);
         WaitForAsyncUtils.waitForFxEvents();
         int afterDownIndex = getHighlightedIndex();
