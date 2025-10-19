@@ -7,28 +7,40 @@ import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.beans.property.MapProperty;
-import javafx.collections.MapChangeListener;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 public class StartMenuController extends BaseController<StartMenuModel> implements RouterAware {
+    // CSS 스타일 클래스 상수
+    private static final String STYLE_HIGHLIGHTED = "highlighted";
+    private static final String STYLE_MENU_BUTTON = "menu-button";
+    
+    // 메뉴 버튼 텍스트 상수
+    private static final String TEXT_NORMAL_MODE = "일반 모드\n게임 시작";
+    private static final String TEXT_ITEM_MODE = "아이템 모드\n게임 시작";
+    private static final String TEXT_SETTINGS = "설정";
+    private static final String TEXT_EXIT = "종료";
+    
+    // 메시지 텍스트 상수
+    private static final String TEXT_WRONG_INPUT = "잘못된 입력입니다.\n위/아래 방향키와 Enter를 사용하세요.";
+
+    private static final String STYLE_TITLE = "-fx-font-size: ";
+    private static final String PX_STRING = "px;";
+    
+    public StartMenuController(StartMenuModel model) {
+        super(model);
+    }
+
     @FXML
     private StackPane root;
     @FXML
@@ -38,52 +50,92 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     @FXML
     private Label wrongInputLabel;
 
-    // 스코어보드 영역
+    // 스코어보드 영역 - Item (왼쪽)
     @FXML
-    private VBox scoreboard; // 스코어보드 전체 컨테이너
+    private VBox scoreboardItem;
     @FXML
-    private VBox scoreboardBox; // 스코어보드 내 실제 점수 행 컨테이너
+    private Label scoreboardItemTitle;
+    @FXML
+    private VBox scoreboardItemBox;
+
+    // 스코어보드 영역 - Normal (오른쪽)
+    @FXML
+    private VBox scoreboardNormal;
+    @FXML
+    private Label scoreboardNormalTitle;
+    @FXML
+    private VBox scoreboardNormalBox;
+
 
     private Router router;
-    private StartMenuModel model;
     private final ArrayList<Button> buttons = new ArrayList<>();
     private Timeline hideMessageTimeline;
 
-    @Override
-    public void setRouter(Router router) {
-        this.router = router;
-    }
-    // Router가 주입을 끝낸 뒤 호출
-    public void init(Router router, StartMenuModel model) {
-        this.router = router;
-        this.model = model;
+    @FXML
+    protected void initialize() {
+        super.initialize();
 
         createMenuButtons();
         setupWrongInputLabelText();
 
         // 첫 번째 버튼 하이라이트
         if (!buttons.isEmpty()) {
-            buttons.get(model.getSelectedIndex()).getStyleClass().add("highlighted");
+            buttons.get(model.getSelectedIndex()).getStyleClass().add(STYLE_HIGHLIGHTED);
         }
+
+        bindInput();
 
         // 반응형 크기 적용
         applyResponsiveSizing();
     }
 
+    @Override
+    public void setRouter(Router router) {
+        this.router = router;
+
+        // 버튼 액션 핸들러 등록 (라우터 등록 후 등록 가능)
+        buttons.get(0).setOnAction(e -> onGameStart());
+        buttons.get(1).setOnAction(e -> {});
+        buttons.get(2).setOnAction(e -> onSettings());
+        buttons.get(3).setOnAction(e -> onExit());
+    }
+
     private void createMenuButtons() {
-        Button gameStartButton = createMenuButton("게임 시작");
-        Button settingButton = createMenuButton("설정");
-        Button exitButton = createMenuButton("종료");
+        Button normalStartButton = createMenuButton(TEXT_NORMAL_MODE);
+        Button itemStarButton = createMenuButton(TEXT_ITEM_MODE);
+        Button settingButton = createMenuButton(TEXT_SETTINGS);
+        Button exitButton = createMenuButton(TEXT_EXIT);
 
-        gameStartButton.setOnAction(e -> onGameStart());
-        settingButton.setOnAction(e -> onSettings());
-        exitButton.setOnAction(e -> onExit());
-
-        buttons.add(gameStartButton);
+        buttons.add(normalStartButton);
+        buttons.add(itemStarButton);
         buttons.add(settingButton);
         buttons.add(exitButton);
 
         menuBox.getChildren().addAll(buttons);
+    }
+
+    private Button createMenuButton(String text) {
+        Button button = new Button(text);
+        button.setFocusTraversable(false);
+        button.getStyleClass().add(STYLE_MENU_BUTTON);
+        return button;
+    }
+
+    private void setupWrongInputLabelText() {
+        wrongInputLabel.setText(TEXT_WRONG_INPUT);
+    }
+
+    public void bindInput() {
+        // Scene이 설정될 때까지 대기
+        if (root.getScene() == null) {
+            root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) {
+                    setupKeyboardInput(newScene);
+                }
+            });
+        } else {
+            setupKeyboardInput(root.getScene());
+        }
 
         // 마우스 오버 시 해당 버튼으로 하이라이트 이동
         for (int i = 0; i < buttons.size(); i++) {
@@ -92,27 +144,11 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         }
     }
 
-    private Button createMenuButton(String text) {
-        Button button = new Button(text);
-        button.setFocusTraversable(false);
-        button.getStyleClass().add("menu-button");
-        return button;
-    }
-
-    private void setupWrongInputLabelText() {
-        wrongInputLabel.setText("잘못된 입력입니다.\n위/아래 방향키와 Enter를 사용하세요.");
-    }
-
-    // 키 입력 바인딩 (Router가 Scene 만든 뒤 호출)
-    public void bindInput() {
-        if (root.getScene() == null) {
-            System.err.println("Warning: Scene is null when trying to bind input");
-            return;
-        }
+    private void setupKeyboardInput(Scene scene) {
         root.setFocusTraversable(true);
         root.requestFocus();
 
-        root.getScene().setOnKeyPressed(e -> {
+        scene.setOnKeyPressed(e -> {
             handleKey(e);
             e.consume();
         });
@@ -162,22 +198,18 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     // 하이라이트/모델 동기화의 단일 진입점
     private void updateHighlight(int newIndex) {
-        int n = buttons.size();
-        if (n == 0)
-            return;
-
         int prev = model.getSelectedIndex();
         if (prev == newIndex)
             return;
 
         // 이전 하이라이트 제거(안전하게 중복 제거)
-        buttons.get(prev).getStyleClass().remove("highlighted");
+        buttons.get(prev).getStyleClass().remove(STYLE_HIGHLIGHTED);
 
         // 모델 인덱스 즉시 갱신
         model.setSelectedIndex(newIndex);
 
         // 새 하이라이트 추가
-        buttons.get(newIndex).getStyleClass().add("highlighted");
+        buttons.get(newIndex).getStyleClass().add(STYLE_HIGHLIGHTED);
     }
 
     private void fire() {
@@ -219,91 +251,75 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         if (w <= 0 || h <= 0)
             return;
 
+        updateTitleSizes(w, h);
+
+        updateButtonSizes(w, h);
+
+        updateScoreboardSizes(w, h);
+    }
+
+    private void updateTitleSizes(double w, double h) {
         double base = Math.min(w, h);
 
         // 타이틀 폰트: 비례 + 클램프
         double titlePx = clamp(base / 6.0, 30, 120);
-        titleLabel.setStyle("-fx-font-size: " + Math.round(titlePx) + "px;");
+        titleLabel.setStyle(STYLE_TITLE + Math.round(titlePx) + PX_STRING);
+    }
 
+    private void updateButtonSizes(double w, double h) {
         // 버튼 크기: 비례 + 클램프
-        // 1) 버튼 간 간격: 화면 높이에 비례 + 클램프
-        double gap = clamp(h * 0.3, 40, 60); // 예: 높이의 4%, 최소 12px, 최대 36px
+        double gap = clamp(h * 0.03, 12, 50);
         menuBox.setSpacing(gap);
 
-        double btnW = clamp(w * 0.3, 180, 420);
-        double btnH = clamp(h * 0.12, 40, 80);
-        double btnFontPx = clamp(btnH * 0.40, 15, 40);
+        double btnW = clamp(w * 0.28, 180, 380);
+        double btnH = clamp(h * 0.1, 60, 120);
+        double btnFontPx = clamp(btnH * 0.18, 14, 28);
 
         for (Button b : buttons) {
             b.setPrefWidth(btnW);
             b.setPrefHeight(btnH);
             // 인라인 스타일로 폰트 크기만 덧입힘(기타 CSS는 그대로 유지)
-            b.setStyle("-fx-font-size: " + Math.round(btnFontPx) + "px;");
+            b.setStyle(STYLE_TITLE + Math.round(btnFontPx) + PX_STRING);
         }
+    }
+
+    private void updateScoreboardSizes(double screenW, double screenH) {
+        // 스코어보드 너비: 화면 너비에 비례, 클램프
+        double sbWidth = clamp(screenW * 0.20, 200, 400);
+        
+        // 스코어보드 높이: 화면 높이에 비례, 클램프
+        double sbHeight = clamp(screenH * 0.7, 400, 800);
+        
+        // 스코어보드 타이틀 폰트 크기
+        double sbTitleFontPx = clamp(screenW * 0.012, 11, 16);
+
+        // Item 스코어보드 적용
+        if (scoreboardItem != null) {
+            scoreboardItem.setPrefWidth(sbWidth);
+            scoreboardItem.setPrefHeight(sbHeight);
+            scoreboardItem.setMaxWidth(sbWidth);
+            scoreboardItem.setMaxHeight(sbHeight);
+        }
+        if (scoreboardItemTitle != null) {
+            scoreboardItemTitle.setStyle(STYLE_TITLE + Math.round(sbTitleFontPx) + PX_STRING);
+        }
+
+        // Normal 스코어보드 적용
+        if (scoreboardNormal != null) {
+            scoreboardNormal.setPrefWidth(sbWidth);
+            scoreboardNormal.setPrefHeight(sbHeight);
+            scoreboardNormal.setMaxWidth(sbWidth);
+            scoreboardNormal.setMaxHeight(sbHeight);
+        }
+        if (scoreboardNormalTitle != null) {
+            scoreboardNormalTitle.setStyle(STYLE_TITLE + Math.round(sbTitleFontPx) + PX_STRING);
+        }
+
+        // 스코어 행 폰트는 동적 생성 시 적용되므로 여기서는 변수만 저장
+        // (필요시 ScoreRow 생성 시 참조할 수 있도록 필드에 저장)
     }
 
     private static double clamp(double v, double min, double max) {
         return Math.max(min, Math.min(max, v));
-    }
-
-    /*
-     * =========================
-     * 스코어보드 렌더링
-     * =========================
-     */
-
-    // 정렬된 Top10을 문자열로 받는 버전.
-    // 형식: "1. playerId : score"
-
-    public void setTopScores(List<String> rankedLines) {
-        if (rankedLines == null) return;
-
-        Runnable apply = () -> scoreboardBox.getChildren().setAll(
-                rankedLines.stream().limit(10).map(this::createScoreRowFromLine).toList());
-
-        if (Platform.isFxApplicationThread())
-            apply.run();
-        else
-            Platform.runLater(apply);
-    }
-
-    private HBox createScoreRowFromLine(String line) {
-        // line 예: "1. abc : 12345"
-        Label rowLabel = new Label(line);
-
-        HBox row = new HBox(8, rowLabel);
-        row.getStyleClass().add("score-row");
-        row.setFillHeight(true);
-        // 가로 꽉 차기용 spacer (필요 시)
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        return row;
-    }
-
-    // key: playerId, value: score
-    // ScoreboardModel에서 바뀔 때마다 자동 갱신됨.
-
-    public void bindScoreboard(MapProperty<String, Integer> sortedScoreMap) {
-        if (sortedScoreMap == null)
-            return;
-
-        renderScoreboardMap(sortedScoreMap);
-        // Scoreboard 변경 감지 리스너 등록
-        sortedScoreMap.addListener((MapChangeListener<String, Integer>) ch -> Platform
-                .runLater(() -> renderScoreboardMap(sortedScoreMap)));
-    }
-
-    // scoreMap을 받아서 스코어보드 갱신
-    // MapProperty 변경 감지 리스너에서 호출됨
-    // Map은 정렬된 상태로 들어온다고 가정
-    // map을 string 리스트로 변환하여 setTopScores 호출
-    private void renderScoreboardMap(Map<String, Integer> map) {
-        AtomicInteger rank = new AtomicInteger(1);
-        List<String> lines = map.entrySet().stream()
-                .limit(10)
-                .map(e -> rank.getAndIncrement() + ". " + e.getKey() + " : " + e.getValue())
-                .toList();
-
-        setTopScores(lines);
     }
 }
