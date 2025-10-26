@@ -19,8 +19,7 @@
     <!-- ============== 게임 보드 (중앙) ============== -->
     <center>
         <Pane fx:id="gameBoard" 
-            prefWidth="300" prefHeight="600"
-            style="-fx-background-color: #16213e; -fx-border-color: #0f3460; -fx-border-width: 3;">
+            prefWidth="300" prefHeight="600">
             <BorderPane.margin>
                 <Insets top="20.0" bottom="20.0" />
             </BorderPane.margin>
