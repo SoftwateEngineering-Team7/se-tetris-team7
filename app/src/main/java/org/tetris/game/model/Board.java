@@ -79,7 +79,7 @@ public class Board extends BaseModel{
         
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) != 0) {
+                if (activeBlock.getCell(r, c) != 0) {
                     int row = pos.r - activeBlock.pivot.r + r;
                     int col = pos.c - activeBlock.pivot.c + c;
 
@@ -121,7 +121,7 @@ public class Board extends BaseModel{
         Point downPos = curPos.down();
         removeBlock(curPos, activeBlock);
 
-        if (isValidPos(downPos, activeBlock)) {
+        if (isValidPos(downPos)) {
             curPos = downPos;
             isMoved = true;
         }
@@ -136,7 +136,7 @@ public class Board extends BaseModel{
         Point rightPos = curPos.right();
         removeBlock(curPos, activeBlock);
 
-        if (isValidPos(rightPos, activeBlock)) {
+        if (isValidPos(rightPos)) {
             curPos = rightPos;
             isMoved = true;
         }
@@ -151,7 +151,7 @@ public class Board extends BaseModel{
         Point leftPos = curPos.left();
         removeBlock(curPos, activeBlock);
 
-        if (isValidPos(leftPos, activeBlock)) {
+        if (isValidPos(leftPos)) {
             curPos = leftPos;
             isMoved = true;
         }
@@ -168,11 +168,12 @@ public class Board extends BaseModel{
     }
 
     public void hardDrop() {
-        while (isValidPos(curPos.down(), activeBlock)) {
+        while (isValidPos(curPos.down())) {
             curPos = curPos.down();
+        }
         placeBlock(curPos, activeBlock);
         setActiveToStaticBlock();
-    }}
+    }
 
     // 시계방향 90도 회전 함수
     public boolean rotate() {
@@ -180,7 +181,7 @@ public class Board extends BaseModel{
         removeBlock(curPos, activeBlock);
         activeBlock.rotateCW();
 
-        if (isValidPos(curPos, activeBlock)) {
+        if (isValidPos(curPos)) {
             isMoved = true;
         } else {
             activeBlock.rotateCCW();
@@ -197,15 +198,9 @@ public class Board extends BaseModel{
             for (int c = 0; c < width; c++) {
                 sb.append(board[r][c]).append(" ");
             }
-            System.out.println();
+            sb.append("\n");
         }
-    }
-
-    public int getCell(int row, int col) {
-        if (isInBound(row, col)) {
-            return board[row][col];
-        }
-        throw new IndexOutOfBoundsException("Row or Column out of bounds");
+        return sb.toString();
     }
 
     public int getCell(int row, int col) {
