@@ -173,18 +173,25 @@ public class GameController extends BaseController<GameModel> implements RouterA
         switch (code) {
             case LEFT:
                 boardModel.moveLeft();
+                updateGameBoard();
                 break;
             case RIGHT:
                 boardModel.moveRight();
+                updateGameBoard();
                 break;
             case UP:
                 boardModel.rotate();
+                updateGameBoard();
                 break;
             case DOWN:
                 boardModel.moveDown();
+                updateGameBoard();
                 break;
             case SPACE:
-                // Hard drop (구현 예정)
+                handleHardDrop();
+                break;
+            case P:
+                togglePause();
                 break;
             case C:
                 // Hold (구현 예정)

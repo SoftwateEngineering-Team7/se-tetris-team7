@@ -167,12 +167,16 @@ public class Board extends BaseModel{
         return moveDown();
     }
 
-    public void hardDrop() {
+    public int hardDrop() {
+        removeBlock(curPos, activeBlock);
+        int dropDistance = 0;
         while (isValidPos(curPos.down(), activeBlock)) {
             curPos = curPos.down();
+            dropDistance++;
+        }
         placeBlock(curPos, activeBlock);
-        setActiveToStaticBlock();
-    }}
+        return dropDistance;
+    }
 
     // 시계방향 90도 회전 함수
     public boolean rotate() {
