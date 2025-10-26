@@ -162,11 +162,9 @@ public class Board extends BaseModel{
         return isMoved;
     }
 
-    // 매 임의의 시간마다 아래로 한칸 이동하는 함수 (이동이 불가하면 활성 블럭은 고정되고 새로운 블럭으로 반환)
-    public void autoDown() {
-        boolean isDown = moveDown();
-        if (!isDown)
-            setActiveToStaticBlock();
+    // 매 임의의 시간마다 아래로 한칸 이동하는 함수 (이동이 불가하면 false 반환)
+    public boolean autoDown() {
+        return moveDown();
     }
 
     public void hardDrop() {
@@ -192,6 +190,39 @@ public class Board extends BaseModel{
         return isMoved;
     }
 
+    // 라인 클리어 체크 및 처리
+    public int clearLines() {
+        int linesCleared = 0;
+        
+        for (int r = height - 1; r >= 0; r--) {
+            boolean isLineFull = true;
+            for (int c = 0; c < width; c++) {
+                if (board[r][c] == 0) {
+                    isLineFull = false;
+                    break;
+                }
+            }
+            
+            if (isLineFull) {
+                linesCleared++;
+                // 해당 라인 삭제하고 위의 라인들을 아래로 이동
+                for (int row = r; row > 0; row--) {
+                    for (int col = 0; col < width; col++) {
+                        board[row][col] = board[row - 1][col];
+                    }
+                }
+                // 최상단 라인 초기화
+                for (int col = 0; col < width; col++) {
+                    board[0][col] = 0;
+                }
+                r++; // 같은 라인을 다시 체크
+            }
+        }
+        
+        return linesCleared;
+    }
+    
+    
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

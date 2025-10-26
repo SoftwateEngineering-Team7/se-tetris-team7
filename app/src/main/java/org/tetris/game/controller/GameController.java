@@ -226,6 +226,27 @@ public class GameController extends BaseController<GameModel> implements RouterA
         updateLinesDisplay();
     }
     
+    private void lockCurrentBlock() {
+        // 블럭 고정 및 라인 클리어
+        int linesCleared = gameModel.lockBlockAndClearLines();
+        
+        // 새 블럭 생성 (실패하면 게임 오버)
+        boolean spawned = gameModel.spawnNewBlock();
+        
+        if (!spawned) {
+            handleGameOver();
+        }
+        
+        updateGameBoard();
+    }
+    
+    private void handleGameOver() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        showGameOver();
+    }
+    
     private void updateGameBoard() {
         if (gc == null) return;
         
