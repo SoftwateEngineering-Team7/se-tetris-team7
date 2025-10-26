@@ -2,6 +2,10 @@ package org.tetris.game.controller;
 
 import org.tetris.Router;
 import org.tetris.game.model.Board;
+import org.tetris.game.model.GameModel;
+import org.tetris.game.model.ScoreModel;
+import org.tetris.game.model.blocks.Block;
+import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.GameColor;
@@ -49,11 +53,27 @@ public class GameController extends BaseController<Board> implements RouterAware
     private HBox gameOverOverlay;
     
     @FXML
+    private HBox pauseOverlay;
+    
+    @FXML
     private Button restartButton;
     
     @FXML
     private Button menuButton;
     
+    @FXML
+    private Button resumeButton;
+    
+    @FXML
+    private Button pauseMenuButton;
+    
+    /** 모델 및 기타 필드 **/
+
+    private GameModel gameModel;
+    private Board boardModel;
+    private NextBlockModel nextBlockModel;
+    private ScoreModel scoreModel;
+
     private Router router;
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
@@ -61,7 +81,10 @@ public class GameController extends BaseController<Board> implements RouterAware
     
     private Canvas boardCanvas;
     private GraphicsContext gc;
+    private Canvas nextBlockCanvas;
+    private GraphicsContext nextBlockGc;
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
+    private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
 
     private int frame = 0;
     private Point boardSize;
@@ -87,12 +110,16 @@ public class GameController extends BaseController<Board> implements RouterAware
     
     private void setupUI() {
         setupCanvas();
+        setupNextBlockCanvas();
         
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
+        updateNextBlockPreview();
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        pauseOverlay.setVisible(false);
+        pauseOverlay.setManaged(false);
     }
     
     private void setBoardSize(){
@@ -131,6 +158,8 @@ public class GameController extends BaseController<Board> implements RouterAware
         pauseButton.setOnAction(e -> togglePause());
         restartButton.setOnAction(e -> restartGame());
         menuButton.setOnAction(e -> goToMenu());
+        resumeButton.setOnAction(e -> resumeGame());
+        pauseMenuButton.setOnAction(e -> goToMenuFromPause());
     }
     
     private void setupKeyboardInput() {
@@ -243,13 +272,50 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void togglePause() {
-        pauseButton.setText(true ? "RESUME" : "PAUSE");
+        if (gameModel.isGameOver()) return;
+        
+        gameModel.setPaused(!gameModel.isPaused());
+        
+        if (gameModel.isPaused()) {
+            showPauseOverlay();
+        } else {
+            hidePauseOverlay();
+        }
+    }
+    
+    private void showPauseOverlay() {
+        pauseOverlay.setVisible(true);
+        pauseOverlay.setManaged(true);
+    }
+    
+    private void hidePauseOverlay() {
+        pauseOverlay.setVisible(false);
+        pauseOverlay.setManaged(false);
+        root.requestFocus();
+    }
+    
+    private void resumeGame() {
+        gameModel.setPaused(false);
+        hidePauseOverlay();
+    }
+    
+    private void goToMenuFromPause() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        if (router != null) {
+            router.showStartMenu();
+        }
     }
     
     private void restartGame() {
         // model.reset();
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        pauseOverlay.setVisible(false);
+        pauseOverlay.setManaged(false);
+        
+        // 디스플레이 업데이트
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();

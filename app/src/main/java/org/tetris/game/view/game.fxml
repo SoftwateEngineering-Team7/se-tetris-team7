@@ -200,45 +200,98 @@
         </VBox>
     </left>
 
-    <!-- ============== 게임 오버 오버레이 ============== -->
-    <top>
-        <HBox fx:id="gameOverOverlay" alignment="CENTER" 
-            visible="false" managed="false"
-            style="-fx-background-color: rgba(0, 0, 0, 0.8);">
-            <children>
-                <VBox alignment="CENTER" spacing="20">
-                    <children>
-                        <Label text="GAME OVER" textFill="#e94560">
-                            <font>
-                                <Font name="Arial Black" size="48.0" />
-                            </font>
-                            <effect>
-                                <DropShadow height="15.0" radius="7.0" width="15.0">
-                                    <color>
-                                        <Color red="0.91" green="0.27" blue="0.38" opacity="0.8" />
-                                    </color>
-                                </DropShadow>
-                            </effect>
-                        </Label>
-                        <Button fx:id="restartButton" text="RESTART" 
-                            prefWidth="150" prefHeight="40"
-                            style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-background-radius: 5;">
-                            <font>
-                                <Font name="Arial Bold" size="16.0" />
-                            </font>
-                        </Button>
-                        <Button fx:id="menuButton" text="MENU" 
-                            prefWidth="150" prefHeight="40"
-                            style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
-                            <font>
-                                <Font name="Arial Bold" size="16.0" />
-                            </font>
-                        </Button>
-                    </children>
-                </VBox>
-            </children>
-        </HBox>
-    </top>
 
 </BorderPane>
+
+<!-- ============== 게임 오버 오버레이 ============== -->
+<HBox fx:id="gameOverOverlay" alignment="CENTER" 
+    visible="false" managed="false"
+    prefWidth="800" prefHeight="600"
+    style="-fx-background-color: rgba(0, 0, 0, 0.8);">
+    <children>
+        <VBox alignment="CENTER" spacing="20">
+            <children>
+                <Label text="GAME OVER" textFill="#e94560">
+                    <font>
+                        <Font name="Arial Black" size="48.0" />
+                    </font>
+                    <effect>
+                        <DropShadow height="15.0" radius="7.0" width="15.0">
+                            <color>
+                                <Color red="0.91" green="0.27" blue="0.38" opacity="0.8" />
+                            </color>
+                        </DropShadow>
+                    </effect>
+                </Label>
+                <Button fx:id="restartButton" text="RESTART" 
+                    prefWidth="150" prefHeight="40"
+                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-background-radius: 5;">
+                    <font>
+                        <Font name="Arial Bold" size="16.0" />
+                    </font>
+                </Button>
+                <Button fx:id="menuButton" text="MENU" 
+                    prefWidth="150" prefHeight="40"
+                    style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
+                    <font>
+                        <Font name="Arial Bold" size="16.0" />
+                    </font>
+                </Button>
+            </children>
+        </VBox>
+    </children>
+</HBox>
+
+<!-- ============== 일시정지 오버레이 ============== -->
+<HBox fx:id="pauseOverlay" alignment="CENTER" 
+    visible="false" managed="false"
+    prefWidth="800" prefHeight="600"
+    style="-fx-background-color: rgba(0, 0, 0, 0.7);">
+    <children>
+        <VBox alignment="CENTER" spacing="20">
+            <children>
+                <Label text="PAUSED" textFill="#533483">
+                    <font>
+                        <Font name="Arial Black" size="48.0" />
+                    </font>
+                    <effect>
+                        <DropShadow height="15.0" radius="7.0" width="15.0">
+                            <color>
+                                <Color red="0.33" green="0.20" blue="0.51" opacity="0.8" />
+                            </color>
+                        </DropShadow>
+                    </effect>
+                </Label>
+                <Button fx:id="resumeButton" text="RESUME" 
+                    prefWidth="150" prefHeight="40"
+                    style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
+                    <font>
+                        <Font name="Arial Bold" size="16.0" />
+                    </font>
+                    <effect>
+                        <DropShadow height="8.0" radius="3.5" width="8.0">
+                            <color>
+                                <Color opacity="0.5" />
+                            </color>
+                        </DropShadow>
+                    </effect>
+                </Button>
+                <Button fx:id="pauseMenuButton" text="MAIN MENU" 
+                    prefWidth="150" prefHeight="40"
+                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-background-radius: 5;">
+                    <font>
+                        <Font name="Arial Bold" size="16.0" />
+                    </font>
+                    <effect>
+                        <DropShadow height="8.0" radius="3.5" width="8.0">
+                            <color>
+                                <Color opacity="0.5" />
+                            </color>
+                        </DropShadow>
+                    </effect>
+                </Button>
+            </children>
+        </VBox>
+    </children>
+</HBox>
 
