@@ -73,6 +73,31 @@ public class GameControllerTest extends ApplicationTest {
         // 다시 클릭 (재개)
         clickOn("#pauseButton");
     }
+
+    @Test
+    public void testNextBlockPreviewExists() throws InterruptedException {
+        Thread.sleep(1000);
+        
+        // Next Block 미리보기 영역이 존재하는지 확인
+        verifyThat("#nextBlockPane", isNotNull());
+        verifyThat("#nextBlockPane", isVisible());
+    }
+
+    @Test
+    public void testNextBlockPreviewUpdates() throws InterruptedException {
+        Thread.sleep(1000);
+        
+        // Next Block 미리보기가 표시되어야 함
+        verifyThat("#nextBlockPane", isVisible());
+        
+        // 하드 드롭으로 블록 변경
+        press(javafx.scene.input.KeyCode.SPACE);
+        Thread.sleep(500);
+        
+        // Next Block이 여전히 표시되어야 함
+        verifyThat("#nextBlockPane", isVisible());
+    }
+
     @Test
     public void testPauseOverlayInitiallyHidden() throws InterruptedException {
         Thread.sleep(1000);

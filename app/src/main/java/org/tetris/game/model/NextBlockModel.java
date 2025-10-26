@@ -99,4 +99,18 @@ class NextBlockModel
 		var block = nextBlocks.poll();
 		return block;
 	}
+
+	/**
+	 * 큐에서 제거하지 않고 다음 블록을 미리 확인합니다.
+	 * 큐가 비어있는 경우 자동으로 새로운 랜덤 블록들로 채운 후 
+	 * 큐의 첫 번째 블록을 반환합니다.
+	 * 
+	 * @return 다음에 사용할 Block 객체 (큐에서 제거되지 않음)
+	 */
+	public Block peekNext() {
+		if(nextBlocks.isEmpty())
+			fill();
+
+		return nextBlocks.peek();
+	}
 }
