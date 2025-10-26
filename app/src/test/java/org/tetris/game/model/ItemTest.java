@@ -16,9 +16,10 @@ public class ItemTest {
         Item item = new LItem();
 
         Block itemBlock = item.GetItemBlock(block);
-        Point itemPos = item.getPosition();
 
         System.out.println("Item Block\n" + itemBlock);
+
+        Point itemPos = item.getPosition();
         System.out.println("Item Position: " + itemPos);
 
         int itemValue = itemBlock.getShape(itemPos.r, itemPos.c);

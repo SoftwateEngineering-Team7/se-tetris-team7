@@ -7,11 +7,20 @@ import org.util.Point;
 
 public abstract class Item {
 
-    protected Point position;
+    protected Point position = new Point(0, 0);
+    protected int itemID;
+
+    protected Item(int id) {
+        this.itemID = id;
+    }
 
     public abstract Block GetItemBlock(Block block);
 
     public abstract void Activate(Board board);
+
+    protected void setPosition(Point position) {
+        this.position = position;
+    }
 
     public Point getPosition() {
         return position;
