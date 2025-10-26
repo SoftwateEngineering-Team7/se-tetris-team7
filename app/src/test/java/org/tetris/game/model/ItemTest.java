@@ -9,7 +9,7 @@ import org.tetris.game.model.items.*;
 import org.util.Point;
 
 public class ItemTest {
-    
+
     @Test
     public void testLItemGetItemBlock() {
         Block block = new ZBlock();
@@ -21,7 +21,7 @@ public class ItemTest {
         System.out.println("Item Block\n" + itemBlock);
         System.out.println("Item Position: " + itemPos);
 
-        int itemValue = itemBlock.getShape(itemPos.r, itemPos.c);
+        int itemValue = itemBlock.getCell(itemPos.r, itemPos.c);
         assertTrue(itemValue == 9);
     }
 }

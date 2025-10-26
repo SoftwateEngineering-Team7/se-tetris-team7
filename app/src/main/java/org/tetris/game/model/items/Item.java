@@ -8,6 +8,7 @@ import org.util.Point;
 public abstract class Item {
 
     protected Point position;
+    protected int itemID;
 
     public abstract Block GetItemBlock(Block block);
 

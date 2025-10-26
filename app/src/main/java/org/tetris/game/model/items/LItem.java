@@ -12,20 +12,21 @@ public class LItem extends Item {
 
     @Override
     public Block GetItemBlock(Block block) {
-        Point length = block.getLength();
-        int[][] shape = new int[length.r][length.c];
+        Point size = block.getSize();
+        int[][] shape = new int[size.r][size.c];
 
         Random rand = new Random();
         int itemIndex = rand.nextInt(block.getBlockCount());
-        int count = 0;        
+        int count = 0;
 
-        for(int r = 0; r < length.r; r++){
-            for(int c = 0; c < length.c; c++){
-                shape[r][c] = block.getShape(r, c);
-                if(shape[r][c] == 0) continue;
+        for (int r = 0; r < size.r; r++) {
+            for (int c = 0; c < size.c; c++) {
+                shape[r][c] = block.getCell(r, c);
+                if (shape[r][c] == 0)
+                    continue;
 
-                count ++;
-                if (count == itemIndex){
+                count++;
+                if (count == itemIndex) {
                     shape[r][c] = itemNum;
                     position = new Point(r, c);
                 }
@@ -39,5 +40,5 @@ public class LItem extends Item {
     public void Activate(Board board) {
         // Activate the item (e.g., apply its effect)
     }
-    
+
 }
