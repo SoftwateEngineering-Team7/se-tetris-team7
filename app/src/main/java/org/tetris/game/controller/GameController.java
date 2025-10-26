@@ -63,11 +63,14 @@ public class GameController extends BaseController<Board> implements RouterAware
     private GraphicsContext gc;
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
 
-    private int frame = 0;
     private Point boardSize;
 
-    public GameController(Board model) {
-        super(model);
+    public GameController(GameModel gameModel) {
+        super(gameModel);
+        this.gameModel = model;
+        this.boardModel = model.getBoardModel();
+        this.nextBlockModel = model.getNextBlockModel();
+        this.scoreModel = model.getScoreModel();
     }
 
     @Override
@@ -244,16 +247,28 @@ public class GameController extends BaseController<Board> implements RouterAware
     
     private void togglePause() {
         pauseButton.setText(true ? "RESUME" : "PAUSE");
+        pauseButton.setText(gameModel.isPaused() ? "RESUME" : "PAUSE");
+        
+        if (!gameModel.isPaused()) {
+            root.requestFocus();
+        }
     }
     
     private void restartGame() {
         // model.reset();
+        gameModel.reset();
+        
+        // UI 초기화
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        // 디스플레이 업데이트
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
         updateGameBoard();
+        
+        // 게임 루프 재시작
+        if (gameLoop != null) {
     }
     
     private void goToMenu() {
