@@ -2,6 +2,7 @@ package org.tetris.game.model.items;
 
 import java.util.Random;
 
+import org.tetris.game.model.Board;
 import org.tetris.game.model.blocks.*;
 import org.util.Point;
 
@@ -35,7 +36,7 @@ public class LItem extends Item {
     }
 
     @Override
-    public void Activate() {
+    public void Activate(Board board) {
         // Activate the item (e.g., apply its effect)
     }
     
