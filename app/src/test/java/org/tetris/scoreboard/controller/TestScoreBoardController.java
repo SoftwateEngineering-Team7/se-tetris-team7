@@ -1,4 +1,4 @@
-package org.tetris.menu.scoreboard.view;
+package org.tetris.scoreboard.controller;
 
 import static org.testfx.api.FxAssert.verifyThat;
 import static org.testfx.matcher.base.NodeMatchers.*;
@@ -7,16 +7,20 @@ import static org.testfx.matcher.control.TextInputControlMatchers.hasText;
 import org.junit.Test;
 
 import org.testfx.framework.junit.ApplicationTest;
-import org.tetris.scoreboard.view.ScoreBoardView;
+import org.tetris.scoreboard.ScoreBoardFactory;
+import org.tetris.scoreboard.model.ScoreBoard;
+import org.tetris.shared.MvcBundle;
 
+import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
 
-public class TestScoreBoardViewTest extends ApplicationTest {
+public class TestScoreBoardController extends ApplicationTest {
 
+    private ScoreBoardFactory sbFactory = new ScoreBoardFactory();
     @Override
     public void start(Stage stage) {
-        ScoreBoardView scoreBoardView = new ScoreBoardView();
-        stage.setScene(scoreBoardView.getScene());
+        MvcBundle bundle = sbFactory.create();
+        stage.setScene(bundle.view().getScene());
         stage.setTitle("ScoreBoard Test");
         stage.show();
     }
