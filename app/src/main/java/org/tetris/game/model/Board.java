@@ -74,21 +74,30 @@ public class Board extends BaseModel{
     }
 
     // 배치 시도 후 가능 여부 반환
-    public boolean isValidPos(Point pos, Block block) {
-        for (int r = 0; r < block.height(); r++) {
-            for (int c = 0; c < block.width(); c++) {
-                if (block.getCell(r, c) != 0) {
-                    int row = pos.r - block.pivot.r + r;
-                    int col = pos.c - block.pivot.c + c;
+    public boolean isValidPos(Point pos) {
+        boolean hasInBoundCell = false;
+        
+        for (int r = 0; r < activeBlock.height(); r++) {
+            for (int c = 0; c < activeBlock.width(); c++) {
+                if (activeBlock.getShape(r, c) != 0) {
+                    int row = pos.r - activeBlock.pivot.r + r;
+                    int col = pos.c - activeBlock.pivot.c + c;
 
-                    if (!isInBound(row, col) || board[row][col] != 0) {
-                        // System.out.println("Collision occurred.");
-                        return false;
+                    if (isInBound(row, col)) {
+                        hasInBoundCell = true;
+                        // 경계 안에 있고 충돌이 발생하면 false 반환
+                        if (board[row][col] != 0) {
+                            System.out.println("Collision occurred.");
+                            return false;
+                        }
                     }
+                    // 경계 밖 셀은 무시 (화면 위쪽에서 블록이 시작할 수 있음)
                 }
             }
-        }   
-        return true;
+        }
+        
+        // 최소 한 개의 셀이 경계 안에 있어야 함
+        return hasInBoundCell;
     }
 
     // 보드 크기 에 있는지 확인
@@ -188,8 +197,14 @@ public class Board extends BaseModel{
             for (int c = 0; c < width; c++) {
                 sb.append(board[r][c]).append(" ");
             }
-            sb.append("\n");
+            System.out.println();
         }
-        return sb.toString();
+    }
+
+    public int getCell(int row, int col) {
+        if (isInBound(row, col)) {
+            return board[row][col];
+        }
+        throw new IndexOutOfBoundsException("Row or Column out of bounds");
     }
 }
