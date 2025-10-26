@@ -246,6 +246,7 @@ public class GameController extends BaseController<Board> implements RouterAware
         updateGameBoard();
     }
     
+    // UI 처리만 담당 (게임 오버 판단은 Model에서)
     private void handleGameOver() {
         if (gameLoop != null) {
             gameLoop.stop();
@@ -336,9 +337,11 @@ public class GameController extends BaseController<Board> implements RouterAware
         gameOverOverlay.setManaged(true);
     }
     
+    @Override
     public void cleanup() {
         if (gameLoop != null) {
             gameLoop.stop();
+            gameLoop = null;
         }
     }
 }
