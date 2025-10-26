@@ -25,4 +25,17 @@ public abstract class Item {
     public Point getPosition() {
         return position;
     }
+
+    private final static Item[] itemPool = {
+        new LItem(),
+        new HItem(),
+        new BItem(),
+        new CItem()
+    };
+
+    public static Item getRandomItem() {
+        int poolSize = itemPool.length;
+        int randomIndex = (int)(Math.random() * poolSize);
+        return itemPool[randomIndex];
+    }
 }

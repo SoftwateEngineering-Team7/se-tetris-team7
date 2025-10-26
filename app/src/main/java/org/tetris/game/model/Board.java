@@ -1,7 +1,8 @@
 package org.tetris.game.model;
 
-import java.util.Random;
 import org.tetris.game.model.blocks.*;
+import org.tetris.game.model.items.*;
+
 import org.util.Point;
 
 public class Board {
@@ -12,7 +13,11 @@ public class Board {
     public Block activeBlock;
     private Point curPos;
     private Point initialPos;
+    
     private NextBlockModel nextBlockModel;
+
+    private boolean isItemMode = false;
+    private Item activeItem = null;
 
     // Board 생성자
     public Board() {
