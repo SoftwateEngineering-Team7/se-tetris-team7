@@ -238,11 +238,25 @@ public class GameController extends BaseController<GameModel> implements RouterA
                     gc.setFill(Color.BLACK);
                     gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 } else {
-                    // TODO: 셀 값에 따른 색상 매핑 필요
-                    gc.setFill(model.activeBlock.getColor()); 
+                    // 셀 값에 따른 색상 매핑
+                    gc.setFill(getCellColor(cellValue)); 
                     gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 }
             }
+        }
+    }
+    
+    // 셀 값에 따른 색상 반환
+    private Color getCellColor(int cellValue) {
+        switch (cellValue) {
+            case 1: return GameColor.BLUE.getColor();    // IBlock
+            case 2: return GameColor.ORANGE.getColor();  // JBlock
+            case 3: return GameColor.YELLOW.getColor();  // LBlock
+            case 4: return GameColor.GREEN.getColor();   // OBlock
+            case 5: return GameColor.RED.getColor();     // SBlock
+            case 6: return GameColor.PURPLE.getColor();  // TBlock
+            case 7: return GameColor.CYAN.getColor();    // ZBlock
+            default: return Color.WHITE;
         }
     }
     
