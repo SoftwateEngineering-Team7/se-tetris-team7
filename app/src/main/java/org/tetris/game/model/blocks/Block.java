@@ -3,6 +3,8 @@ package org.tetris.game.model.blocks;
 import org.util.GameColor;
 import org.util.Point;
 
+import javafx.scene.paint.Color;
+
 public abstract class Block {
     public Point pivot;
 
@@ -110,8 +112,8 @@ public abstract class Block {
         setSize();
     }
 
-    public GameColor getColor() {
-        return color;
+    public Color getColor() {
+        return color.getColor();
     }
 
     @Override
