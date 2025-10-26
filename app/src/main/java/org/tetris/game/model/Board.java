@@ -1,6 +1,7 @@
 package org.tetris.game.model;
 
-import java.util.Random;
+import java.util.List;
+
 import org.tetris.game.model.blocks.*;
 import org.util.Point;
 
@@ -14,6 +15,19 @@ public class Board {
     private Point initialPos;
     private NextBlockModel nextBlockModel;
 
+    // Getter/Setter 메서드 (테스트용)
+    public int[][] getBoard() {
+        return board;
+    }
+
+    public Point getCurPos() {
+        return curPos;
+    }
+
+    public void setCurPos(Point pos) {
+        this.curPos = pos;
+    }
+    
     // Board 생성자
     public Board() {
         this(21, 12);
@@ -95,6 +109,103 @@ public class Board {
     public void setActiveToStaticBlock() {
         activeBlock = nextBlockModel.getBlock();
         curPos = new Point(initialPos);
+    }
+
+    // -------------------- 줄 삭제 관련 함수들 --------------------
+
+    // 전제 활성 블록이 null이 아니여야 하고, curPos도 활성 블록 놓인 위치가 유지되어야 함
+    // 현재 활성 블록이 놓인 위치에서 가득 찬 줄들을 찾아서 반환
+    // 블록의 shape가 걸쳐있는 row들만 검사
+    public List<Integer> findFullRows() {
+        List<Integer> fullRows = new java.util.ArrayList<>();
+
+        // 현재 블록이 차지하는 row 범위 계산
+        int minRow = curPos.r - activeBlock.pivot.r;
+        int maxRow = minRow + activeBlock.height() - 1;
+
+        // 블록이 걸쳐있는 row들을 검사
+        for (int r = minRow; r <= maxRow; r++) {
+            // 범위를 벗어나거나 바닥(row 20)이면 스킵
+            if (r < 0 || r >= HEIGHT - 1) {
+                continue;
+            }
+
+            // 해당 row가 가득 찼는지 검사
+            boolean isFull = true;
+            for (int c = 1; c < WIDTH - 1; c++) {
+                if (board[r][c] == 0) {
+                    isFull = false;
+                    break;
+                }
+            }
+
+            if (isFull) {
+                fullRows.add(r);
+            }
+        }
+        return fullRows;
+    }
+
+    public void clearRows(List<Integer> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+
+        // 각 가득 찬 줄을 제거
+        for (int fullRow : rows) {
+            for (int c = 1; c < WIDTH - 1; c++) {
+                board[fullRow][c] = 0;
+            }
+        }
+    }
+
+    public void collapse() {
+        // 아래에서부터 위로 올라가면서 처리
+        int r = HEIGHT - 2; // HEIGHT-1은 바닥이므로 HEIGHT-2부터 시작
+        while (r > 0) {
+            // 현재 줄이 비어있는지 확인
+            boolean isEmpty = true;
+            for (int c = 1; c < WIDTH - 1; c++) {
+                if (board[r][c] != 0) {
+                    isEmpty = false;
+                    break;
+                }
+            }
+
+            if (isEmpty) {
+                // 위에 블록이 있는지 확인
+                boolean hasBlockAbove = false;
+                for (int i = r - 1; i >= 0; i--) {
+                    for (int c = 1; c < WIDTH - 1; c++) {
+                        if (board[i][c] != 0) {
+                            hasBlockAbove = true;
+                            break;
+                        }
+                    }
+                    if (hasBlockAbove) break;
+                }
+
+                // 위에 블록이 있으면 아래로 이동
+                if (hasBlockAbove) {
+                    for (int i = r; i > 0; i--) {
+                        for (int c = 1; c < WIDTH - 1; c++) {
+                            board[i][c] = board[i - 1][c];
+                        }
+                    }
+                    // 맨 위 줄은 비움 (벽 제외)
+                    for (int c = 1; c < WIDTH - 1; c++) {
+                        board[0][c] = 0;
+                    }
+                    // 같은 위치를 다시 검사 (위에서 내려온 줄도 비어있을 수 있음)
+                } else {
+                    // 위에 블록이 없으면 다음 줄로
+                    r--;
+                }
+            } else {
+                // 비어있지 않으면 다음 위치로
+                r--;
+            }
+        }
     }
 
     // -------------------- 이동 관련 함수들 --------------------
