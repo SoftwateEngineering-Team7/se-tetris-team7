@@ -2,6 +2,7 @@ package org.tetris.scoreboard.model;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.util.Random;
 
 import org.junit.Test;
@@ -9,8 +10,9 @@ import org.junit.Test;
 public class TestScoreBoard {
 
     private ScoreBoard scoreBoard;
-    private final String testReadFilePath = "app/src/test/java/org/tetris/scoreboard/TestReadScore.csv";
-    private final String testWriteFilePath = "app/src/test/java/org/tetris/scoreboard/TestWriteScore.csv";
+    // 절대 경로 또는 작업 디렉토리 기반 경로 사용
+    private final String testReadFilePath = "src/test/java/org/tetris/scoreboard/TestReadScore.csv";
+    private final String testWriteFilePath = "src/test/java/org/tetris/scoreboard/TestWriteScore.csv";
 
     @Test
     public void testInsert() {
@@ -30,6 +32,11 @@ public class TestScoreBoard {
 
     @Test
     public void testReadHighScore() {
+        // 파일 존재 확인을 위한 디버그 로깅
+        File file = new File(testReadFilePath);
+        System.out.println("Reading file: " + file.getAbsolutePath());
+        System.out.println("File exists: " + file.exists());
+        
         scoreBoard = new ScoreBoard(2, testReadFilePath);
         var scores = scoreBoard.readHighScoreList();
 
@@ -43,7 +50,16 @@ public class TestScoreBoard {
 
     @Test
     public void testWriteHighScore() {
-        scoreBoard = new ScoreBoard(2, testWriteFilePath);
+        // 파일 존재 확인을 위한 디버그 로깅
+        File file = new File(testWriteFilePath);
+        System.out.println("Writing file: " + file.getAbsolutePath());
+        
+        // 테스트용 임시 파일 생성 (기존 내용 초기화)
+        String tempPath = "src/test/java/org/tetris/scoreboard/TestWriteScoreTemp.csv";
+        File tempFile = new File(tempPath);
+        
+        // 새로운 ScoreBoard 생성 (빈 상태)
+        scoreBoard = new ScoreBoard(2, tempPath);
         var randomScore = new Random().nextInt(1000);
         var playerName = "TEST_WRITE";
 
@@ -58,5 +74,10 @@ public class TestScoreBoard {
         
         assertEquals(randomScore, scores.get(0).score());
         assertEquals(playerName, scores.get(0).name());
+        
+        // 임시 파일 삭제
+        if (tempFile.exists()) {
+            tempFile.delete();
+        }
     }
 }
