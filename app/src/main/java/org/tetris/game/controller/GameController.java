@@ -142,6 +142,33 @@ public class GameController extends BaseController<Board> implements RouterAware
         updateGameBoard();
     }
     
+    private void setupNextBlockCanvas() {
+        // Next Block 프리뷰를 위한 Canvas 생성 (Pane과 같은 크기)
+        double paneWidth = nextBlockPane.getPrefWidth();
+        double paneHeight = nextBlockPane.getPrefHeight();
+        
+        nextBlockCanvas = new Canvas(paneWidth, paneHeight);
+        nextBlockGc = nextBlockCanvas.getGraphicsContext2D();
+        
+        // nextBlockPane에 Canvas 추가
+        nextBlockPane.getChildren().clear();
+        nextBlockPane.getChildren().add(nextBlockCanvas);
+        
+        // Pane의 크기가 변경되면 Canvas 크기도 조정
+        nextBlockPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            nextBlockCanvas.setWidth(newVal.doubleValue());
+            updateNextBlockPreview();
+        });
+        
+        nextBlockPane.heightProperty().addListener((obs, oldVal, newVal) -> {
+            nextBlockCanvas.setHeight(newVal.doubleValue());
+            updateNextBlockPreview();
+        });
+        
+        // 초기 Next Block 그리기
+        updateNextBlockPreview();
+    }
+    
     private void setupEventHandlers() {
         // 키보드 입력 처리
         if (root.getScene() == null) {
@@ -228,6 +255,7 @@ public class GameController extends BaseController<Board> implements RouterAware
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
+        updateNextBlockPreview();
     }
     
     private void updateGameBoard() {
@@ -269,6 +297,55 @@ public class GameController extends BaseController<Board> implements RouterAware
     
     private void updateLinesDisplay() {
         linesLabel.setText(String.valueOf(0));
+    }
+    
+    private void updateNextBlockPreview() {
+        if (nextBlockGc == null) return;
+        
+        double canvasWidth = nextBlockCanvas.getWidth();
+        double canvasHeight = nextBlockCanvas.getHeight();
+        
+        // Canvas 초기화 (투명 배경)
+        nextBlockGc.clearRect(0, 0, canvasWidth, canvasHeight);
+        
+        // 다음 블록 가져오기
+        Block nextBlock = nextBlockModel.peekNext();
+        if (nextBlock == null) return;
+ 
+        Color blockColor = nextBlock.getColor();
+        
+        // 블록 크기 계산
+        int blockWidth = nextBlock.getSize().c;
+        int blockHeight = nextBlock.getSize().r;
+ 
+        // 중앙 정렬을 위한 오프셋 계산
+        double offsetX = (canvasWidth - blockWidth * PREVIEW_CELL_SIZE) / 2.0;
+        double offsetY = (canvasHeight - blockHeight * PREVIEW_CELL_SIZE) / 2.0;
+        
+        // 블록 그리기
+        for (int r = 0; r < blockHeight; r++) {
+            for (int c = 0; c < blockWidth; c++) {
+                if (nextBlock.getCell(r, c) != 0) {
+                    nextBlockGc.setFill(blockColor);
+                    nextBlockGc.fillRect(
+                        offsetX + c * PREVIEW_CELL_SIZE, 
+                        offsetY + r * PREVIEW_CELL_SIZE, 
+                        PREVIEW_CELL_SIZE - 2, 
+                        PREVIEW_CELL_SIZE - 2
+                    );
+                    
+                    // 테두리 효과
+                    nextBlockGc.setStroke(Color.WHITE);
+                    nextBlockGc.setLineWidth(1);
+                    nextBlockGc.strokeRect(
+                        offsetX + c * PREVIEW_CELL_SIZE, 
+                        offsetY + r * PREVIEW_CELL_SIZE, 
+                        PREVIEW_CELL_SIZE - 2, 
+                        PREVIEW_CELL_SIZE - 2
+                    );
+                }
+            }
+        }
     }
     
     private void togglePause() {
