@@ -138,6 +138,17 @@ public class GameController extends BaseController<Board> implements RouterAware
         gameBoard.getChildren().clear();
         gameBoard.getChildren().add(boardCanvas);
         
+        // Pane의 크기가 결정된 후 Canvas를 중앙에 배치
+        gameBoard.widthProperty().addListener((obs, oldVal, newVal) -> {
+            double centerX = (newVal.doubleValue() - canvasWidth) / 2.0;
+            boardCanvas.setLayoutX(centerX);
+        });
+        
+        gameBoard.heightProperty().addListener((obs, oldVal, newVal) -> {
+            double centerY = (newVal.doubleValue() - canvasHeight) / 2.0;
+            boardCanvas.setLayoutY(centerY);
+        });
+        
         // 초기 보드 그리기
         updateGameBoard();
     }
