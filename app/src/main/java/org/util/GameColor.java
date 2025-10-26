@@ -30,6 +30,11 @@ public class GameColor {
         GameColor.colorBlind = colorBlind;
     }
 
+    // 테스트 용 추가
+    public static boolean getColorBlind() {
+        return colorBlind;
+    }
+
 
     // region 색상 정의
 
