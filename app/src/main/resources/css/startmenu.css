@@ -31,11 +31,12 @@
     -fx-padding: 0.6em 1.0em;
     -fx-background-radius: 10;
     -fx-border-radius: 10;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
 }
 
 /* 선택(하이라이트) 상태: 스카이블루 배경 */
-.menu-button.highlighted,
-.menu-button:hover {
+.menu-button.highlighted {
     -fx-background-color: #56B4E9;
     -fx-text-fill: black;
     -fx-border-color: #56B4E9;
@@ -46,27 +47,29 @@
 .label-error {
     -fx-text-fill: #D55E00;
     -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
 }
 
 /* ===== 스코어보드 ===== */
 .scoreboard-container {
-    -fx-padding: 12 12 12 12;
-    -fx-spacing: 8;
+    -fx-padding: 10 10 10 10;
+    -fx-spacing: 6;
     -fx-border-color: #E69F00;
     -fx-border-width: 2px;
-    -fx-border-radius: 12;
-    -fx-background-radius: 12;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
     -fx-background-color: "white";
 }
 
 .scoreboard-title {
     -fx-text-fill: "black";
-    -fx-font-size: 1.2em;
+    -fx-font-size: 0.95em;
     -fx-font-weight: bold;
 }
 
 .score-row {
-    -fx-padding: 0.6em 0.8em;
+    -fx-padding: 0.4em 0.6em;
     -fx-background-color: transparent;
     -fx-border-color: #56B4E9;
     -fx-border-width: 0 0 1px 0;
