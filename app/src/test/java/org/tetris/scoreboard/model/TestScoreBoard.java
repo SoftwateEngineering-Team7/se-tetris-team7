@@ -1,13 +1,10 @@
-package org.tetris.menu.scoreboard.model;
+package org.tetris.scoreboard.model;
 
 import static org.junit.Assert.*;
 
 import java.util.Random;
 
 import org.junit.Test;
-
-import org.tetris.scoreboard.model.ScoreBoard;
-import org.tetris.scoreboard.model.ScoreInfo;
 
 public class TestScoreBoard {
 
