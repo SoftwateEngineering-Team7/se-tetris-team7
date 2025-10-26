@@ -77,14 +77,13 @@ public class GameModel extends BaseModel {
         this.frameCounter = 0;
     }
     
-    // 새 블럭 생성 (성공 여부 반환)
-    public boolean spawnNewBlock() {
+    // 새 블럭 생성 (게임 오버 판단은 Model에서)
+    public void spawnNewBlock() {
         Block newBlock = nextBlockModel.getBlock();
         boolean spawned = board.setActiveBlock(newBlock);
         if (!spawned) {
-            isGameOver = true;
+            isGameOver = true;  // Model이 게임 오버 상태 관리
         }
-        return spawned;
     }
     
     // 블럭 고정 및 라인 클리어 처리

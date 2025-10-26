@@ -231,6 +231,28 @@ public class GameController extends BaseController<Board> implements RouterAware
         updateLinesDisplay();
     }
     
+    private void lockCurrentBlock() {
+        // 블럭 고정 및 라인 클리어
+        int linesCleared = gameModel.lockBlockAndClearLines();
+        
+        // 새 블럭 생성
+        gameModel.spawnNewBlock();
+        
+        // Model 상태 확인 후 UI 업데이트
+        if (gameModel.isGameOver()) {
+            handleGameOver();
+        }
+        
+        updateGameBoard();
+    }
+    
+    private void handleGameOver() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        showGameOver();
+    }
+    
     private void updateGameBoard() {
         if (gc == null) return;
         
