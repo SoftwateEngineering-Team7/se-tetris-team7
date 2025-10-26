@@ -1,6 +1,8 @@
 package org.tetris.scoreboard.model;
 
 import java.io.BufferedReader;
+
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -8,9 +10,11 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 
+import org.tetris.shared.BaseModel;
+
 import javafx.collections.ObservableList;
 
-public class ScoreBoard
+public class ScoreBoard extends BaseModel
 {
     private final static String DEFAULT_HIGH_SCORE_LIST_PATH = "src/main/java/org/tetris/scoreboard/HighScore.csv";  
 

@@ -12,6 +12,7 @@ public class Board {
     public Block activeBlock;
     private Point curPos;
     private Point initialPos;
+    private NextBlockModel nextBlockModel;
 
     // Board 생성자
     public Board() {
@@ -21,6 +22,7 @@ public class Board {
     public Board(int height, int width) {
         HEIGHT = height;
         WIDTH = width;
+
         board = new int[HEIGHT][WIDTH];
         for (int r = 0; r < HEIGHT; r++) {
             for (int c = 0; c < WIDTH; c++) {
@@ -28,42 +30,13 @@ public class Board {
                     board[r][c] = 1;
             }
         }
-        activeBlock = getRandomBlock();
+        nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
+        activeBlock = nextBlockModel.getBlock();
+
         initialPos = new Point(-1, 5);
         curPos = new Point(initialPos);
+        
         placeBlock(curPos);
-    }
-
-    // 랜덤블럭 반환
-    public Block getRandomBlock() {
-        Random rnd = new Random();
-        int block = rnd.nextInt(7);
-        switch (block) {
-            case 0:
-                return new IBlock();
-            case 1:
-                return new JBlock();
-            case 2:
-                return new LBlock();
-            case 3:
-                return new ZBlock();
-            case 4:
-                return new SBlock();
-            case 5:
-                return new TBlock();
-            case 6:
-                return new OBlock();
-        }
-        return new LBlock();
-
-    }
-
-    public int getCell(Point point) {
-        return board[point.r][point.c];
-    }
-
-    public int getCell(int r, int c) {
-        return board[r][c];
     }
 
     // 블럭 배치
@@ -120,7 +93,7 @@ public class Board {
 
     // 기존 활성 블럭은 고정되고 활성 블럭에 새로운 랜덤블럭 반환
     public void setActiveToStaticBlock() {
-        activeBlock = getRandomBlock();
+        activeBlock = nextBlockModel.getBlock();
         curPos = new Point(initialPos);
     }
 
