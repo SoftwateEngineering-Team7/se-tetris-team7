@@ -73,4 +73,49 @@ public class GameControllerTest extends ApplicationTest {
         // 다시 클릭 (재개)
         clickOn("#pauseButton");
     }
+    @Test
+    public void testPauseOverlayInitiallyHidden() throws InterruptedException {
+        Thread.sleep(1000);
+        
+        // 게임 시작 시 일시정지 오버레이가 숨겨져 있어야 함
+        verifyThat("#pauseOverlay", isInvisible());
+    }
+
+    @Test
+    public void testPauseOverlayShownOnPause() throws InterruptedException {
+        Thread.sleep(1000);
+        
+        // 일시정지 버튼 클릭
+        clickOn("#pauseButton");
+        Thread.sleep(500);
+        
+        // 일시정지 오버레이가 표시되어야 함
+        verifyThat("#pauseOverlay", isVisible());
+        
+        // RESUME 버튼이 표시되어야 함
+        verifyThat("#resumeButton", isVisible());
+        
+        // MAIN MENU 버튼이 표시되어야 함
+        verifyThat("#pauseMenuButton", isVisible());
+    }
+
+    @Test
+    public void testResumeButtonWorks() throws InterruptedException {
+        Thread.sleep(1000);
+        
+        // 일시정지
+        clickOn("#pauseButton");
+        Thread.sleep(500);
+        
+        // 일시정지 오버레이 확인
+        verifyThat("#pauseOverlay", isVisible());
+        
+        // RESUME 버튼 클릭
+        clickOn("#resumeButton");
+        Thread.sleep(500);
+        
+        // 일시정지 오버레이가 숨겨져야 함
+        verifyThat("#pauseOverlay", isInvisible());
+    }
+
 }
