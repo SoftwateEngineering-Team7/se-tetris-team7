@@ -277,11 +277,26 @@ public class GameController extends BaseController<Board> implements RouterAware
                 if (cellValue == 0) {
                     // 빈 칸 - 검은색
                     gc.setFill(Color.BLACK);
-                    gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    gc.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 } else {
-                    // TODO: 셀 값에 따른 색상 매핑 필요
-                    gc.setFill(model.activeBlock.getColor()); 
-                    gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    // 셀 값에 따른 색상 매핑
+                    gc.setFill(getCellColor(cellValue)); 
+                    gc.fillRect(
+                        c * CELL_SIZE, 
+                        r * CELL_SIZE, 
+                        CELL_SIZE - 2, 
+                        CELL_SIZE - 2
+                    );
+                    
+                    // 테두리 효과
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(1);
+                    gc.strokeRect(
+                        c * CELL_SIZE, 
+                        r * CELL_SIZE, 
+                        CELL_SIZE - 2, 
+                        CELL_SIZE - 2
+                    );
                 }
             }
         }
