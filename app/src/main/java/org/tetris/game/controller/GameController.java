@@ -96,6 +96,15 @@ public class GameController extends BaseController<GameModel> implements RouterA
     protected void initialize() {
         super.initialize();
         
+        // 이전 게임 루프가 있으면 정리
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
+        // 게임 상태 초기화
+        gameModel.reset();
+        lastUpdate = 0;
+        
         setBoardSize();
         setupUI();
         setupEventHandlers();
@@ -277,13 +286,27 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
     
     private void restartGame() {
-        // model.reset();
+        // 게임 상태 초기화
+        gameModel.reset();
+        
+        // UI 초기화
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        pauseButton.setText("PAUSE");
+        
+        // 디스플레이 업데이트
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
         updateGameBoard();
+        
+        // 게임 루프 재시작
+        if (gameLoop != null) {
+            lastUpdate = 0;
+            gameLoop.start();
+        }
+        
+        root.requestFocus();
     }
     
     private void goToMenu() {
