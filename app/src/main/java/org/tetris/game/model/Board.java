@@ -227,6 +227,17 @@ public class Board extends BaseModel{
     }
     
     
+    // 보드 초기화
+    public void reset() {
+        for (int r = 0; r < height; r++) {
+            for (int c = 0; c < width; c++) {
+                board[r][c] = 0;
+            }
+        }
+        activeBlock = null;
+        curPos = new Point(initialPos);
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
