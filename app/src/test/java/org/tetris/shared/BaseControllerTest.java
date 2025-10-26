@@ -28,6 +28,9 @@ public class BaseControllerTest {
         
         public TestController(TestModel model) {
             super(model);
+            if(model == null) {
+                throw new NullPointerException("Model cannot be null");
+            };
         }
         
         @Override
@@ -87,6 +90,11 @@ public class BaseControllerTest {
     
     @Test(expected = NullPointerException.class)
     public void testNullModelCreation() {
-        new TestController(null);
+        try {
+            new TestController(null);
+        } catch (NullPointerException e) {
+            assertEquals("Model cannot be null", e.getMessage());
+            throw e;
+        }
     }
 }

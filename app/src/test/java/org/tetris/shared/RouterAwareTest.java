@@ -1,12 +1,23 @@
 package org.tetris.shared;
 
 import org.junit.Test;
+import org.testfx.framework.junit.ApplicationTest;
+
 import static org.junit.Assert.*;
 
 import org.tetris.Router;
 
-public class RouterAwareTest {
-    
+import javafx.stage.Stage;
+
+public class RouterAwareTest extends ApplicationTest {
+
+    private Stage testStage;
+
+
+    @Override
+    public void start(Stage s) throws Exception {
+        testStage = s;
+    }
     // 테스트용 RouterAware 구현체
     private static class TestRouterAware implements RouterAware {
         private Router router;
@@ -50,12 +61,12 @@ public class RouterAwareTest {
         TestRouterAware routerAware = new TestRouterAware();
         
         // 첫 번째 Router 설정
-        Router router1 = new Router(null);
+        Router router1 = new Router(testStage);
         routerAware.setRouter(router1);
         assertEquals("첫 번째 Router가 설정되어야 합니다", router1, routerAware.getRouter());
         
         // 두 번째 Router로 교체
-        Router router2 = new Router(null);
+        Router router2 = new Router(testStage);
         routerAware.setRouter(router2);
         assertEquals("두 번째 Router로 교체되어야 합니다", router2, routerAware.getRouter());
         assertNotEquals("이전 Router와는 달라야 합니다", router1, routerAware.getRouter());
@@ -71,7 +82,7 @@ public class RouterAwareTest {
         
         // 인터페이스 메서드가 존재하는지 확인
         RouterAware interfaceRef = routerAware;
-        Router router = new Router(null);
+        Router router = new Router(testStage);
         // 인터페이스 참조를 통해 메서드 호출 가능한지 확인
         interfaceRef.setRouter(router);
         assertEquals("인터페이스를 통한 Router 설정이 동작해야 합니다", 

@@ -73,4 +73,5 @@ jacocoTestCoverageVerification {
 
 test {
     useJUnit()
+    jvmArgs '-Djavafx.headless=true', '-Dprism.order=sw'
 }
