@@ -40,7 +40,7 @@ public class Board {
 
         initialPos = new Point(-1, 5);
         curPos = new Point(initialPos);
-        
+
         placeBlock(curPos);
     }
 
@@ -48,7 +48,7 @@ public class Board {
     public void placeBlock(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) == 1) {
+                if (activeBlock.getCell(r, c) == 1) {
                     int row = pos.r - activeBlock.pivot.r + r;
                     int col = pos.c - activeBlock.pivot.c + c;
 
@@ -62,7 +62,7 @@ public class Board {
     public void removeBlock(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) == 1) {
+                if (activeBlock.getCell(r, c) == 1) {
                     int row = pos.r - activeBlock.pivot.r + r;
                     int col = pos.c - activeBlock.pivot.c + c;
 
@@ -77,7 +77,7 @@ public class Board {
     public boolean isValidPos(Point pos) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) != 0) {
+                if (activeBlock.getCell(r, c) != 0) {
                     int row = pos.r - activeBlock.pivot.r + r;
                     int col = pos.c - activeBlock.pivot.c + c;
 
