@@ -16,6 +16,9 @@ public final class Router {
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
     public Router(Stage stage) {
+        if(stage == null) {
+            throw new IllegalArgumentException("Stage는 null일 수 없습니다");
+        }
         this.stage = stage;
 
         this.startMenuFactory = new StartMenuFactory();
