@@ -8,7 +8,7 @@ public abstract class Block {
 
     private int[][] shape;
     private GameColor color;
-    private Point length;
+    private Point size;
     private int blockCount;
 
     public Block(int[][] shape, Point pivot, GameColor color) {
@@ -16,16 +16,16 @@ public abstract class Block {
         this.pivot = pivot;
         this.color = color;
 
-        setLength();
+        setSize();
         setBlockCount();
     }
 
-    public Point getLength() {
-        return length;
+    public Point getSize() {
+        return size;
     }
 
-    private void setLength() {
-        this.length = new Point(shape.length, shape[0].length);
+    private void setSize() {
+        this.size = new Point(shape.length, shape[0].length);
     }
 
     public int height() {
@@ -66,46 +66,15 @@ public abstract class Block {
     }
 
     private void setBlockCount() {
-        blockCount = 0;
+        int count = 0;
         for (int r = 0; r < size.r; r++) {
             for (int c = 0; c < size.c; c++) {
-                if (shape[r][c] == 0)
-                    continue;
-                blockCount += 1;
+                if (shape[r][c] != 0) {
+                    count++;
+                }
             }
         }
-    }
-
-    public int getShape(int r, int c) {
-        return shape[r][c];
-    }
-
-    /**
-     * 모양만 바꿔서 새로운 블록을 반환하는 메서드
-     * @param shape 변경할 모양
-     * @return 새로운 블록
-     */
-    public Block reShape(int[][] shape){
-        Block block = new ConcreteBlock(shape, pivot, color);
-        return block;
-    }
-
-    /**
-     * 블록의 개수를 반환하는 메서드
-     * @return 블록의 개수
-     */
-    public int getBlockCount() {
-        return blockCount;
-    }
-
-    private void setBlockCount() {
-        blockCount = 0;
-        for (int r = 0; r < length.r; r++) {
-            for (int c = 0; c < length.c; c++) {
-                if (shape[r][c] == 0) continue;
-                blockCount += 1;
-            }
-        }
+        this.blockCount = count;
     }
 
     public void rotateCW() {

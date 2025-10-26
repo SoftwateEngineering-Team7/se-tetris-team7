@@ -16,7 +16,7 @@ public class HItem extends Item {
 
     @Override
     public Block GetItemBlock(Block block) {
-        Point size = block.getLength();
+        Point size = block.getSize();
         int[][] shape = new int[size.r][size.c];
 
         Random rand = new Random();
@@ -25,7 +25,7 @@ public class HItem extends Item {
 
         for(int r = 0; r < size.r; r++){
             for(int c = 0; c < size.c; c++){
-                shape[r][c] = block.getShape(r, c);
+                shape[r][c] = block.getCell(r, c);
                 if(shape[r][c] == 0) continue;
 
                 count++;

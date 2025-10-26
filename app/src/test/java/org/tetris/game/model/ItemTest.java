@@ -22,7 +22,7 @@ public class ItemTest {
         Point itemPos = item.getPosition();
         System.out.println("Item Position: " + itemPos);
 
-        int itemValue = itemBlock.getShape(itemPos.r, itemPos.c);
+        int itemValue = itemBlock.getCell(itemPos.r, itemPos.c);
         assertTrue(itemValue == 9);
     }
 }
