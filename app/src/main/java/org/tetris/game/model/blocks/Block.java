@@ -11,9 +11,9 @@ public abstract class Block {
     private Point length;
     private int blockCount;
 
-    public Block(int[][] shape, Point pivot2, GameColor color) {
+    public Block(int[][] shape, Point pivot, GameColor color) {
         this.shape = shape;
-        this.pivot = pivot2;
+        this.pivot = pivot;
         this.color = color;
 
         setLength();
