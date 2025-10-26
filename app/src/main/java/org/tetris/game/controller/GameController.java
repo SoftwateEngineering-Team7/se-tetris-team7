@@ -2,6 +2,9 @@ package org.tetris.game.controller;
 
 import org.tetris.Router;
 import org.tetris.game.model.Board;
+import org.tetris.game.model.GameModel;
+import org.tetris.game.model.ScoreModel;
+import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.GameColor;
@@ -22,7 +25,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-public class GameController extends BaseController<Board> implements RouterAware {
+public class GameController extends BaseController<GameModel> implements RouterAware {
     
     @FXML
     private BorderPane root;
@@ -54,6 +57,13 @@ public class GameController extends BaseController<Board> implements RouterAware
     @FXML
     private Button menuButton;
     
+    /** 모델 및 기타 필드 **/
+
+    private GameModel gameModel;
+    private Board boardModel;
+    private NextBlockModel nextBlockModel;
+    private ScoreModel scoreModel;
+
     private Router router;
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
@@ -63,11 +73,18 @@ public class GameController extends BaseController<Board> implements RouterAware
     private GraphicsContext gc;
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
 
-    private int frame = 0;
+    private int frameCounter = 0;
     private Point boardSize;
+    
+    private boolean isPaused = false;
+    private boolean isGameOver = false;
 
-    public GameController(Board model) {
-        super(model);
+    public GameController(GameModel gameModel) {
+        super(gameModel);
+        this.gameModel = model;
+        this.boardModel = model.getBoardModel();
+        this.nextBlockModel = model.getNextBlockModel();
+        this.scoreModel = model.getScoreModel();
     }
 
     @Override
@@ -96,7 +113,7 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void setBoardSize(){
-        boardSize = model.getSize();
+        boardSize = boardModel.getSize();
     }
 
     private void setupCanvas() {
@@ -146,16 +163,16 @@ public class GameController extends BaseController<Board> implements RouterAware
 
         switch (code) {
             case LEFT:
-                model.moveLeft();
+                boardModel.moveLeft();
                 break;
             case RIGHT:
-                model.moveRight();
+                boardModel.moveRight();
                 break;
             case UP:
-                model.rotate();
+                boardModel.rotate();
                 break;
             case DOWN:
-                model.moveDown();
+                boardModel.moveDown();
                 break;
             case SPACE:
                 // Hard drop (구현 예정)
@@ -166,7 +183,6 @@ public class GameController extends BaseController<Board> implements RouterAware
             default:
                 break;
         }
-        updateGameBoard();
 
         e.consume();
     }
@@ -204,7 +220,7 @@ public class GameController extends BaseController<Board> implements RouterAware
     private void updateGameBoard() {
         if (gc == null) return;
         
-        int[][] board = model.getBoard();
+        int[][] board = boardModel.getBoard();
         int rows = boardSize.r;
         int cols = boardSize.c;
 
@@ -231,15 +247,15 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void updateScoreDisplay() {
-        scoreLabel.setText(String.valueOf(0));
+        scoreLabel.setText(scoreModel.toString());
     }
     
     private void updateLevelDisplay() {
-        levelLabel.setText(String.valueOf(0));
+        levelLabel.setText(String.valueOf(gameModel.getLevel()));
     }
     
     private void updateLinesDisplay() {
-        linesLabel.setText(String.valueOf(0));
+        linesLabel.setText(String.valueOf(gameModel.getTotalLinesCleared()));
     }
     
     private void togglePause() {
