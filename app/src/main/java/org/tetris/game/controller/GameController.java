@@ -144,6 +144,13 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void handleKeyPress(KeyEvent e) {
+        if (gameModel.isGameOver() || gameModel.isPaused()) {
+            if (e.getCode() == KeyCode.P) {
+                togglePause();
+            }
+            e.consume();
+            return;
+        }
         
         KeyCode code = e.getCode();
 
@@ -172,6 +179,12 @@ public class GameController extends BaseController<Board> implements RouterAware
         updateGameBoard();
 
         e.consume();
+    }
+    
+    private void handleHardDrop() {
+        int dropDistance = boardModel.hardDrop();
+        scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
+        lockCurrentBlock();
     }
     
     private void startGameLoop() {
