@@ -13,7 +13,6 @@ public class GameModel extends BaseModel {
     // 게임 상태
     private boolean isGameOver;
     private boolean isPaused;
-    private int frameCounter;
 
     public GameModel() {
         this.board = new Board();
@@ -23,7 +22,6 @@ public class GameModel extends BaseModel {
         this.level = 1;
         this.isGameOver = false;
         this.isPaused = false;
-        this.frameCounter = 0;
         
         // 첫 블럭 설정
         spawnNewBlock();
@@ -65,18 +63,6 @@ public class GameModel extends BaseModel {
         this.isPaused = paused;
     }
     
-    public int getFrameCounter() {
-        return frameCounter;
-    }
-    
-    public void incrementFrameCounter() {
-        this.frameCounter++;
-    }
-    
-    public void resetFrameCounter() {
-        this.frameCounter = 0;
-    }
-    
     // 새 블럭 생성 (게임 오버 판단은 Model에서)
     public void spawnNewBlock() {
         Block newBlock = nextBlockModel.getBlock();
@@ -111,7 +97,6 @@ public class GameModel extends BaseModel {
         level = 1;
         isGameOver = false;
         isPaused = false;
-        frameCounter = 0;
         spawnNewBlock();
     }
     

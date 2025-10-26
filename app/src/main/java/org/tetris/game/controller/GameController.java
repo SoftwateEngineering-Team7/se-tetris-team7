@@ -57,6 +57,7 @@ public class GameController extends BaseController<Board> implements RouterAware
     private Router router;
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
+    private long lastDropTime = 0; // 마지막 블록 낙하 시간
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
     
     private Canvas boardCanvas;
@@ -81,6 +82,16 @@ public class GameController extends BaseController<Board> implements RouterAware
     @FXML
     protected void initialize() {
         super.initialize();
+        
+        // 이전 게임 루프가 있으면 정리
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
+        // 게임 상태 초기화
+        gameModel.reset();
+        lastUpdate = 0;
+        lastDropTime = 0;
         
         setBoardSize();
         setupUI();
@@ -193,12 +204,13 @@ public class GameController extends BaseController<Board> implements RouterAware
             public void handle(long now) {
                 if (lastUpdate == 0) {
                     lastUpdate = now;
+                    lastDropTime = now;
                     return;
                 }
                 
                 long elapsed = now - lastUpdate;
                 if (elapsed >= FRAME_TIME) {
-                    update();
+                    update(now);
                     lastUpdate = now;
                 }
             }
@@ -206,25 +218,29 @@ public class GameController extends BaseController<Board> implements RouterAware
         gameLoop.start();
     }
     
-    private void update() {
+    private void update(long now) {
         if (gameModel.isPaused() || gameModel.isGameOver()) {
             return;
         }
         
-        gameModel.incrementFrameCounter();
-        // TODO: 떨어진 블럭 개수에 따라도 속도 조절 필요 또는 레벨을 떨어진 블럭 개수에 맞춰 상승
-        // 레벨에 따른 속도 조절 (레벨이 높을수록 빠르게)
-        int dropInterval = gameModel.getDropInterval();
+        // 레벨에 따른 블록 낙하 간격 (밀리초 단위)
+        // dropInterval은 프레임 수이므로, 프레임당 시간(~16.6ms)을 곱함
+        int dropIntervalFrames = gameModel.getDropInterval();
+        long dropIntervalNanos = dropIntervalFrames * FRAME_TIME;
         
-        if (gameModel.getFrameCounter() >= dropInterval) {
-            gameModel.resetFrameCounter();
+        // 시간 기반 블록 낙하 처리
+        long timeSinceLastDrop = now - lastDropTime;
+        if (timeSinceLastDrop >= dropIntervalNanos) {
             boolean moved = boardModel.autoDown();
             
             if (!moved) {
                 lockCurrentBlock();
             }
+            
+            lastDropTime = now;
         }
 
+        // UI는 매 프레임 업데이트 (60 FPS)
         updateGameBoard();
         updateScoreDisplay();
         updateLevelDisplay();
@@ -321,6 +337,12 @@ public class GameController extends BaseController<Board> implements RouterAware
         
         // 게임 루프 재시작
         if (gameLoop != null) {
+            lastUpdate = 0;
+            lastDropTime = 0;
+            gameLoop.start();
+        }
+        
+        root.requestFocus();
     }
     
     private void goToMenu() {
