@@ -207,4 +207,11 @@ public class Board extends BaseModel{
         }
         throw new IndexOutOfBoundsException("Row or Column out of bounds");
     }
+
+    public int getCell(int row, int col) {
+        if (isInBound(row, col)) {
+            return board[row][col];
+        }
+        throw new IndexOutOfBoundsException("Row or Column out of bounds");
+    }
 }
