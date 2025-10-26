@@ -13,8 +13,6 @@ public class Board extends BaseModel{
     public Block activeBlock;
     private Point curPos;
     private Point initialPos;
-    
-    private NextBlockModel nextBlockModel;
 
     private boolean isItemMode = false;
     private Item activeItem = null;
@@ -29,10 +27,10 @@ public class Board extends BaseModel{
         this.width = w;
 
         board = new int[height][width];
-        nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
-        activeBlock = nextBlockModel.getBlock();
+        activeBlock = null;
 
-        initialPos = new Point(0, width / 2);
+        // TODO: 블럭 생성 위치가 r = 0 이면 게임 오버 처리됨(게임 오버 처리 로직 수정 필요)
+        initialPos = new Point(2, width / 2);
         curPos = new Point(initialPos);
     }
 
@@ -96,10 +94,23 @@ public class Board extends BaseModel{
         return row >= 0 && row < height && col >= 0 && col < width;
     }
 
-    // 기존 활성 블럭은 고정되고 활성 블럭에 새로운 랜덤블럭 반환
-    public void setActiveToStaticBlock() {
-        activeBlock = nextBlockModel.getBlock();
+    // 새로운 블럭을 활성 블럭으로 설정 (배치 가능 여부 반환)
+    public boolean setActiveBlock(Block block) {
+        activeBlock = block;
         curPos = new Point(initialPos);
+        
+        // 초기 위치에 배치 가능한지 확인
+        if (!isValidPos(curPos, activeBlock)) {
+            return false; // 게임 오버
+        }
+        
+        placeBlock(curPos, activeBlock);
+        return true;
+    }
+    
+    // 현재 블럭 위치 반환
+    public Point getCurPos() {
+        return curPos;
     }
 
     // -------------------- 이동 관련 함수들 --------------------
