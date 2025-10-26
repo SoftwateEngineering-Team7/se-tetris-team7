@@ -273,7 +273,9 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void togglePause() {
-        pauseButton.setText(true ? "RESUME" : "PAUSE");
+        if (gameModel.isGameOver()) return;
+        
+        gameModel.setPaused(!gameModel.isPaused());
         pauseButton.setText(gameModel.isPaused() ? "RESUME" : "PAUSE");
         
         if (!gameModel.isPaused()) {
