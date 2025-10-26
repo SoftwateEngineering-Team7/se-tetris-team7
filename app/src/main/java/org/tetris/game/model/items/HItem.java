@@ -6,12 +6,12 @@ import org.tetris.game.model.Board;
 import org.tetris.game.model.blocks.*;
 import org.util.Point;
 
-public class LItem extends Item {
+public class HItem extends Item {
 
-    private final static int LItemID = 9;
+    private final static int HItemID = 11;
 
-    public LItem() {
-        super(LItemID);
+    public HItem() {
+        super(HItemID);
     }
 
     @Override
