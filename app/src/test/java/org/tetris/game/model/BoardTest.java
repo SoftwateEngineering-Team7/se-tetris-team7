@@ -1,98 +1,112 @@
 package org.tetris.game.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.tetris.game.model.blocks.Block;
+
+import org.tetris.game.model.blocks.*;
+
 import org.util.Point;
 
 public class BoardTest {
-    private Board board;
-
-    @Before
-    public void setUp() {
-        board = new Board(21, 12);
-    }
-
+    
     @Test
     public void testBoardInitialization() {
-        // 보드의 경계선이 잘 초기화되었는지 확인
-        assertEquals(1, board.getCell(20, 0)); // 왼쪽 아래 모서리
-        assertEquals(1, board.getCell(20, 11)); // 오른쪽 아래 모서리
-        assertEquals(1, board.getCell(20, 5)); // 바닥
-        assertEquals(1, board.getCell(10, 0)); // 왼쪽 벽
-        assertEquals(1, board.getCell(10, 11)); // 오른쪽 벽
+        Board board = new Board(5, 5);
+        String expected =
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n";
+
+        System.err.println(board);
+
+        assertEquals(expected, board.toString());
     }
 
     @Test
-    public void testIsInBound() {
-        assertTrue(board.isInBound(0, 0));
-        assertTrue(board.isInBound(19, 10));
-        assertFalse(board.isInBound(-1, 5));
-        assertFalse(board.isInBound(21, 5));
-        assertFalse(board.isInBound(5, 12));
+    public void testBoardPlaceBlock() {
+        Board board = new Board(5, 5);
+        Block block = new ZBlock();
+        board.placeBlock(new Point(1, 1), block);
+
+        String expected =
+            "7 7 0 0 0 \n" +
+            "0 7 7 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n";
+
+        System.err.println(board);
+
+        assertEquals(expected, board.toString());
+
     }
 
     @Test
-    public void testMoveDown() {
-        // 초기 위치에서 아래로 이동 시도
-        boolean moved = board.moveDown();
-        assertTrue(moved);
+    public void testBoardRemoveBlock()
+    {
+        Board board = new Board(5, 5);
+        Block block = new ZBlock();
+        Point position = new Point(1, 1);
+
+        board.placeBlock(position, block);
+        board.removeBlock(position, block);
+
+        String expected =
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n";
+
+        System.err.println(board);
+
+        assertEquals(expected, board.toString());
     }
 
     @Test
-    public void testMoveLeftAndRight() {
-        // 왼쪽/오른쪽 이동 시 유효한지 확인
-        boolean movedRight = board.moveRight();
-        boolean movedLeft = board.moveLeft();
+    public void testBoardIsValidPos() {
+        Board board = new Board(5, 5);
+        Block block = new ZBlock();
 
-        // 적어도 한쪽 방향으로는 이동 가능해야 함
-        assertTrue(movedRight || movedLeft);
+        assertEquals(false, board.isValidPos(new Point(0, 0), block));
+
+        assertEquals(true, board.isValidPos(new Point(1, 1), block));
     }
 
     @Test
-    public void testRotate() {
-        // 회전이 가능한 위치라면 true 반환
-        boolean rotated = board.rotate();
-        assertTrue(rotated);
-    }
+    public void testBoardMoveDown() {
+        Board board = new Board(5, 5);
+        Block block = new ZBlock();
 
-    @Test
-    public void testAutoDownSetsNewBlock() {
-        Block beforeBlock = board.activeBlock;
-        Point beforePos = new Point(20, 5); // 거의 아래까지 이동시켜서 고정 유도
+        board.activeBlock = block;
 
-        // 강제로 curPos를 아래쪽으로 세팅해본 뒤 autoDown 호출
-        board.removeBlock(new Point(-1, 5)); // 기존 블록 제거
-        board.placeBlock(beforePos);
-        board.autoDown();
+        board.moveDown();
 
-        // 블록이 바뀌었는지 (새 activeBlock 생성 확인)
-        assertNotNull(board.activeBlock);
-        assertNotEquals(beforeBlock, board.activeBlock);
-    }
+        String expected =
+            "0 7 7 0 0 \n" +
+            "0 0 7 7 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n";
 
-    @Test
-    public void testIsValidPos() {
-        // 초기 블럭 위치는 항상 유효해야 함
-        assertTrue(board.isValidPos(new Point(-1, 5)));
+        System.out.println(board);
 
-        // 경계 밖 좌표는 false
-        assertFalse(board.isValidPos(new Point(25, 15)));
-    }
+        assertEquals(expected, board.toString());
 
-    @Test
-    public void testSetActiveToStaticBlockCreatesNewBlock() {
-        Block before = board.activeBlock;
-        board.setActiveToStaticBlock();
-        Block after = board.activeBlock;
+        board.moveDown();
 
-        assertNotNull(after);
-        assertNotEquals(before, after);
+        expected =
+            "0 0 0 0 0 \n" +
+            "0 7 7 0 0 \n" +
+            "0 0 7 7 0 \n" +
+            "0 0 0 0 0 \n" +
+            "0 0 0 0 0 \n";
+
+        System.out.println(board);
+
+        assertEquals(expected, board.toString());
     }
 }

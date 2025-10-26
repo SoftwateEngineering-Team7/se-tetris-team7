@@ -2,6 +2,7 @@ package org.tetris;
 
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
+import org.tetris.game.GameFactory;
 import org.tetris.shared.*;
 import javafx.stage.Stage;
 
@@ -20,7 +21,7 @@ public final class Router {
 
         this.startMenuFactory = new StartMenuFactory();
         this.settingsFactory = new ScoreBoardFactory();
-        this.gameFactory = new StartMenuFactory();
+        this.gameFactory = new GameFactory();
 
         stage.setTitle("Tetris");
         stage.setResizable(false);
