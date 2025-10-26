@@ -194,9 +194,23 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void update() {
+        if (gameModel.isPaused() || gameModel.isGameOver()) {
+            return;
+        }
         
-        frame++;
-        model.autoDown();
+        gameModel.incrementFrameCounter();
+        // TODO: 떨어진 블럭 개수에 따라도 속도 조절 필요 또는 레벨을 떨어진 블럭 개수에 맞춰 상승
+        // 레벨에 따른 속도 조절 (레벨이 높을수록 빠르게)
+        int dropInterval = gameModel.getDropInterval();
+        
+        if (gameModel.getFrameCounter() >= dropInterval) {
+            gameModel.resetFrameCounter();
+            boolean moved = boardModel.autoDown();
+            
+            if (!moved) {
+                lockCurrentBlock();
+            }
+        }
 
         updateGameBoard();
         updateScoreDisplay();
