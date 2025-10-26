@@ -18,6 +18,13 @@ public class BlockTest {
 
         assertEquals(expectedBlock, block.toString());
     }
+
+    @Test
+    public void testBlockCount()
+    {
+        Block block = new OBlock();
+        assertEquals(4, block.getBlockCount());
+    }
     
     @Test
     public void testBlockShape()

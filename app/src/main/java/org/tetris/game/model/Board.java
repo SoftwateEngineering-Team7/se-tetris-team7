@@ -1,65 +1,70 @@
 package org.tetris.game.model;
 
-import java.util.Random;
 import org.tetris.game.model.blocks.*;
+import org.tetris.game.model.items.*;
+import org.tetris.shared.BaseModel;
 import org.util.Point;
 
-public class Board {
-    private final int HEIGHT;
-    private final int WIDTH;
+public class Board extends BaseModel{
+    private final int height;
+    private final int width;
 
     private int[][] board;
     public Block activeBlock;
     private Point curPos;
     private Point initialPos;
+    
     private NextBlockModel nextBlockModel;
+
+    private boolean isItemMode = false;
+    private Item activeItem = null;
 
     // Board 생성자
     public Board() {
-        this(21, 12);
+        this(20, 10);
     }
 
-    public Board(int height, int width) {
-        HEIGHT = height;
-        WIDTH = width;
+    public Board(int h, int w) {
+        this.height = h;
+        this.width = w;
 
-        board = new int[HEIGHT][WIDTH];
-        for (int r = 0; r < HEIGHT; r++) {
-            for (int c = 0; c < WIDTH; c++) {
-                if (r == 20 || c == 0 || c == 11)
-                    board[r][c] = 1;
-            }
-        }
+        board = new int[height][width];
         nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
         activeBlock = nextBlockModel.getBlock();
 
-        initialPos = new Point(-1, 5);
+        initialPos = new Point(0, width / 2);
         curPos = new Point(initialPos);
-        
-        placeBlock(curPos);
+    }
+
+    public int[][] getBoard() {
+        return board;
+    }
+
+    public Point getSize(){
+        return new Point(height, width);
     }
 
     // 블럭 배치
-    public void placeBlock(Point pos) {
-        for (int r = 0; r < activeBlock.height(); r++) {
-            for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) == 1) {
-                    int row = pos.r - activeBlock.pivot.r + r;
-                    int col = pos.c - activeBlock.pivot.c + c;
+    public void placeBlock(Point pos, Block block) {
+        for (int r = 0; r < block.height(); r++) {
+            for (int c = 0; c < block.width(); c++) {
+                if (block.getCell(r, c) != 0) {
+                    int row = pos.r - block.pivot.r + r;
+                    int col = pos.c - block.pivot.c + c;
 
                     if (isInBound(row, col))
-                        board[row][col] = 1;
+                        board[row][col] = block.getCell(r, c);
                 }
             }
         }
     }
 
-    public void removeBlock(Point pos) {
-        for (int r = 0; r < activeBlock.height(); r++) {
-            for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) == 1) {
-                    int row = pos.r - activeBlock.pivot.r + r;
-                    int col = pos.c - activeBlock.pivot.c + c;
+    public void removeBlock(Point pos, Block block) {
+        for (int r = 0; r < block.height(); r++) {
+            for (int c = 0; c < block.width(); c++) {
+                if (block.getCell(r, c) != 0) {
+                    int row = pos.r - block.pivot.r + r;
+                    int col = pos.c - block.pivot.c + c;
 
                     if (isInBound(row, col))
                         board[row][col] = 0;
@@ -69,35 +74,27 @@ public class Board {
     }
 
     // 배치 시도 후 가능 여부 반환
-    public boolean isValidPos(Point pos) {
-        boolean hasInBoundCell = false;
-        
-        for (int r = 0; r < activeBlock.height(); r++) {
-            for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getShape(r, c) != 0) {
-                    int row = pos.r - activeBlock.pivot.r + r;
-                    int col = pos.c - activeBlock.pivot.c + c;
+    public boolean isValidPos(Point pos, Block block) {
+        for (int r = 0; r < block.height(); r++) {
+            for (int c = 0; c < block.width(); c++) {
+                if (block.getCell(r, c) != 0) {
+                    int row = pos.r - block.pivot.r + r;
+                    int col = pos.c - block.pivot.c + c;
 
-                    if (isInBound(row, col)) {
-                        hasInBoundCell = true;
-                        // 경계 안에 있고 충돌이 발생하면 false 반환
-                        if (board[row][col] != 0) {
-                            System.out.println("Collision occurred.");
-                            return false;
-                        }
+                    if (!isInBound(row, col) || board[row][col] != 0) {
+                        // System.out.println("Collision occurred.");
+                        return false;
                     }
                     // 경계 밖 셀은 무시 (화면 위쪽에서 블록이 시작할 수 있음)
                 }
             }
-        }
-        
-        // 최소 한 개의 셀이 경계 안에 있어야 함
-        return hasInBoundCell;
+        }   
+        return true;
     }
 
-    // 보드 크기 (22 * 11) 에 있는지 확인
+    // 보드 크기 에 있는지 확인
     public boolean isInBound(int row, int col) {
-        return row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH;
+        return row >= 0 && row < height && col >= 0 && col < width;
     }
 
     // 기존 활성 블럭은 고정되고 활성 블럭에 새로운 랜덤블럭 반환
@@ -114,14 +111,14 @@ public class Board {
     public boolean moveDown() {
         boolean isMoved = false;
         Point downPos = curPos.down();
-        removeBlock(curPos);
+        removeBlock(curPos, activeBlock);
 
-        if (isValidPos(downPos)) {
+        if (isValidPos(downPos, activeBlock)) {
             curPos = downPos;
             isMoved = true;
         }
 
-        placeBlock(curPos);
+        placeBlock(curPos, activeBlock);
         return isMoved;
     }
 
@@ -129,14 +126,14 @@ public class Board {
     public boolean moveRight() {
         boolean isMoved = false;
         Point rightPos = curPos.right();
-        removeBlock(curPos);
+        removeBlock(curPos, activeBlock);
 
-        if (isValidPos(rightPos)) {
+        if (isValidPos(rightPos, activeBlock)) {
             curPos = rightPos;
             isMoved = true;
         }
 
-        placeBlock(curPos);
+        placeBlock(curPos, activeBlock);
         return isMoved;
     }
 
@@ -144,14 +141,14 @@ public class Board {
     public boolean moveLeft() {
         boolean isMoved = false;
         Point leftPos = curPos.left();
-        removeBlock(curPos);
+        removeBlock(curPos, activeBlock);
 
-        if (isValidPos(leftPos)) {
+        if (isValidPos(leftPos, activeBlock)) {
             curPos = leftPos;
             isMoved = true;
         }
 
-        placeBlock(curPos);
+        placeBlock(curPos, activeBlock);
         return isMoved;
     }
 
@@ -163,35 +160,38 @@ public class Board {
     }
 
     public void hardDrop() {
-        while (isValidPos(curPos.down()))
+        while (isValidPos(curPos.down(), activeBlock)) {
             curPos = curPos.down();
-        placeBlock(curPos);
+        placeBlock(curPos, activeBlock);
         setActiveToStaticBlock();
-    }
+    }}
 
     // 시계방향 90도 회전 함수
     public boolean rotate() {
         boolean isMoved = false;
-        removeBlock(curPos);
+        removeBlock(curPos, activeBlock);
         activeBlock.rotateCW();
 
-        if (isValidPos(curPos)) {
+        if (isValidPos(curPos, activeBlock)) {
             isMoved = true;
         } else {
             activeBlock.rotateCCW();
         }
 
-        placeBlock(curPos);
+        placeBlock(curPos, activeBlock);
         return isMoved;
     }
 
-    public void printBoard() {
-        for (int r = 0; r < HEIGHT; r++) {
-            for (int c = 0; c < WIDTH; c++) {
-                System.out.print(board[r][c] + " ");
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int r = 0; r < height; r++) {
+            for (int c = 0; c < width; c++) {
+                sb.append(board[r][c]).append(" ");
             }
-            System.out.println();
+            sb.append("\n");
         }
+        return sb.toString();
     }
 
     public int getCell(int row, int col) {
