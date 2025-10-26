@@ -25,8 +25,10 @@ public final class Router {
         this.settingsFactory = new ScoreBoardFactory();
         this.gameFactory = new StartMenuFactory();
 
-        stage.setTitle("Tetris");
-        stage.setResizable(false);
+        if (stage != null) {
+            stage.setTitle("Tetris");
+            stage.setResizable(false);
+        }
     }
 
     /* --------- 공개 API ---------- */

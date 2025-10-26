@@ -63,12 +63,12 @@ public class StartMenuFactoryTest {
     @Test
     public void testModelCreation() {
         // Factory 내부의 모델 생성 로직 테스트
-        // StartMenuFactory는 3개 버튼으로 모델을 생성함
+        // StartMenuFactory는 4개 버튼으로 모델을 생성함
         try {
             MvcBundle<StartMenuModel, ViewWrap, StartMenuController> bundle = factory.create();
             if (bundle != null) {
                 StartMenuModel model = bundle.model();
-                assertEquals("모델이 3개 버튼으로 초기화되어야 합니다", 0, model.getSelectedIndex());
+                assertEquals("모델이 4개 버튼으로 초기화되어야 합니다", 0, model.getSelectedIndex());
                 
                 // 모델의 이동 테스트
                 model.move(1);
