@@ -50,9 +50,9 @@ public class Difficulty {
 
     // region 난이도 정의
 
-    public static final Difficulty EASY = new Difficulty(EASY_STRING, 1.0f);
-    public static final Difficulty NORMAL = new Difficulty(NORMAL_STRING, 1.15f);
-    public static final Difficulty HARD = new Difficulty(HARD_STRING, 1.3f);
+    public static final Difficulty EASY = new Difficulty(EASY_STRING, 0.8f);
+    public static final Difficulty NORMAL = new Difficulty(NORMAL_STRING, 1f);
+    public static final Difficulty HARD = new Difficulty(HARD_STRING, 1.2f);
 
     // endregion
 }
