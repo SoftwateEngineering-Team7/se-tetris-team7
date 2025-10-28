@@ -2,6 +2,9 @@ package org.tetris.game.controller;
 
 import org.tetris.Router;
 import org.tetris.game.model.Board;
+import org.tetris.game.model.GameModel;
+import org.tetris.game.model.ScoreModel;
+import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.GameColor;
@@ -22,7 +25,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-public class GameController extends BaseController<Board> implements RouterAware {
+public class GameController extends BaseController<GameModel> implements RouterAware {
     
     @FXML
     private BorderPane root;
@@ -54,6 +57,13 @@ public class GameController extends BaseController<Board> implements RouterAware
     @FXML
     private Button menuButton;
     
+    /** 모델 및 기타 필드 **/
+
+    private GameModel gameModel;
+    private Board boardModel;
+    private NextBlockModel nextBlockModel;
+    private ScoreModel scoreModel;
+
     private Router router;
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
@@ -63,11 +73,18 @@ public class GameController extends BaseController<Board> implements RouterAware
     private GraphicsContext gc;
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
 
-    private int frame = 0;
+    private int frameCounter = 0;
     private Point boardSize;
+    
+    private boolean isPaused = false;
+    private boolean isGameOver = false;
 
-    public GameController(Board model) {
-        super(model);
+    public GameController(GameModel gameModel) {
+        super(gameModel);
+        this.gameModel = model;
+        this.boardModel = model.getBoardModel();
+        this.nextBlockModel = model.getNextBlockModel();
+        this.scoreModel = model.getScoreModel();
     }
 
     @Override
@@ -78,6 +95,15 @@ public class GameController extends BaseController<Board> implements RouterAware
     @FXML
     protected void initialize() {
         super.initialize();
+        
+        // 이전 게임 루프가 있으면 정리
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
+        // 게임 상태 초기화
+        gameModel.reset();
+        lastUpdate = 0;
         
         setBoardSize();
         setupUI();
@@ -96,7 +122,7 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void setBoardSize(){
-        boardSize = model.getSize();
+        boardSize = boardModel.getSize();
     }
 
     private void setupCanvas() {
@@ -146,19 +172,26 @@ public class GameController extends BaseController<Board> implements RouterAware
 
         switch (code) {
             case LEFT:
-                model.moveLeft();
+                boardModel.moveLeft();
+                updateGameBoard();
                 break;
             case RIGHT:
-                model.moveRight();
+                boardModel.moveRight();
+                updateGameBoard();
                 break;
             case UP:
-                model.rotate();
+                boardModel.rotate();
+                updateGameBoard();
                 break;
             case DOWN:
-                model.moveDown();
+                boardModel.moveDown();
+                updateGameBoard();
                 break;
             case SPACE:
-                // Hard drop (구현 예정)
+                handleHardDrop();
+                break;
+            case P:
+                togglePause();
                 break;
             case C:
                 // Hold (구현 예정)
@@ -166,7 +199,6 @@ public class GameController extends BaseController<Board> implements RouterAware
             default:
                 break;
         }
-        updateGameBoard();
 
         e.consume();
     }
@@ -201,10 +233,31 @@ public class GameController extends BaseController<Board> implements RouterAware
         updateLinesDisplay();
     }
     
+    private void lockCurrentBlock() {
+        // 블럭 고정 및 라인 클리어
+        int linesCleared = gameModel.lockBlockAndClearLines();
+        
+        // 새 블럭 생성 (실패하면 게임 오버)
+        boolean spawned = gameModel.spawnNewBlock();
+        
+        if (!spawned) {
+            handleGameOver();
+        }
+        
+        updateGameBoard();
+    }
+    
+    private void handleGameOver() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        showGameOver();
+    }
+    
     private void updateGameBoard() {
         if (gc == null) return;
         
-        int[][] board = model.getBoard();
+        int[][] board = boardModel.getBoard();
         int rows = boardSize.r;
         int cols = boardSize.c;
 
@@ -222,24 +275,38 @@ public class GameController extends BaseController<Board> implements RouterAware
                     gc.setFill(Color.BLACK);
                     gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 } else {
-                    // TODO: 셀 값에 따른 색상 매핑 필요
-                    gc.setFill(model.activeBlock.getColor()); 
+                    // 셀 값에 따른 색상 매핑
+                    gc.setFill(getCellColor(cellValue)); 
                     gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 }
             }
         }
     }
     
+    // 셀 값에 따른 색상 반환
+    private Color getCellColor(int cellValue) {
+        switch (cellValue) {
+            case 1: return GameColor.BLUE.getColor();    // IBlock
+            case 2: return GameColor.ORANGE.getColor();  // JBlock
+            case 3: return GameColor.YELLOW.getColor();  // LBlock
+            case 4: return GameColor.GREEN.getColor();   // OBlock
+            case 5: return GameColor.RED.getColor();     // SBlock
+            case 6: return GameColor.PURPLE.getColor();  // TBlock
+            case 7: return GameColor.CYAN.getColor();    // ZBlock
+            default: return Color.WHITE;
+        }
+    }
+    
     private void updateScoreDisplay() {
-        scoreLabel.setText(String.valueOf(0));
+        scoreLabel.setText(scoreModel.toString());
     }
     
     private void updateLevelDisplay() {
-        levelLabel.setText(String.valueOf(0));
+        levelLabel.setText(String.valueOf(gameModel.getLevel()));
     }
     
     private void updateLinesDisplay() {
-        linesLabel.setText(String.valueOf(0));
+        linesLabel.setText(String.valueOf(gameModel.getTotalLinesCleared()));
     }
     
     private void togglePause() {
@@ -247,13 +314,27 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void restartGame() {
-        // model.reset();
+        // 게임 상태 초기화
+        gameModel.reset();
+        
+        // UI 초기화
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        pauseButton.setText("PAUSE");
+        
+        // 디스플레이 업데이트
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
         updateGameBoard();
+        
+        // 게임 루프 재시작
+        if (gameLoop != null) {
+            lastUpdate = 0;
+            gameLoop.start();
+        }
+        
+        root.requestFocus();
     }
     
     private void goToMenu() {
