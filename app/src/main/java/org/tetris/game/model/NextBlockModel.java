@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 
 import org.tetris.game.model.blocks.*;
 
-class NextBlockModel
+public class NextBlockModel
 {
 	private int[] blockProbList;
 	private int totalProb;

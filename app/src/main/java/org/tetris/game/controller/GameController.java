@@ -2,6 +2,9 @@ package org.tetris.game.controller;
 
 import org.tetris.Router;
 import org.tetris.game.model.Board;
+import org.tetris.game.model.GameModel;
+import org.tetris.game.model.ScoreModel;
+import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.GameColor;
@@ -22,7 +25,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-public class GameController extends BaseController<Board> implements RouterAware {
+public class GameController extends BaseController<GameModel> implements RouterAware {
     
     @FXML
     private BorderPane root;
@@ -54,6 +57,13 @@ public class GameController extends BaseController<Board> implements RouterAware
     @FXML
     private Button menuButton;
     
+    /** 모델 및 기타 필드 **/
+
+    private GameModel gameModel;
+    private Board boardModel;
+    private NextBlockModel nextBlockModel;
+    private ScoreModel scoreModel;
+
     private Router router;
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
@@ -65,6 +75,9 @@ public class GameController extends BaseController<Board> implements RouterAware
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
 
     private Point boardSize;
+    
+    private boolean isPaused = false;
+    private boolean isGameOver = false;
 
     public GameController(GameModel gameModel) {
         super(gameModel);
@@ -110,7 +123,7 @@ public class GameController extends BaseController<Board> implements RouterAware
     }
     
     private void setBoardSize(){
-        boardSize = model.getSize();
+        boardSize = boardModel.getSize();
     }
 
     private void setupCanvas() {
@@ -167,19 +180,26 @@ public class GameController extends BaseController<Board> implements RouterAware
 
         switch (code) {
             case LEFT:
-                model.moveLeft();
+                boardModel.moveLeft();
+                updateGameBoard();
                 break;
             case RIGHT:
-                model.moveRight();
+                boardModel.moveRight();
+                updateGameBoard();
                 break;
             case UP:
-                model.rotate();
+                boardModel.rotate();
+                updateGameBoard();
                 break;
             case DOWN:
-                model.moveDown();
+                boardModel.moveDown();
+                updateGameBoard();
                 break;
             case SPACE:
-                // Hard drop (구현 예정)
+                handleHardDrop();
+                break;
+            case P:
+                togglePause();
                 break;
             case C:
                 // Hold (구현 예정)
@@ -187,7 +207,6 @@ public class GameController extends BaseController<Board> implements RouterAware
             default:
                 break;
         }
-        updateGameBoard();
 
         e.consume();
     }
@@ -273,7 +292,7 @@ public class GameController extends BaseController<Board> implements RouterAware
     private void updateGameBoard() {
         if (gc == null) return;
         
-        int[][] board = model.getBoard();
+        int[][] board = boardModel.getBoard();
         int rows = boardSize.r;
         int cols = boardSize.c;
 
@@ -291,24 +310,38 @@ public class GameController extends BaseController<Board> implements RouterAware
                     gc.setFill(Color.BLACK);
                     gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 } else {
-                    // TODO: 셀 값에 따른 색상 매핑 필요
-                    gc.setFill(model.activeBlock.getColor()); 
+                    // 셀 값에 따른 색상 매핑
+                    gc.setFill(getCellColor(cellValue)); 
                     gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 }
             }
         }
     }
     
+    // 셀 값에 따른 색상 반환
+    private Color getCellColor(int cellValue) {
+        switch (cellValue) {
+            case 1: return GameColor.BLUE.getColor();    // IBlock
+            case 2: return GameColor.ORANGE.getColor();  // JBlock
+            case 3: return GameColor.YELLOW.getColor();  // LBlock
+            case 4: return GameColor.GREEN.getColor();   // OBlock
+            case 5: return GameColor.RED.getColor();     // SBlock
+            case 6: return GameColor.PURPLE.getColor();  // TBlock
+            case 7: return GameColor.CYAN.getColor();    // ZBlock
+            default: return Color.WHITE;
+        }
+    }
+    
     private void updateScoreDisplay() {
-        scoreLabel.setText(String.valueOf(0));
+        scoreLabel.setText(scoreModel.toString());
     }
     
     private void updateLevelDisplay() {
-        levelLabel.setText(String.valueOf(0));
+        levelLabel.setText(String.valueOf(gameModel.getLevel()));
     }
     
     private void updateLinesDisplay() {
-        linesLabel.setText(String.valueOf(0));
+        linesLabel.setText(String.valueOf(gameModel.getTotalLinesCleared()));
     }
     
     private void togglePause() {
