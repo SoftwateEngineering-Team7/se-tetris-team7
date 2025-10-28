@@ -20,6 +20,14 @@ public class BlockTest {
     }
 
     @Test
+    public void testGetCell()
+    {
+        Block block = new TBlock();
+        assertEquals(6, block.getCell(1, 1));
+        assertEquals(0, block.getCell(0, 0));
+    }
+
+    @Test
     public void testBlockCount()
     {
         Block block = new OBlock();
@@ -33,6 +41,31 @@ public class BlockTest {
         Block block = new LBlock();
         assertEquals(3, block.width());
         assertEquals(2, block.height());
+    }
+
+    @Test
+    public void testBlockPositions()
+    {
+        // 블럭 좌표 리스트 테스트
+        Block block = new TBlock();
+        var positions = block.getBlockPositions();
+
+        assertEquals(4, positions.size());
+
+        assertTrue(positions.contains(new Point(0,1)));
+        assertTrue(positions.contains(new Point(1,0)));
+        assertTrue(positions.contains(new Point(1,1)));
+        assertTrue(positions.contains(new Point(1,2)));
+    }
+
+    @Test
+    public void testToPivot() {
+        // 피벗 기준 좌표 변환 테스트
+        Block block = new SBlock();
+        Point pos = new Point(1, 2);
+        Point expectedPos = new Point(0, 1);
+
+        assertEquals(expectedPos, block.toPivot(pos));
     }
 
     @Test
