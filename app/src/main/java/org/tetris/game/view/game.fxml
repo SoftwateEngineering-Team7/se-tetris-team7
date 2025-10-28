@@ -7,12 +7,16 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane fx:id="root" xmlns="http://javafx.com/javafx"
+<StackPane xmlns="http://javafx.com/javafx"
     xmlns:fx="http://javafx.com/fxml"
+    prefWidth="800" prefHeight="600">
+    
+<BorderPane fx:id="root" 
     prefWidth="800" prefHeight="600"
     style="-fx-background-color: #1a1a2e;">
 
@@ -294,3 +298,43 @@
     </children>
 </HBox>
 
+<!-- ============== 게임 오버 오버레이 ============== -->
+<HBox fx:id="gameOverOverlay" alignment="CENTER" 
+    visible="false" managed="false"
+    prefWidth="800" prefHeight="600"
+    style="-fx-background-color: rgba(0, 0, 0, 0.8);">
+    <children>
+        <VBox alignment="CENTER" spacing="20">
+            <children>
+                <Label text="GAME OVER" textFill="#e94560">
+                    <font>
+                        <Font name="Arial Black" size="48.0" />
+                    </font>
+                    <effect>
+                        <DropShadow height="15.0" radius="7.0" width="15.0">
+                            <color>
+                                <Color red="0.91" green="0.27" blue="0.38" opacity="0.8" />
+                            </color>
+                        </DropShadow>
+                    </effect>
+                </Label>
+                <Button fx:id="restartButton" text="RESTART" 
+                    prefWidth="150" prefHeight="40"
+                    style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-background-radius: 5;">
+                    <font>
+                        <Font name="Arial Bold" size="16.0" />
+                    </font>
+                </Button>
+                <Button fx:id="menuButton" text="MENU" 
+                    prefWidth="150" prefHeight="40"
+                    style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
+                    <font>
+                        <Font name="Arial Bold" size="16.0" />
+                    </font>
+                </Button>
+            </children>
+        </VBox>
+    </children>
+</HBox>
+
+</StackPane>

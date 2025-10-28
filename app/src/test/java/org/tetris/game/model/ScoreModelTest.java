@@ -42,4 +42,38 @@ public class ScoreModelTest {
         scoreModel.lineCleared(5);
         assertEquals(25000, scoreModel.getScore());
     }
+
+    @Test
+    public void testReset() {
+        ScoreModel scoreModel = new ScoreModel();
+        scoreModel.add(5000);
+        scoreModel.lineCleared(3);
+        
+        assertEquals(10000, scoreModel.getScore());
+        
+        scoreModel.reset();
+        
+        assertEquals(0, scoreModel.getScore());
+    }
+
+    @Test
+    public void testToString() {
+        ScoreModel scoreModel = new ScoreModel();
+        assertEquals("00000000", scoreModel.toString());
+        
+        scoreModel.add(1234);
+        assertEquals("00001234", scoreModel.toString());
+        
+        scoreModel.add(98766);
+        assertEquals("00100000", scoreModel.toString());
+    }
+
+    @Test
+    public void testAddNegativeScore() {
+        ScoreModel scoreModel = new ScoreModel();
+        scoreModel.add(1000);
+        scoreModel.add(-500); // 음수는 무시되어야 함
+        
+        assertEquals(1000, scoreModel.getScore());
+    }
 }

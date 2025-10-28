@@ -51,7 +51,7 @@ public final class Router {
     void show(MvcFactory<M, C> factory) {
         // 이전 화면 정리
         if (current != null) {
-            // 만약 필요하면 여기서 컨트롤러 종료 처리 코드 추가
+            current.controller().cleanup();
         }
 
         // 새 화면 생성 + 연결
