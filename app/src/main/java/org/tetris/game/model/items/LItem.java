@@ -42,12 +42,9 @@ public class LItem extends Item {
     @Override
     public void Activate(Board board) {
         Point blockPos = board.getCurPos();
+        Point itemPos = getPosition();
 
-        for (Point p : itemBlock.getBlockPositions()) {
-            if (itemBlock.getCell(p) == itemID) {
-                int row = blockPos.r - itemBlock.pivot.r + p.r;
-                board.clearALine(row);
-            }
-        }
+        int row = blockPos.r - itemBlock.pivot.r + itemPos.r;
+        board.clearALine(row);
     }
 }
