@@ -2,16 +2,16 @@ package org.tetris.scoreboard.controller;
 
 import static org.testfx.api.FxAssert.verifyThat;
 import static org.testfx.matcher.base.NodeMatchers.*;
-import static org.testfx.matcher.control.TextInputControlMatchers.hasText;
+
 
 import org.junit.Test;
 
 import org.testfx.framework.junit.ApplicationTest;
+import org.testfx.matcher.control.TextInputControlMatchers;
 import org.tetris.scoreboard.ScoreBoardFactory;
-import org.tetris.scoreboard.model.ScoreBoard;
 import org.tetris.shared.MvcBundle;
 
-import javafx.fxml.FXMLLoader;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 public class TestScoreBoardController extends ApplicationTest {
@@ -20,15 +20,33 @@ public class TestScoreBoardController extends ApplicationTest {
     @Override
     public void start(Stage stage) {
         MvcBundle bundle = sbFactory.create();
+        
         stage.setScene(bundle.view().getScene());
         stage.setTitle("ScoreBoard Test");
         stage.show();
     }
 
     @Test
+    public void testSetFromGame(){
+        MvcBundle bundle = sbFactory.create();
+        var controller = bundle.controller();
+        if(controller instanceof ScoreBoardController sbc){
+            
+            sbc.setFromGame(true, 1500);
+            sleep(1000);
+            verifyThat("#inputPane", isVisible());
+            verifyThat("#scoreText", (Text text) -> "1500".equals(text.getText()));
+
+            sbc.setFromGame(false, 0);
+            sleep(1000);
+            verifyThat("#inputPane", isInvisible());
+        }
+    }
+
+    @Test
     public void testNameFieldInput() {
         clickOn("#nameField").write("TestPlayer");
-        verifyThat("#nameField", hasText("TestPlayer"));
+        verifyThat("#nameField", TextInputControlMatchers.hasText("TestPlayer"));
     }
 
     @Test

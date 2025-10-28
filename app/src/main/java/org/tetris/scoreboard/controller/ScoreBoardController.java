@@ -74,4 +74,16 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         String playerName = nameField.getText();
         OnSubmitClick(playerName);
     }
+
+    public void setFromGame(boolean fromGame, int score)
+    {
+        this.finishScore = score;
+        scoreText.setText(String.valueOf(finishScore));
+
+        if (fromGame) {
+            inputPane.setVisible(true);
+        } else {
+            inputPane.setVisible(false);
+        }
+    }
 }

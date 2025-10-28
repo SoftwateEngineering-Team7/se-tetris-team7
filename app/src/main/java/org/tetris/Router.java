@@ -5,6 +5,9 @@ import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.game.GameFactory;
+
+import org.tetris.scoreboard.controller.ScoreBoardController;
+
 import org.tetris.shared.*;
 import org.util.ScreenPreset;
 
@@ -18,6 +21,7 @@ public final class Router {
     private final Setting setting; // 전역 Setting 객체
     private final MvcFactory<?, ?> settingsFactory;
     private final MvcFactory<?, ?> gameFactory;
+    private final MvcFactory<?, ?> scoreBoardFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -28,6 +32,7 @@ public final class Router {
         this.startMenuFactory = new StartMenuFactory();
         this.settingsFactory = new SettingMenuFactory(setting);
         this.gameFactory = new GameFactory();
+        this.scoreBoardFactory = new ScoreBoardFactory();
 
         setStageSize();
         stage.setTitle("Tetris");
@@ -48,6 +53,13 @@ public final class Router {
         show(gameFactory);
     }
 
+    public void showScoreBoard(boolean fromGame, int score) {
+        var controller = show(scoreBoardFactory);
+        if (controller instanceof ScoreBoardController sbc) {
+            sbc.setFromGame(fromGame, score);
+        }
+    }
+
     public void exitGame() {
         stage.close();
     }
@@ -66,7 +78,7 @@ public final class Router {
     /* --------- 화면 전환 로직 ---------- */
 
     private <M extends BaseModel, C extends BaseController<M>>
-    void show(MvcFactory<M, C> factory) {
+    C show(MvcFactory<M, C> factory) {
         // 이전 화면 정리
         if (current != null) {
             current.controller().cleanup();
@@ -85,5 +97,6 @@ public final class Router {
         stage.show();
 
         current = bundle;
+        return bundle.controller();
     }
 }
