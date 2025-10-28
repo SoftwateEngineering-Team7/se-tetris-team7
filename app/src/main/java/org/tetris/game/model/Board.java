@@ -1,11 +1,11 @@
 package org.tetris.game.model;
 
 import org.tetris.game.model.blocks.*;
-import org.tetris.game.model.items.*;
 import org.tetris.shared.BaseModel;
 import org.util.Point;
 
 public class Board extends BaseModel{
+
     private final int height;
     private final int width;
 
@@ -13,9 +13,6 @@ public class Board extends BaseModel{
     public Block activeBlock;
     private Point curPos;
     private Point initialPos;
-
-    private boolean isItemMode = false;
-    private Item activeItem = null;
 
     // Board 생성자
     public Board() {
@@ -220,24 +217,27 @@ public class Board extends BaseModel{
             
             if (isLineFull) {
                 linesCleared++;
-                // 해당 라인 삭제하고 위의 라인들을 아래로 이동
-                for (int row = r; row > 0; row--) {
-                    for (int col = 0; col < width; col++) {
-                        board[row][col] = board[row - 1][col];
-                    }
-                }
-                // 최상단 라인 초기화
-                for (int col = 0; col < width; col++) {
-                    board[0][col] = 0;
-                }
+                clearALine(r);
                 r++; // 같은 라인을 다시 체크
             }
         }
         
         return linesCleared;
     }
-    
-    
+
+    // 해당 라인 삭제하고 위의 라인들을 아래로 이동
+    public void clearALine(int r) {
+        for (int row = r; row > 0; row--) {
+            for (int col = 0; col < width; col++) {
+                board[row][col] = board[row - 1][col];
+            }
+        }
+        // 최상단 라인 초기화
+        for (int col = 0; col < width; col++) {
+            board[0][col] = 0;
+        }
+    }
+
     // 보드 초기화
     public void reset() {
         for (int r = 0; r < height; r++) {
