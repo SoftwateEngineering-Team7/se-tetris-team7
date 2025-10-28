@@ -9,9 +9,9 @@ public class Difficulty {
     private static String currentDifficulty = EASY_STRING; // 기본값
     
     private final String name;
-    private final float speedMultiplier;
+    private final double speedMultiplier;
 
-    private Difficulty(String name, float speedMultiplier) {
+    private Difficulty(String name, double speedMultiplier) {
         this.name = name;
         this.speedMultiplier = speedMultiplier;
     }
@@ -19,7 +19,7 @@ public class Difficulty {
     /**
      * 현재 설정된 난이도의 속도 배율 반환
      */
-    public static float getSpeedMultiplier() {
+    public static double getSpeedMultiplier() {
         switch (currentDifficulty) {
             case NORMAL_STRING: return NORMAL.speedMultiplier;
             case HARD_STRING: return HARD.speedMultiplier;
@@ -50,9 +50,9 @@ public class Difficulty {
 
     // region 난이도 정의
 
-    public static final Difficulty EASY = new Difficulty(EASY_STRING, 1.0f);
-    public static final Difficulty NORMAL = new Difficulty(NORMAL_STRING, 1.15f);
-    public static final Difficulty HARD = new Difficulty(HARD_STRING, 1.3f);
+    public static final Difficulty EASY = new Difficulty(EASY_STRING, 1.0);
+    public static final Difficulty NORMAL = new Difficulty(NORMAL_STRING, 1.5);
+    public static final Difficulty HARD = new Difficulty(HARD_STRING, 2.0);
 
     // endregion
 }
