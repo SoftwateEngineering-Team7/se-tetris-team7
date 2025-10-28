@@ -3,6 +3,9 @@ package org.tetris;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.game.GameFactory;
+
+import org.tetris.scoreboard.controller.ScoreBoardController;
+
 import org.tetris.shared.*;
 import javafx.stage.Stage;
 
@@ -13,6 +16,7 @@ public final class Router {
     private final StartMenuFactory startMenuFactory;
     private final MvcFactory<?, ?> settingsFactory;
     private final MvcFactory<?, ?> gameFactory;
+    private final MvcFactory<?, ?> scoreBoardFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -22,6 +26,7 @@ public final class Router {
         this.startMenuFactory = new StartMenuFactory();
         this.settingsFactory = new ScoreBoardFactory();
         this.gameFactory = new GameFactory();
+        this.scoreBoardFactory = new ScoreBoardFactory();
 
         stage.setTitle("Tetris");
         stage.setResizable(false);
@@ -41,6 +46,13 @@ public final class Router {
         show(gameFactory);
     }
 
+    public void showScoreBoard(boolean fromGame, int score) {
+        var controller = show(scoreBoardFactory);
+        if (controller instanceof ScoreBoardController sbc) {
+            sbc.setFromGame(fromGame, score);
+        }
+    }
+
     public void exitGame() {
         stage.close();
     }
@@ -48,7 +60,7 @@ public final class Router {
     /* --------- 화면 전환 로직 ---------- */
 
     private <M extends BaseModel, C extends BaseController<M>>
-    void show(MvcFactory<M, C> factory) {
+    C show(MvcFactory<M, C> factory) {
         // 이전 화면 정리
         if (current != null) {
             // 만약 필요하면 여기서 컨트롤러 종료 처리 코드 추가
@@ -67,5 +79,6 @@ public final class Router {
         stage.show();
 
         current = bundle;
+        return bundle.controller();
     }
 }
