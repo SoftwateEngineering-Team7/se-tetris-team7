@@ -9,6 +9,7 @@ import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.GameColor;
+import org.util.KeyLayout;
 import org.util.Point;
 
 import javafx.fxml.FXML;
@@ -235,34 +236,25 @@ public class GameController extends BaseController<GameModel> implements RouterA
         
         KeyCode code = e.getCode();
 
-        switch (code) {
-            case LEFT:
-                boardModel.moveLeft();
-                updateGameBoard();
-                break;
-            case RIGHT:
-                boardModel.moveRight();
-                updateGameBoard();
-                break;
-            case UP:
-                boardModel.rotate();
-                updateGameBoard();
-                break;
-            case DOWN:
-                boardModel.moveDown();
-                updateGameBoard();
-                break;
-            case SPACE:
-                handleHardDrop();
-                break;
-            case P:
-                togglePause();
-                break;
-            case C:
-                // Hold (구현 예정)
-                break;
-            default:
-                break;
+        // switch문으로는 static 메서드 호출이 불가능하므로 if-else로 처리
+        if(code == KeyLayout.getLeftKey()) {
+            boardModel.moveLeft();
+            updateGameBoard();
+        } else if(code == KeyLayout.getRightKey()) {
+            boardModel.moveRight();
+            updateGameBoard();
+        } else if(code == KeyLayout.getUpKey()) {
+            boardModel.rotate();
+            updateGameBoard();
+        } else if(code == KeyLayout.getDownKey()) {
+            boardModel.moveDown();
+            updateGameBoard();
+        } else if(code == KeyCode.SPACE) {
+            handleHardDrop();
+        } else if(code == KeyCode.P) {
+            togglePause();
+        } else{
+            // 기타 키는 무시
         }
 
         e.consume();
