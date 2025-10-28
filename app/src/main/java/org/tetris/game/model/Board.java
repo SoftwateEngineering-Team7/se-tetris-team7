@@ -70,33 +70,31 @@ public class Board extends BaseModel{
         }
     }
 
-        // 배치 시도 후 가능 여부 반환
+     // 블럭이 해당 위치에 배치 가능한지 확인
     public boolean isValidPos(Point pos, Block activeBlock) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getCell(r, c) != 0) {
-                    int row = pos.r - activeBlock.pivot.r + r;
-                    int col = pos.c - activeBlock.pivot.c + c;
+                if (activeBlock.getCell(r, c) == 0)
+                    continue;
 
-                    // 위쪽 경계를 벗어나는 셀은 무시 (화면 위쪽에서 블록이 시작할 수 있음)
-                    if (row < 0) {
-                        continue;
-                    }
-                    
-                    // 좌, 우, 하 경계를 벗어나면 false 반환
-                    if (col < 0 || col >= width || row >= height) {
-                        return false;
-                    }
-                    
-                    // 경계 안에 있고 충돌이 발생하면 false 반환
-                    if (board[row][col] != 0) {
-                        System.out.println("Collision occurred.");
-                        return false;
-                    }
-                }
+                int row = pos.r + (r - activeBlock.pivot.r); // pos == pivot 좌표 전제
+                int col = pos.c + (c - activeBlock.pivot.c);
+
+                // 1) 좌우 경계는 항상 강제
+                if (col < 0 || col >= width)
+                    return false;
+
+                // 2) 위쪽은 스킵, 아래쪽은 차단
+                if (row < 0)
+                    continue;
+                if (row >= height)
+                    return false;
+
+                // 3) 충돌
+                if (board[row][col] != 0)
+                    return false;
             }
         }
-
         return true;
     }
 
