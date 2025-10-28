@@ -31,7 +31,6 @@ public class HItem extends Item {
                 count++;
                 if (count == itemIndex) {
                     shape[r][c] = itemID;
-                    setPosition(new Point(r, c));
                 }
             }
         }
