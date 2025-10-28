@@ -228,14 +228,12 @@ public class Board extends BaseModel {
     }
 
     public void clearColumn(int index) {
-        // 해당 column를 제거하고 왼쪽의 블록들을 오른쪽으로 이동
         for (int r = 0; r < height; r++) {
             board[r][index] = 0;
         }
     }
 
     public void clearRow(int index) {
-        // 해당 row를 제거하고 위의 블록들을 아래로 이동
         for (int c = 0; c < width; c++) {
             board[index][c] = 0;
         }
