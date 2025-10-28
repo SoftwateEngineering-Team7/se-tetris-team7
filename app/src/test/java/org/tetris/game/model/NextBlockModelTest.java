@@ -70,4 +70,67 @@ public class NextBlockModelTest {
         
         assertBlockDistribution(actual, expected);
     }
+
+    @Test
+    public void testPeekNext() {
+        NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
+        
+        // peekNext는 큐에서 블록을 제거하지 않아야 함
+        Block firstPeek = model.peekNext();
+        assertNotNull("첫 번째 peekNext는 null이 아니어야 합니다", firstPeek);
+        
+        Block secondPeek = model.peekNext();
+        assertNotNull("두 번째 peekNext는 null이 아니어야 합니다", secondPeek);
+        
+        // peekNext는 같은 블록을 반환해야 함 (타입만 비교)
+        assertEquals("peekNext는 같은 타입의 블록을 반환해야 합니다", 
+                    firstPeek.getClass(), secondPeek.getClass());
+    }
+
+    @Test
+    public void testPeekNextDoesNotRemove() {
+        NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
+        
+        // peekNext로 블록 확인
+        Block peeked = model.peekNext();
+        assertNotNull("peekNext는 블록을 반환해야 합니다", peeked);
+        
+        // getBlock으로 실제 블록 가져오기
+        Block gotten = model.getBlock();
+        assertNotNull("getBlock은 블록을 반환해야 합니다", gotten);
+        
+        // peekNext로 본 블록과 getBlock으로 가져온 블록의 타입이 같아야 함
+        assertEquals("peekNext와 getBlock은 같은 타입의 블록을 반환해야 합니다",
+                    peeked.getClass(), gotten.getClass());
+    }
+
+    @Test
+    public void testPeekNextWithEmptyQueue() {
+        // fillCount가 0이면 큐가 비어있고, peekNext가 자동으로 채워야 함
+        NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 1);
+        
+        // 큐를 비우기
+        model.getBlock();
+        
+        // peekNext는 자동으로 큐를 채워야 함
+        Block peeked = model.peekNext();
+        assertNotNull("peekNext는 빈 큐를 자동으로 채워야 합니다", peeked);
+        assertTrue("peekNext는 Block 인스턴스를 반환해야 합니다", peeked instanceof Block);
+    }
+
+    @Test
+    public void testPeekNextMultipleTimes() {
+        NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
+        
+        // 여러 번 peekNext 호출
+        Block peek1 = model.peekNext();
+        Block peek2 = model.peekNext();
+        Block peek3 = model.peekNext();
+        
+        // 모두 같은 타입이어야 함
+        assertEquals("여러 번 peekNext를 호출해도 같은 블록을 반환해야 합니다",
+                    peek1.getClass(), peek2.getClass());
+        assertEquals("여러 번 peekNext를 호출해도 같은 블록을 반환해야 합니다",
+                    peek2.getClass(), peek3.getClass());
+    }
 }

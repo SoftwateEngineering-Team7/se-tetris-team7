@@ -4,6 +4,7 @@ import org.tetris.Router;
 import org.tetris.game.model.Board;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.ScoreModel;
+import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -52,10 +53,19 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private HBox gameOverOverlay;
     
     @FXML
+    private HBox pauseOverlay;
+    
+    @FXML
     private Button restartButton;
     
     @FXML
     private Button menuButton;
+    
+    @FXML
+    private Button resumeButton;
+    
+    @FXML
+    private Button pauseMenuButton;
     
     /** 모델 및 기타 필드 **/
 
@@ -72,7 +82,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
     
     private Canvas boardCanvas;
     private GraphicsContext gc;
+    private Canvas nextBlockCanvas;
+    private GraphicsContext nextBlockGc;
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
+    private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
 
     private Point boardSize;
     
@@ -114,12 +127,16 @@ public class GameController extends BaseController<GameModel> implements RouterA
     
     private void setupUI() {
         setupCanvas();
+        setupNextBlockCanvas();
         
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
+        updateNextBlockPreview();
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        pauseOverlay.setVisible(false);
+        pauseOverlay.setManaged(false);
     }
     
     private void setBoardSize(){
@@ -138,8 +155,46 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameBoard.getChildren().clear();
         gameBoard.getChildren().add(boardCanvas);
         
+        // Pane의 크기가 결정된 후 Canvas를 중앙에 배치
+        gameBoard.widthProperty().addListener((obs, oldVal, newVal) -> {
+            double centerX = (newVal.doubleValue() - canvasWidth) / 2.0;
+            boardCanvas.setLayoutX(centerX);
+        });
+        
+        gameBoard.heightProperty().addListener((obs, oldVal, newVal) -> {
+            double centerY = (newVal.doubleValue() - canvasHeight) / 2.0;
+            boardCanvas.setLayoutY(centerY);
+        });
+        
         // 초기 보드 그리기
         updateGameBoard();
+    }
+    
+    private void setupNextBlockCanvas() {
+        // Next Block 프리뷰를 위한 Canvas 생성 (Pane과 같은 크기)
+        double paneWidth = nextBlockPane.getPrefWidth();
+        double paneHeight = nextBlockPane.getPrefHeight();
+        
+        nextBlockCanvas = new Canvas(paneWidth, paneHeight);
+        nextBlockGc = nextBlockCanvas.getGraphicsContext2D();
+        
+        // nextBlockPane에 Canvas 추가
+        nextBlockPane.getChildren().clear();
+        nextBlockPane.getChildren().add(nextBlockCanvas);
+        
+        // Pane의 크기가 변경되면 Canvas 크기도 조정
+        nextBlockPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            nextBlockCanvas.setWidth(newVal.doubleValue());
+            updateNextBlockPreview();
+        });
+        
+        nextBlockPane.heightProperty().addListener((obs, oldVal, newVal) -> {
+            nextBlockCanvas.setHeight(newVal.doubleValue());
+            updateNextBlockPreview();
+        });
+        
+        // 초기 Next Block 그리기
+        updateNextBlockPreview();
     }
     
     private void setupEventHandlers() {
@@ -158,6 +213,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         pauseButton.setOnAction(e -> togglePause());
         restartButton.setOnAction(e -> restartGame());
         menuButton.setOnAction(e -> goToMenu());
+        resumeButton.setOnAction(e -> resumeGame());
+        pauseMenuButton.setOnAction(e -> goToMenuFromPause());
     }
     
     private void setupKeyboardInput() {
@@ -264,6 +321,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
+        updateNextBlockPreview();
     }
     
     private void lockCurrentBlock() {
@@ -308,11 +366,26 @@ public class GameController extends BaseController<GameModel> implements RouterA
                 if (cellValue == 0) {
                     // 빈 칸 - 검은색
                     gc.setFill(Color.BLACK);
-                    gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    gc.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 } else {
                     // 셀 값에 따른 색상 매핑
                     gc.setFill(getCellColor(cellValue)); 
-                    gc.fillRect(3 + c * CELL_SIZE, 3 + r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    gc.fillRect(
+                        c * CELL_SIZE, 
+                        r * CELL_SIZE, 
+                        CELL_SIZE - 2, 
+                        CELL_SIZE - 2
+                    );
+                    
+                    // 테두리 효과
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(1);
+                    gc.strokeRect(
+                        c * CELL_SIZE, 
+                        r * CELL_SIZE, 
+                        CELL_SIZE - 2, 
+                        CELL_SIZE - 2
+                    );
                 }
             }
         }
@@ -344,14 +417,89 @@ public class GameController extends BaseController<GameModel> implements RouterA
         linesLabel.setText(String.valueOf(gameModel.getTotalLinesCleared()));
     }
     
+    private void updateNextBlockPreview() {
+        if (nextBlockGc == null) return;
+        
+        double canvasWidth = nextBlockCanvas.getWidth();
+        double canvasHeight = nextBlockCanvas.getHeight();
+        
+        // Canvas 초기화 (투명 배경)
+        nextBlockGc.clearRect(0, 0, canvasWidth, canvasHeight);
+        
+        // 다음 블록 가져오기
+        Block nextBlock = nextBlockModel.peekNext();
+        if (nextBlock == null) return;
+ 
+        Color blockColor = nextBlock.getColor();
+        
+        // 블록 크기 계산
+        int blockWidth = nextBlock.getSize().c;
+        int blockHeight = nextBlock.getSize().r;
+ 
+        // 중앙 정렬을 위한 오프셋 계산
+        double offsetX = (canvasWidth - blockWidth * PREVIEW_CELL_SIZE) / 2.0;
+        double offsetY = (canvasHeight - blockHeight * PREVIEW_CELL_SIZE) / 2.0;
+        
+        // 블록 그리기
+        for (int r = 0; r < blockHeight; r++) {
+            for (int c = 0; c < blockWidth; c++) {
+                if (nextBlock.getCell(r, c) != 0) {
+                    nextBlockGc.setFill(blockColor);
+                    nextBlockGc.fillRect(
+                        offsetX + c * PREVIEW_CELL_SIZE, 
+                        offsetY + r * PREVIEW_CELL_SIZE, 
+                        PREVIEW_CELL_SIZE - 2, 
+                        PREVIEW_CELL_SIZE - 2
+                    );
+                    
+                    // 테두리 효과
+                    nextBlockGc.setStroke(Color.WHITE);
+                    nextBlockGc.setLineWidth(1);
+                    nextBlockGc.strokeRect(
+                        offsetX + c * PREVIEW_CELL_SIZE, 
+                        offsetY + r * PREVIEW_CELL_SIZE, 
+                        PREVIEW_CELL_SIZE - 2, 
+                        PREVIEW_CELL_SIZE - 2
+                    );
+                }
+            }
+        }
+    }
+    
     private void togglePause() {
         if (gameModel.isGameOver()) return;
         
         gameModel.setPaused(!gameModel.isPaused());
-        pauseButton.setText(gameModel.isPaused() ? "RESUME" : "PAUSE");
         
-        if (!gameModel.isPaused()) {
-            root.requestFocus();
+        if (gameModel.isPaused()) {
+            showPauseOverlay();
+        } else {
+            hidePauseOverlay();
+        }
+    }
+    
+    private void showPauseOverlay() {
+        pauseOverlay.setVisible(true);
+        pauseOverlay.setManaged(true);
+    }
+    
+    private void hidePauseOverlay() {
+        pauseOverlay.setVisible(false);
+        pauseOverlay.setManaged(false);
+        root.requestFocus();
+    }
+    
+    private void resumeGame() {
+        gameModel.setPaused(false);
+        hidePauseOverlay();
+    }
+    
+    private void goToMenuFromPause() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        if (router != null) {
+            router.showStartMenu();
         }
     }
     
@@ -362,6 +510,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // UI 초기화
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
+        pauseOverlay.setVisible(false);
+        pauseOverlay.setManaged(false);
+        
         // 디스플레이 업데이트
         updateScoreDisplay();
         updateLevelDisplay();
