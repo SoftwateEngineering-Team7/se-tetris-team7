@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.tetris.menu.setting.Setting;
+import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.model.SettingMenuModel;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;

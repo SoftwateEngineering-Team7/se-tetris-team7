@@ -1,4 +1,4 @@
-package org.tetris.menu.setting;
+package org.tetris.menu.setting.model;
 
 import static org.junit.Assert.*;
 
