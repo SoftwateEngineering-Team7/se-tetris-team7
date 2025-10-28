@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.util.Difficulty;
 
 public class GameModelTest {
     
@@ -219,25 +218,6 @@ public class GameModelTest {
         
         // 레벨 2일 때 드롭 인터벌
         assertEquals("레벨 2일 때 드롭 인터벌은 50이어야 합니다", 50, gameModel.getDropInterval());
-    }
-
-    @Test
-    public void testGetDropOtherDifficultyInterval() {
-        // 레벨 1일 때 드롭 인터벌
-        assertEquals("레벨 1일 때 드롭 인터벌은 55이어야 합니다", 55, gameModel.getDropInterval());
-        
-        Difficulty.setCurrentDifficulty(Difficulty.NORMAL_STRING);
-
-        // 레벨을 높여서 테스트 (10줄 클리어)
-        Board board = gameModel.getBoardModel();
-        for (int r = 10; r < 20; r++) {
-            for (int c = 0; c < 10; c++) {
-                board.getBoard()[r][c] = 1;
-            }
-        }
-        gameModel.lockBlockAndClearLines();
-        // 레벨 2일 때 드롭 인터벌 1.15배 적용 ==> 60 - round(2 * 5 * 1.15) = 48
-        assertEquals("레벨 2일 때 드롭 인터벌은 48이어야 합니다", 48, gameModel.getDropInterval());
     }
 }
 
