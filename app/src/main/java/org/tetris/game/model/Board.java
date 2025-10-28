@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.tetris.game.model.blocks.*;
-import org.tetris.game.model.items.*;
 import org.tetris.shared.BaseModel;
 import org.util.Point;
 
@@ -16,9 +15,6 @@ public class Board extends BaseModel {
     public Block activeBlock;
     private Point curPos;
     private Point initialPos;
-
-    private boolean isItemMode = false;
-    private Item activeItem = null;
 
     // Board 생성자
     public Board() {
