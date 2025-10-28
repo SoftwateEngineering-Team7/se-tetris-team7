@@ -26,6 +26,10 @@ public abstract class Item {
         return position;
     }
 
+    public Point getItemPositionOnBoard(Point blockPos) {
+        return new Point(blockPos.subtract(position));
+    }
+
     private final static Item[] itemPool = {
         new LItem(),
         new HItem(),

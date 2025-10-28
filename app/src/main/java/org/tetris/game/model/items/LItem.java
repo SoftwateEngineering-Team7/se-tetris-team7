@@ -41,7 +41,8 @@ public class LItem extends Item {
 
     @Override
     public void Activate(Board board) {
-        // Activate the item (e.g., apply its effect)
+        Point blockPos = board.getCurPos();   
+        board.clearALine(getItemPositionOnBoard(blockPos).r);
     }
     
 }
