@@ -31,18 +31,23 @@ public class LItem extends Item {
                 count++;
                 if (count == itemIndex) {
                     shape[r][c] = itemID;
-                    setPosition(new Point(r, c));
                 }
             }
         }
 
-        return block.reShape(shape);
+        itemBlock = block.reShape(shape);
+        return itemBlock;
     }
 
     @Override
     public void Activate(Board board) {
-        Point blockPos = board.getCurPos();   
-        board.clearALine(getItemPositionOnBoard(blockPos).r);
+        Point blockPos = board.getCurPos();
+
+        for (Point p : itemBlock.getBlockPositions()) {
+            if (itemBlock.getCell(p) == itemID) {
+                int row = blockPos.r - itemBlock.pivot.r + p.r;
+                board.clearALine(row);
+            }
+        }
     }
-    
 }
