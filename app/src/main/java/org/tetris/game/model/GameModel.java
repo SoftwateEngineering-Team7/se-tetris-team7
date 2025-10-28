@@ -1,6 +1,7 @@
 package org.tetris.game.model;
 
 import org.tetris.shared.BaseModel;
+import org.util.Difficulty;
 import org.tetris.game.model.blocks.Block;
 
 public class GameModel extends BaseModel {
@@ -102,6 +103,7 @@ public class GameModel extends BaseModel {
     
     // 레벨에 따른 낙하 속도 계산
     public int getDropInterval() {
-        return Math.max(10, 60 - (level * 5));
+        float difficultyMul = Difficulty.getSpeedMultiplier();
+        return Math.max(10, 60 - Math.round(level * 5 * difficultyMul));
     }
 } 
