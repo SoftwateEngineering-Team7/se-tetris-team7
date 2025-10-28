@@ -2,10 +2,6 @@ package org.tetris.game.model;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import org.junit.Before;
 import org.junit.Test;
 import org.tetris.game.model.blocks.*;
 
