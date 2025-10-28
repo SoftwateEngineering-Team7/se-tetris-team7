@@ -17,4 +17,14 @@ public class OBlock extends Block {
     public OBlock() {
         super(O_SHAPE, O_POINT, O_COLOR);
     }
+
+    @Override
+    public void rotateCW() {
+        return;
+    }
+
+    @Override
+    public void rotateCCW() {
+        return;
+    }
 }
