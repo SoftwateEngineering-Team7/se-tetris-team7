@@ -17,7 +17,7 @@ public class GameModel extends BaseModel {
     private int localLineCleared = 0;
     private int level;
 
-    private boolean isItemMode = true;
+    private boolean isItemMode = true; // TODO: 기본값 false로 변경
     private boolean isItemUsed = false;
     private Item activeItem = Item.getRandomItem();
 
@@ -74,6 +74,7 @@ public class GameModel extends BaseModel {
         this.isPaused = paused;
     }
     
+    // TODO: 난이도에 따른 블럭 출현 확률 설정 + 게임 시작 전에 호출
     public void setGameStart(Difficulty difficulty, boolean itemMode)
     {
         this.isItemMode = itemMode;
