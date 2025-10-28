@@ -5,6 +5,7 @@ import org.tetris.Router;
 import org.tetris.menu.start.model.StartMenuModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
+import org.util.KeyLayout;
 
 import java.util.ArrayList;
 import javafx.animation.KeyFrame;
@@ -32,7 +33,8 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private static final String TEXT_EXIT = "종료";
     
     // 메시지 텍스트 상수
-    private static final String TEXT_WRONG_INPUT = "잘못된 입력입니다.\n위/아래 방향키와 Enter를 사용하세요.";
+    private static final String TEXT_WRONG_INPUT_Arrows = "잘못된 입력입니다.\n방향키와 Enter를 사용하세요.";
+    private static final String TEXT_WRONG_INPUT_WASD = "잘못된 입력입니다.\nWASD키와 Enter를 사용하세요.";
 
     private static final String STYLE_TITLE = "-fx-font-size: ";
     private static final String PX_STRING = "px;";
@@ -122,7 +124,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     }
 
     private void setupWrongInputLabelText() {
-        wrongInputLabel.setText(TEXT_WRONG_INPUT);
+        wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
     }
 
     public void bindInput() {
@@ -155,9 +157,10 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     }
 
     private void handleKey(KeyEvent e) {
-        if (e.getCode() == KeyCode.UP)
+        KeyCode code = e.getCode();
+        if (code == KeyLayout.getDownKey() || e.getCode() == KeyLayout.getRightKey() )
             setHighlightedButton(-1);
-        else if (e.getCode() == KeyCode.DOWN)
+        else if (code == KeyLayout.getUpKey() || e.getCode() == KeyLayout.getLeftKey())
             setHighlightedButton(+1);
         else if (e.getCode() == KeyCode.ENTER)
             fire();
@@ -167,6 +170,12 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     private void showWrongInputLabel() {
         wrongInputLabel.setVisible(true);
+        
+        if(KeyLayout.getCurrentLayout() == KeyLayout.KEY_ARROWS) {
+            wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
+        } else {
+            wrongInputLabel.setText(TEXT_WRONG_INPUT_WASD);
+        }
 
         if (hideMessageTimeline != null)
             hideMessageTimeline.stop();
