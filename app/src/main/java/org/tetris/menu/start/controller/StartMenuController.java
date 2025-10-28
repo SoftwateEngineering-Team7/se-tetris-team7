@@ -159,9 +159,9 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private void handleKey(KeyEvent e) {
         KeyCode code = e.getCode();
         if (code == KeyLayout.getDownKey() || e.getCode() == KeyLayout.getRightKey() )
-            setHighlightedButton(-1);
-        else if (code == KeyLayout.getUpKey() || e.getCode() == KeyLayout.getLeftKey())
             setHighlightedButton(+1);
+        else if (code == KeyLayout.getUpKey() || e.getCode() == KeyLayout.getLeftKey())
+            setHighlightedButton(-1);
         else if (e.getCode() == KeyCode.ENTER)
             fire();
         else
