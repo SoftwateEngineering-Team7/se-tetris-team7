@@ -1,13 +1,17 @@
 package org.tetris.game.controller;
 
 import org.tetris.Router;
+
 import org.tetris.game.model.Board;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.ScoreModel;
 import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.NextBlockModel;
+
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
+
+import org.util.Difficulty;
 import org.util.GameColor;
 import org.util.Point;
 
@@ -274,6 +278,17 @@ public class GameController extends BaseController<GameModel> implements RouterA
         lockCurrentBlock();
     }
     
+    /**
+     * 게임 모드 설정
+     * @param itemMode 아이템 모드 여부
+     * @param difficulty 난이도
+     */
+    public void setUpGameMode(boolean itemMode, Difficulty difficulty)
+    {
+        gameModel.setItemMode(itemMode);
+        gameModel.setDifficulty(difficulty);
+    }
+
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override

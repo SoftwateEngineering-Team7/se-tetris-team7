@@ -57,7 +57,7 @@ public class RouterTest {
         }
         
         try {
-            router.showGamePlaceholder();
+            router.showGamePlaceholder(false);
         } catch (Exception e) {
             // Stage가 null이므로 예외 발생 가능
             assertTrue("예상된 예외가 발생해야 합니다", 
