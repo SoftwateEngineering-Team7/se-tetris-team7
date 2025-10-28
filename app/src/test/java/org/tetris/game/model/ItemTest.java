@@ -34,4 +34,5 @@ public class ItemTest {
         int itemValue = itemBlock.getCell(itemPos.r, itemPos.c);
         assertTrue(itemValue == 9);
     }
+    
 }

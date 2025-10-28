@@ -9,6 +9,7 @@ public abstract class Item {
 
     protected Point position = new Point(0, 0);
     protected int itemID;
+    protected Block itemBlock;
 
     protected Item(int id) {
         this.itemID = id;
@@ -27,14 +28,11 @@ public abstract class Item {
     }
 
     public Point getItemPositionOnBoard(Point blockPos) {
-        return new Point(blockPos.subtract(position));
+        return new Point(blockPos.add(itemBlock.toPivot(position)));
     }
 
     private final static Item[] itemPool = {
         new LItem(),
-        new HItem(),
-        new BItem(),
-        new CItem()
     };
 
     public static Item getRandomItem() {
