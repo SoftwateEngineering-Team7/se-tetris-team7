@@ -29,8 +29,7 @@ public class Board extends BaseModel{
         board = new int[height][width];
         activeBlock = null;
 
-        // TODO: 블럭 생성 위치가 r = 0 이면 게임 오버 처리됨(게임 오버 처리 로직 수정 필요)
-        initialPos = new Point(2, width / 2);
+        initialPos = new Point(-1, width / 2);
         curPos = new Point(initialPos);
     }
 
@@ -71,21 +70,33 @@ public class Board extends BaseModel{
         }
     }
 
-    // 배치 시도 후 가능 여부 반환
-    public boolean isValidPos(Point pos, Block block) {
-        for (int r = 0; r < block.height(); r++) {
-            for (int c = 0; c < block.width(); c++) {
-                if (block.getCell(r, c) != 0) {
-                    int row = pos.r - block.pivot.r + r;
-                    int col = pos.c - block.pivot.c + c;
+        // 배치 시도 후 가능 여부 반환
+    public boolean isValidPos(Point pos, Block activeBlock) {
+        for (int r = 0; r < activeBlock.height(); r++) {
+            for (int c = 0; c < activeBlock.width(); c++) {
+                if (activeBlock.getCell(r, c) != 0) {
+                    int row = pos.r - activeBlock.pivot.r + r;
+                    int col = pos.c - activeBlock.pivot.c + c;
 
-                    if (!isInBound(row, col) || board[row][col] != 0) {
-                        // System.out.println("Collision occurred.");
+                    // 위쪽 경계를 벗어나는 셀은 무시 (화면 위쪽에서 블록이 시작할 수 있음)
+                    if (row < 0) {
+                        continue;
+                    }
+                    
+                    // 좌, 우, 하 경계를 벗어나면 false 반환
+                    if (col < 0 || col >= width || row >= height) {
+                        return false;
+                    }
+                    
+                    // 경계 안에 있고 충돌이 발생하면 false 반환
+                    if (board[row][col] != 0) {
+                        System.out.println("Collision occurred.");
                         return false;
                     }
                 }
             }
-        }   
+        }
+
         return true;
     }
 

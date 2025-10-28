@@ -9,6 +9,10 @@ public class GameModel extends BaseModel {
     private ScoreModel scoreModel;
     private int totalLinesCleared;
     private int level;
+    
+    // 게임 상태
+    private boolean isGameOver;
+    private boolean isPaused;
 
     public GameModel() {
         this.board = new Board();
@@ -16,6 +20,8 @@ public class GameModel extends BaseModel {
         this.scoreModel = new ScoreModel();
         this.totalLinesCleared = 0;
         this.level = 1;
+        this.isGameOver = false;
+        this.isPaused = false;
         
         // 첫 블럭 설정
         spawnNewBlock();
@@ -41,10 +47,29 @@ public class GameModel extends BaseModel {
         return level;
     }
     
-    // 새 블럭 생성 (성공 여부 반환)
-    public boolean spawnNewBlock() {
+    public boolean isGameOver() {
+        return isGameOver;
+    }
+    
+    public void setGameOver(boolean gameOver) {
+        this.isGameOver = gameOver;
+    }
+    
+    public boolean isPaused() {
+        return isPaused;
+    }
+    
+    public void setPaused(boolean paused) {
+        this.isPaused = paused;
+    }
+    
+    // 새 블럭 생성 (게임 오버 판단은 Model에서)
+    public void spawnNewBlock() {
         Block newBlock = nextBlockModel.getBlock();
-        return board.setActiveBlock(newBlock);
+        boolean spawned = board.setActiveBlock(newBlock);
+        if (!spawned) {
+            isGameOver = true;  // Model이 게임 오버 상태 관리
+        }
     }
     
     // 블럭 고정 및 라인 클리어 처리
@@ -70,6 +95,13 @@ public class GameModel extends BaseModel {
         scoreModel.reset();
         totalLinesCleared = 0;
         level = 1;
+        isGameOver = false;
+        isPaused = false;
         spawnNewBlock();
+    }
+    
+    // 레벨에 따른 낙하 속도 계산
+    public int getDropInterval() {
+        return Math.max(10, 60 - (level * 5));
     }
 } 

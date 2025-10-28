@@ -67,13 +67,13 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private Router router;
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
+    private long lastDropTime = 0; // 마지막 블록 낙하 시간
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
     
     private Canvas boardCanvas;
     private GraphicsContext gc;
     private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
 
-    private int frameCounter = 0;
     private Point boardSize;
     
     private boolean isPaused = false;
@@ -104,6 +104,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // 게임 상태 초기화
         gameModel.reset();
         lastUpdate = 0;
+        lastDropTime = 0;
         
         setBoardSize();
         setupUI();
@@ -167,6 +168,13 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
     
     private void handleKeyPress(KeyEvent e) {
+        if (gameModel.isGameOver() || gameModel.isPaused()) {
+            if (e.getCode() == KeyCode.P) {
+                togglePause();
+            }
+            e.consume();
+            return;
+        }
         
         KeyCode code = e.getCode();
 
@@ -203,18 +211,25 @@ public class GameController extends BaseController<GameModel> implements RouterA
         e.consume();
     }
     
+    private void handleHardDrop() {
+        int dropDistance = boardModel.hardDrop();
+        scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
+        lockCurrentBlock();
+    }
+    
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 if (lastUpdate == 0) {
                     lastUpdate = now;
+                    lastDropTime = now;
                     return;
                 }
                 
                 long elapsed = now - lastUpdate;
                 if (elapsed >= FRAME_TIME) {
-                    update();
+                    update(now);
                     lastUpdate = now;
                 }
             }
@@ -222,11 +237,29 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameLoop.start();
     }
     
-    private void update() {
+    private void update(long now) {
+        if (gameModel.isPaused() || gameModel.isGameOver()) {
+            return;
+        }
         
-        frame++;
-        model.autoDown();
+        // 레벨에 따른 블록 낙하 간격 (밀리초 단위)
+        // dropInterval은 프레임 수이므로, 프레임당 시간(~16.6ms)을 곱함
+        int dropIntervalFrames = gameModel.getDropInterval();
+        long dropIntervalNanos = dropIntervalFrames * FRAME_TIME;
+        
+        // 시간 기반 블록 낙하 처리
+        long timeSinceLastDrop = now - lastDropTime;
+        if (timeSinceLastDrop >= dropIntervalNanos) {
+            boolean moved = boardModel.autoDown();
+            
+            if (!moved) {
+                lockCurrentBlock();
+            }
+            
+            lastDropTime = now;
+        }
 
+        // UI는 매 프레임 업데이트 (60 FPS)
         updateGameBoard();
         updateScoreDisplay();
         updateLevelDisplay();
@@ -237,16 +270,18 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // 블럭 고정 및 라인 클리어
         int linesCleared = gameModel.lockBlockAndClearLines();
         
-        // 새 블럭 생성 (실패하면 게임 오버)
-        boolean spawned = gameModel.spawnNewBlock();
+        // 새 블럭 생성
+        gameModel.spawnNewBlock();
         
-        if (!spawned) {
+        // Model 상태 확인 후 UI 업데이트
+        if (gameModel.isGameOver()) {
             handleGameOver();
         }
         
         updateGameBoard();
     }
     
+    // UI 처리만 담당 (게임 오버 판단은 Model에서)
     private void handleGameOver() {
         if (gameLoop != null) {
             gameLoop.stop();
@@ -310,18 +345,23 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
     
     private void togglePause() {
-        pauseButton.setText(true ? "RESUME" : "PAUSE");
+        if (gameModel.isGameOver()) return;
+        
+        gameModel.setPaused(!gameModel.isPaused());
+        pauseButton.setText(gameModel.isPaused() ? "RESUME" : "PAUSE");
+        
+        if (!gameModel.isPaused()) {
+            root.requestFocus();
+        }
     }
     
     private void restartGame() {
-        // 게임 상태 초기화
+        // model.reset();
         gameModel.reset();
         
         // UI 초기화
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
-        pauseButton.setText("PAUSE");
-        
         // 디스플레이 업데이트
         updateScoreDisplay();
         updateLevelDisplay();
@@ -331,6 +371,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // 게임 루프 재시작
         if (gameLoop != null) {
             lastUpdate = 0;
+            lastDropTime = 0;
             gameLoop.start();
         }
         
@@ -351,9 +392,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameOverOverlay.setManaged(true);
     }
     
+    @Override
     public void cleanup() {
         if (gameLoop != null) {
             gameLoop.stop();
+            gameLoop = null;
         }
     }
 }
