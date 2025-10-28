@@ -492,6 +492,15 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void resumeGame() {
         gameModel.setPaused(false);
         hidePauseOverlay();
+
+        if (gameLoop != null) {
+            lastUpdate = 0;
+            lastDropTime = 0;
+            gameLoop.start();
+        } else {
+            startGameLoop();
+        }
+        root.requestFocus();
     }
     
     private void goToMenuFromPause() {
