@@ -1,6 +1,5 @@
 package org.tetris.menu.setting.model;
 
-import org.tetris.menu.setting.Setting;
 import org.tetris.shared.BaseModel;
 
 public class SettingMenuModel extends BaseModel {

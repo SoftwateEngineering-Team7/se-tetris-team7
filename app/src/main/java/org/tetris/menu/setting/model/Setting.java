@@ -1,4 +1,4 @@
-package org.tetris.menu.setting;
+package org.tetris.menu.setting.model;
 
 import java.io.*;
 import java.nio.file.*;
@@ -8,8 +8,6 @@ import org.util.Difficulty;
 import org.util.GameColor;
 import org.util.KeyLayout;
 import org.util.ScreenPreset;
-
-import javafx.scene.input.KeyCode;
 
 public class Setting {
     private static final String DEFAULT_FILE_NAME = "setting.txt";

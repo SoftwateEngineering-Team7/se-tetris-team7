@@ -1,16 +1,21 @@
 package org.tetris;
 
+import org.tetris.menu.setting.model.Setting;
+import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.shared.*;
+import org.util.ScreenPreset;
+
 import javafx.stage.Stage;
 
 public final class Router {
     private final Stage stage;
 
-    // 화면별 팩토리들을 주입 (원하는 것만)
+    // 화면별 팩토리들을 주입
     private final StartMenuFactory startMenuFactory;
+    private final Setting setting; // 전역 Setting 객체
     private final MvcFactory<?, ?> settingsFactory;
     private final MvcFactory<?, ?> gameFactory;
 
@@ -18,11 +23,13 @@ public final class Router {
 
     public Router(Stage stage) {
         this.stage = stage;
+        this.setting = new Setting();
 
         this.startMenuFactory = new StartMenuFactory();
-        this.settingsFactory = new ScoreBoardFactory();
+        this.settingsFactory = new SettingMenuFactory(setting);
         this.gameFactory = new GameFactory();
 
+        setStageSize();
         stage.setTitle("Tetris");
         stage.setResizable(false);
     }
@@ -43,6 +50,17 @@ public final class Router {
 
     public void exitGame() {
         stage.close();
+    }
+
+    // Setting getter (필요한 경우)
+    public Setting getSetting() {
+        return setting;
+    }
+
+    public void setStageSize() {
+        stage.setWidth(ScreenPreset.getWidth());
+        stage.setHeight(ScreenPreset.getHeight());
+        stage.centerOnScreen();
     }
 
     /* --------- 화면 전환 로직 ---------- */
