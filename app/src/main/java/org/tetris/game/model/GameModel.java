@@ -7,7 +7,7 @@ import org.tetris.game.model.items.*;
 
 public class GameModel extends BaseModel {
 
-    private final static int ITEM_MODE_LINE_THRESHOLD = 10;
+    private final static int ITEM_MODE_LINE_THRESHOLD = 5;
 
     private final NextBlockModel nextBlockModel;
     private final Board board;
@@ -17,7 +17,7 @@ public class GameModel extends BaseModel {
     private int localLineCleared = 0;
     private int level;
 
-    private boolean isItemMode = true; // TODO: 기본값 false로 변경
+    private boolean isItemMode = false;
     private boolean isItemUsed = false;
     private Item activeItem = Item.getRandomItem();
 
@@ -73,12 +73,15 @@ public class GameModel extends BaseModel {
     public void setPaused(boolean paused) {
         this.isPaused = paused;
     }
-    
-    // TODO: 난이도에 따른 블럭 출현 확률 설정 + 게임 시작 전에 호출
-    public void setGameStart(Difficulty difficulty, boolean itemMode)
-    {
+
+    public void setItemMode(boolean itemMode) {
         this.isItemMode = itemMode;
-        //TODO: this.nextBlockModel.setBlockProbList(difficulty.getBlockProbList());
+        System.out.println("Item Mode: " + itemMode);
+    }
+
+    public void setDifficulty(Difficulty difficulty)
+    {
+        // this.nextBlockModel.setBlockProbList(difficulty.getBlockProbList());
     }
 
     // 새 블럭 생성 (게임 오버 판단은 Model에서)
@@ -96,6 +99,14 @@ public class GameModel extends BaseModel {
     }
 
     public void updateModels(int linesCleared) {
+
+        if (isItemMode && !isItemUsed) {
+            isItemUsed = true;
+            activateItem();
+            scoreModel.itemActivated();
+        }
+
+
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
             localLineCleared += linesCleared;
@@ -105,12 +116,6 @@ public class GameModel extends BaseModel {
 
             updateLevel();
             updateItemMode();
-        }
-        
-        if (isItemMode && !isItemUsed) {
-            isItemUsed = true;
-            activateItem();
-            scoreModel.itemActivated();
         }
 
         return;

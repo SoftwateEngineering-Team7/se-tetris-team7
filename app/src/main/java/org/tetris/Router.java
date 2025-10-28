@@ -5,7 +5,7 @@ import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.game.GameFactory;
-
+import org.tetris.game.controller.GameController;
 import org.tetris.scoreboard.controller.ScoreBoardController;
 
 import org.tetris.shared.*;
@@ -49,8 +49,10 @@ public final class Router {
         show(settingsFactory);
     }
 
-    public void showGamePlaceholder() {
-        show(gameFactory);
+    public void showGamePlaceholder(boolean itemMode) {
+        var controller = show(gameFactory);
+        if (controller instanceof GameController gameController)
+            gameController.setUpGameMode(itemMode, null);
     }
 
     public void showScoreBoard(boolean fromGame, int score) {
