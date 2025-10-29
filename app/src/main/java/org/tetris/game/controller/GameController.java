@@ -97,9 +97,6 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private Point boardSize;
 
-    private boolean isPaused = false;
-    private boolean isGameOver = false;
-
     // === 아래로 교체 ===
     private boolean isFlashing = false; // 애니메이션 진행 여부
     private boolean flashOn = false; // on/off 상태
@@ -499,22 +496,24 @@ public class GameController extends BaseController<GameModel> implements RouterA
                 gc.setLineWidth(1);
                 gc.strokeRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
                 
+                // 셀 내 문자 그리기
                 String cellText = getCellText(cellValue);
                 if (!cellText.isEmpty()) {
                     gc.setFill(Color.BLACK); // 텍스트 색상
-                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, CELL_SIZE * 0.6));
-                    
+                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
+
                     // 텍스트 중앙 정렬
                     javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
                     text.setFont(gc.getFont());
                     double textWidth = text.getBoundsInLocal().getWidth();
                     double textHeight = text.getBoundsInLocal().getHeight();
-                    
-                    double textX = c * CELL_SIZE + (CELL_SIZE - textWidth) / 2;
-                    double textY = r * CELL_SIZE + (CELL_SIZE + textHeight) / 2 - 2;
-                    
+
+                    double textX = c * cellSize + (cellSize - textWidth) / 2;
+                    double textY = r * cellSize + (cellSize + textHeight) / 2 - 2;
+
                     gc.fillText(cellText, textX, textY);
                 }
+                
             }
         }
     }
@@ -561,7 +560,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
             case 10:
                 return "W";
             case 11:
-                return "H";
+                return "V";
             case 12:
                 return "B";
             case 13:

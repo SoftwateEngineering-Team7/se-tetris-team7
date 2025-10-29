@@ -53,7 +53,7 @@ public final class Router {
     public void showGamePlaceholder(boolean itemMode) {
         var controller = show(gameFactory);
         if (controller instanceof GameController gameController) {
-            gameController.setUpGameMode(itemMode, null);
+            gameController.setUpGameMode(itemMode);
             gameController.initialize();
         }
     }
