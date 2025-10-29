@@ -97,7 +97,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
         // 버튼 액션 핸들러 등록 (라우터 등록 후 등록 가능)
         buttons.get(0).setOnAction(e -> onGameStart());
-        buttons.get(1).setOnAction(e -> {});
+        buttons.get(1).setOnAction(e -> onItemGameStart());
         buttons.get(2).setOnAction(e -> onSettings());
         buttons.get(3).setOnAction(e -> onExit());
     }
@@ -228,7 +228,12 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     // FXML onAction
     @FXML
     public void onGameStart() {
-        router.showGamePlaceholder();
+        router.showGamePlaceholder(false);
+    }
+
+    @FXML
+    public void onItemGameStart() {
+        router.showGamePlaceholder(true);
     }
 
     @FXML

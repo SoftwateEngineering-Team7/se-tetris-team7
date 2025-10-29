@@ -34,4 +34,16 @@ public class ItemTest {
         int itemValue = itemBlock.getCell(itemPos.r, itemPos.c);
         assertTrue(itemValue == 9);
     }
+
+    @Test
+    public void testGetPosition() {
+        Block block = new TBlock();
+        Item item = new LItem();
+
+        Block itemBlock = item.GetItemBlock(block);
+        Point itemPos = item.getPosition();
+
+        int itemValue = itemBlock.getCell(itemPos.r, itemPos.c);
+        assertTrue(itemValue == 9);
+    }
 }

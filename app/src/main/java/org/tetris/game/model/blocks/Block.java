@@ -1,5 +1,7 @@
 package org.tetris.game.model.blocks;
 
+import java.util.ArrayList;
+
 import org.util.GameColor;
 import org.util.Point;
 
@@ -20,6 +22,7 @@ public abstract class Block {
 
         setSize();
         setBlockCount();
+        getBlockPoints();
     }
 
     public Point getSize() {
@@ -40,6 +43,36 @@ public abstract class Block {
 
     public int getCell(int r, int c) {
         return shape[r][c];
+    }
+    
+    public int getCell(Point p) {
+        return shape[p.r][p.c];
+    }
+
+    /**
+     * 블럭 좌표 리스트 반환 메서드
+     * @return 블럭 좌표 리스트
+     */
+    public ArrayList<Point> getBlockPoints() {
+        ArrayList<Point> blockPoints = new ArrayList<>();
+        for (int r = 0; r < size.r; r++) {
+            for (int c = 0; c < size.c; c++) {
+                if (shape[r][c] != 0) {
+                    blockPoints.add(new Point(r, c));
+                }
+            }
+        }
+        return blockPoints;
+    }
+
+    /**
+     * 피벗 기준 좌표 변환 메서드
+     * pos - pivot
+     * @param pos 기준 좌표
+     * @return 변환된 좌표
+     */
+    public Point toPivot(Point pos) {
+        return pos.subtract(pivot);
     }
 
     /**

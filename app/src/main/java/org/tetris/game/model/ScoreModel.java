@@ -3,6 +3,7 @@ package org.tetris.game.model;
 public class ScoreModel {
     private int score;
     private final int[] lineClearScores = {0, 1000, 3000, 5000, 8000}; // 0, 1, 2, 3, 4줄 클리어 시 점수
+    private final int itemActivationScore = 1000; // 아이템 활성화 시 점수
 
     public ScoreModel() {
         this.score = 0;
@@ -29,6 +30,11 @@ public class ScoreModel {
         else if (lines >= length) {
             score += lineClearScores[length - 1] * (lines - (length - 1));
         }
+    }
+
+    public void itemActivated()
+    {
+        score += itemActivationScore;
     }
 
     public void reset() {

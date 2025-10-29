@@ -2,14 +2,24 @@ package org.tetris.game.model;
 
 import org.tetris.shared.BaseModel;
 import org.util.Difficulty;
-import org.tetris.game.model.blocks.Block;
+import org.tetris.game.model.blocks.*;
+import org.tetris.game.model.items.*;
 
 public class GameModel extends BaseModel {
+
+    private final static int ITEM_MODE_LINE_THRESHOLD = 1;
+
     private final NextBlockModel nextBlockModel;
     private final Board board;
     private ScoreModel scoreModel;
+
     private int totalLinesCleared;
+    private int localLineCleared = 0;
     private int level;
+
+    private boolean isItemMode = false;
+    private boolean isItemUsed = false;
+    private Item activeItem = Item.getRandomItem();
 
     // 게임 상태
     private boolean isGameOver;
@@ -64,9 +74,24 @@ public class GameModel extends BaseModel {
         this.isPaused = paused;
     }
 
+    public void setItemMode(boolean itemMode) {
+        this.isItemMode = itemMode;
+        System.out.println("Item Mode: " + itemMode);
+    }
+
+    public void setDifficulty(Difficulty difficulty)
+    {
+        // this.nextBlockModel.setBlockProbList(difficulty.getBlockProbList());
+    }
+
     // 새 블럭 생성 (게임 오버 판단은 Model에서)
     public void spawnNewBlock() {
         Block newBlock = nextBlockModel.getBlock();
+
+        if (isItemMode && !isItemUsed) {
+            newBlock = activeItem.GetItemBlock(newBlock);
+        }
+
         boolean spawned = board.setActiveBlock(newBlock);
         if (!spawned) {
             isGameOver = true; // Model이 게임 오버 상태 관리
@@ -74,12 +99,26 @@ public class GameModel extends BaseModel {
     }
 
     public void updateModels(int linesCleared) {
+
+        if (isItemMode && !isItemUsed) {
+            isItemUsed = true;
+            activateItem();
+            scoreModel.itemActivated();
+        }
+
+
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
+            localLineCleared += linesCleared;
             board.collapse();
+
             scoreModel.lineCleared(linesCleared);
+
             updateLevel();
+            updateItemMode();
         }
+
+        return;
     }
 
     // 레벨 업데이트 (10줄마다 레벨 증가)
@@ -87,6 +126,23 @@ public class GameModel extends BaseModel {
         level = (totalLinesCleared / 10) + 1;
     }
 
+    public void updateItemMode()
+    {
+        if (!isItemMode) return;
+    
+        if (localLineCleared >= ITEM_MODE_LINE_THRESHOLD) {
+            localLineCleared = 0;
+            activeItem = Item.getRandomItem();
+            isItemUsed = false;
+        }
+    }
+
+    public void activateItem()
+    {
+        if (!isItemMode) return;
+        activeItem.Activate(board);
+    }
+    
     // 게임 리셋
     public void reset() {
         board.reset();

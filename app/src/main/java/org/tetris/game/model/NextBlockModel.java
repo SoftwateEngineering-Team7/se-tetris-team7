@@ -40,16 +40,22 @@ public class NextBlockModel
 	 */
 	public NextBlockModel(int[] blockProbList, int fillCount)
 	{
+		this.random = new Random();
+		this.nextBlocks = new LinkedList<Block>();
+		this.fillCount = fillCount;
+
+		setBlockProbList(blockProbList);
+	}
+
+	public void setBlockProbList(int[] blockProbList)
+	{
 		if(blockProbList.length != blockPoolList.size())
 			throw new IllegalArgumentException("blockProbList의 길이는 " + blockPoolList.size() + "이어야 합니다.");
 
 		this.blockProbList = blockProbList;
-		this.fillCount = fillCount;
-
-		this.random = new Random();
-		this.nextBlocks = new LinkedList<Block>();
-		
 		sumProb();
+
+		nextBlocks.clear();
 		fill();
 	}
 
@@ -59,6 +65,7 @@ public class NextBlockModel
 		for(var prob : blockProbList)
 			totalProb += prob;
 	}
+
 
 	private void fill()
 	{
