@@ -490,12 +490,12 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
                 Color fill = flashingThisCell ? Color.WHITE : getCellColor(cellValue);
                 gc.setFill(fill);
-                gc.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
+                gc.fillRect(c * cellSize, r * cellSize, cellSize - 2, cellSize - 2);
 
                 gc.setStroke(Color.WHITE);
                 gc.setLineWidth(1);
-                gc.strokeRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
-                
+                gc.strokeRect(c * cellSize, r * cellSize, cellSize - 2, cellSize - 2);
+
                 // 셀 내 문자 그리기
                 String cellText = getCellText(cellValue);
                 if (!cellText.isEmpty()) {
