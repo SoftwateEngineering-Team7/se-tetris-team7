@@ -289,10 +289,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
      * @param itemMode 아이템 모드 여부
      * @param difficulty 난이도
      */
-    public void setUpGameMode(boolean itemMode, Difficulty difficulty)
+    public void setUpGameMode(boolean itemMode)
     {
         gameModel.setItemMode(itemMode);
-        gameModel.setDifficulty(difficulty);
+        gameModel.setDifficulty();
     }
 
     private void startGameLoop() {
