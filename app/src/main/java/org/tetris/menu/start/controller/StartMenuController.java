@@ -83,7 +83,9 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         buttons.get(0).setOnAction(e -> onGameStart());
         buttons.get(1).setOnAction(e -> onItemGameStart());
         buttons.get(2).setOnAction(e -> onSettings());
-        buttons.get(3).setOnAction(e -> onExit());
+        buttons.get(3).setOnAction(e -> onShowNormalScoreboard());
+        buttons.get(4).setOnAction(e -> onShowItemScoreboard());
+        buttons.get(5).setOnAction(e -> onExit());
     }
 
     private void createMenuButtons() {
@@ -236,12 +238,12 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     @FXML
     public void onShowNormalScoreboard() {
-        
+        router.showScoreBoard(false, false, 0);
     }
 
     @FXML
     public void onShowItemScoreboard() {
-        
+        router.showScoreBoard(false, true, 0);
     }
 
     /*
