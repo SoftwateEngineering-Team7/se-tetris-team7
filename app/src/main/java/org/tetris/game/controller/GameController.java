@@ -428,6 +428,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
             gameLoop.stop();
         }
         showGameOver();
+        
     }
 
     private void updateGameBoard() {
@@ -673,6 +674,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void showGameOver() {
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
+        
+        router.showScoreBoard(true, scoreModel.getScore());
     }
 
     @Override

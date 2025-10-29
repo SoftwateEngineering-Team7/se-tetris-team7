@@ -11,6 +11,7 @@ import org.tetris.scoreboard.controller.ScoreBoardController;
 import org.tetris.shared.*;
 import org.util.ScreenPreset;
 
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public final class Router {
@@ -56,10 +57,14 @@ public final class Router {
     }
 
     public void showScoreBoard(boolean fromGame, int score) {
-        var controller = show(scoreBoardFactory);
+        var bundle = scoreBoardFactory.create();
+        var controller = bundle.controller();
+        
         if (controller instanceof ScoreBoardController sbc) {
             sbc.setFromGame(fromGame, score);
         }
+
+        showPopup(scoreBoardFactory, "Score Board");
     }
 
     public void exitGame() {
@@ -99,6 +104,37 @@ public final class Router {
         stage.show();
 
         current = bundle;
+        return bundle.controller();
+    }
+
+    private <M extends BaseModel, C extends BaseController<M>>
+    C showPopup(MvcFactory<M, C> factory, String title) {
+        // 새 화면 생성 + 연결
+        MvcBundle<M, ViewWrap, C> bundle = factory.create();
+
+        // 컨트롤러가 Router의 참조를 원하면 주입
+        if (bundle.controller() instanceof RouterAware aware) {
+            aware.setRouter(this);
+        }
+
+        // 팝업 Stage 생성
+        Stage popupStage = new Stage();
+        popupStage.setTitle(title);
+        popupStage.setScene(bundle.view().getScene());
+        
+        // 팝업 설정
+        popupStage.initModality(Modality.APPLICATION_MODAL); // 모달 팝업
+        popupStage.initOwner(stage); // 부모 창 설정
+        popupStage.setResizable(false);
+        
+        // 팝업 크기 설정 (필요에 따라 조정)
+        popupStage.setWidth(500);
+        popupStage.setHeight(425);
+        popupStage.centerOnScreen();
+
+        // 팝업 표시
+        popupStage.showAndWait(); // 팝업이 닫힐 때까지 대기
+
         return bundle.controller();
     }
 }
