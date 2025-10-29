@@ -13,7 +13,6 @@ import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 
-import org.util.Difficulty;
 import org.util.GameColor;
 import org.util.KeyLayout;
 import org.util.Point;
@@ -96,9 +95,6 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
 
     private Point boardSize;
-
-    private boolean isPaused = false;
-    private boolean isGameOver = false;
 
     // 애니메이션을 위한 필드 추가
     private boolean isFlashingRows = false;
@@ -491,7 +487,24 @@ public class GameController extends BaseController<GameModel> implements RouterA
                         r * cellSize,
                         cellSize - 2,
                         cellSize - 2);
-            
+                
+                // 셀 내 문자 그리기
+                String cellText = getCellText(cellValue);
+                if (!cellText.isEmpty()) {
+                    gc.setFill(Color.BLACK); // 텍스트 색상
+                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
+
+                    // 텍스트 중앙 정렬
+                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
+                    text.setFont(gc.getFont());
+                    double textWidth = text.getBoundsInLocal().getWidth();
+                    double textHeight = text.getBoundsInLocal().getHeight();
+
+                    double textX = c * cellSize + (cellSize - textWidth) / 2;
+                    double textY = r * cellSize + (cellSize + textHeight) / 2 - 2;
+
+                    gc.fillText(cellText, textX, textY);
+                }
                 
             }
         }
@@ -519,7 +532,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
             case 10:
                 return "W";
             case 11:
-                return "H";
+                return "V";
             case 12:
                 return "B";
             case 13:
