@@ -51,8 +51,10 @@ public final class Router {
 
     public void showGamePlaceholder(boolean itemMode) {
         var controller = show(gameFactory);
-        if (controller instanceof GameController gameController)
+        if (controller instanceof GameController gameController) {
             gameController.setUpGameMode(itemMode, null);
+            gameController.initialize();
+        }
     }
 
     public void showScoreBoard(boolean fromGame, int score) {
@@ -79,8 +81,7 @@ public final class Router {
 
     /* --------- 화면 전환 로직 ---------- */
 
-    private <M extends BaseModel, C extends BaseController<M>>
-    C show(MvcFactory<M, C> factory) {
+    private <M extends BaseModel, C extends BaseController<M>> C show(MvcFactory<M, C> factory) {
         // 이전 화면 정리
         if (current != null) {
             current.controller().cleanup();
