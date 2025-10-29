@@ -265,7 +265,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
             boardModel.rotate();
             updateGameBoard();
         } else if(code == KeyLayout.getDownKey()) {
-            boardModel.moveDown();
+            boolean moved = boardModel.moveDown();
+            if (moved) {
+                scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
+            }
             updateGameBoard();
         } else if(code == KeyCode.SPACE) {
             handleHardDrop();
@@ -337,7 +340,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
         if (timeSinceLastDrop >= dropIntervalNanos) {
             boolean moved = boardModel.autoDown();
 
-            if (!moved) {
+            if (moved) {
+                // 자동으로 1칸 떨어질 때마다 점수 획득
+                scoreModel.blockDropped();
+            } else {
                 lockCurrentBlock();
             }
 

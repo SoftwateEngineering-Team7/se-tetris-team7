@@ -4,6 +4,12 @@ public class ScoreModel {
     private int score;
     private final int[] lineClearScores = {0, 1000, 3000, 5000, 8000}; // 0, 1, 2, 3, 4줄 클리어 시 점수
     private final int itemActivationScore = 1000; // 아이템 활성화 시 점수
+    
+    // 블록 떨어질 때마다 획득하는 기본 점수 단위
+    private final int blockDropScore = 1;
+    
+    // 자동 낙하와 수동 낙하의 점수 배율
+    private final int softDropMultiplier = 1;  // 자동 낙하 (기본)
 
     public ScoreModel() {
         this.score = 0;
@@ -36,6 +42,25 @@ public class ScoreModel {
     {
         score += itemActivationScore;
     }
+    
+    /**
+     * 블록이 1칸 떨어질 때마다 호출 (자동 낙하)
+     * 기본적으로 1점 획득
+     */
+    public void blockDropped() {
+        score += blockDropScore * softDropMultiplier;
+    }
+    
+    /**
+     * 소프트 드롭 (수동으로 아래 키 누를 때)
+     * @param distance 떨어진 칸 수
+     */
+    public void softDrop(int distance) {
+        if (distance > 0) {
+            score += blockDropScore * softDropMultiplier * distance;
+        }
+    }
+    
 
     public void reset() {
         score = 0;
