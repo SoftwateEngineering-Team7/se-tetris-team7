@@ -22,6 +22,7 @@ import javafx.fxml.FXML;
 
 import javafx.animation.AnimationTimer;
 
+import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
@@ -91,7 +92,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private GraphicsContext gc;
     private Canvas nextBlockCanvas;
     private GraphicsContext nextBlockGc;
-    private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
+    private int cellSize = 26; // 각 셀의 크기 (픽셀)
     private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
 
     private Point boardSize;
@@ -131,7 +132,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     @FXML
-    protected void initialize() {
+    public void initialize() {
         super.initialize();
 
         // 이전 게임 루프가 있으면 정리
@@ -145,7 +146,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         lastDropTime = 0;
 
         setBoardSize();
-        setupUI();
+        Platform.runLater(() -> setupUI());
         setupEventHandlers();
         startGameLoop();
     }
@@ -169,9 +170,15 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void setupCanvas() {
+        double stageWidth = root.getScene().getWindow().getWidth();
+        double stageHeight = root.getScene().getWindow().getHeight();
+
+        // 화면 크기에 따라 셀 크기 비율 계산
+        cellSize = (int) Math.round(Math.min(stageWidth / 20, stageHeight / 22));
+
         // 보드 크기에 맞는 Canvas 생성
-        int canvasHeight = boardSize.r * CELL_SIZE;
-        int canvasWidth = boardSize.c * CELL_SIZE;
+        int canvasHeight = boardSize.r * cellSize;
+        int canvasWidth = boardSize.c * cellSize;
 
         boardCanvas = new Canvas(canvasWidth, canvasHeight);
         gc = boardCanvas.getGraphicsContext2D();
@@ -474,7 +481,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         // 전체 Canvas 초기화 (검은색 배경)
         gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, cols * CELL_SIZE, rows * CELL_SIZE);
+        gc.fillRect(0, 0, cols * cellSize, rows * cellSize);
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
