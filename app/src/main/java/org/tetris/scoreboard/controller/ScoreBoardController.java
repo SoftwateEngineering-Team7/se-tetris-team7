@@ -9,12 +9,13 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
 public class ScoreBoardController extends BaseController<ScoreBoard> {
 
     private int finishScore;
+    private String currentDifficulty;
 
     public ScoreBoardController(ScoreBoard scoreBoard)
     {
@@ -31,15 +32,16 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
 
     private void submitCurrentScore(int score, String name)
     {
-        model.insert(new ScoreInfo(score, name));
+        model.insert(new ScoreInfo(score, name, currentDifficulty != null ? currentDifficulty : "EASY"));
         model.writeHighScoreList();
     }
 
     @FXML private TableView<ScoreInfo> scoreTable;
     @FXML private TableColumn<ScoreInfo, String> nameColumn;
     @FXML private TableColumn<ScoreInfo, Integer> scoreColumn;
+    @FXML private TableColumn<ScoreInfo, String> difficultyColumn;
 
-    @FXML private AnchorPane inputPane;
+    @FXML private VBox inputPane;
     @FXML private Text scoreText;
     @FXML private TextField nameField;
     @FXML private Button submitButton;
@@ -47,11 +49,13 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
     @Override
     public void initialize()
     {
-        // name, score <-> ScoreInfo
+        // name, score, difficulty <-> ScoreInfo
         nameColumn.setCellValueFactory(cellData 
             -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().name()));
         scoreColumn.setCellValueFactory(cellData 
             -> new javafx.beans.property.SimpleIntegerProperty(cellData.getValue().score()).asObject());
+        difficultyColumn.setCellValueFactory(cellData 
+            -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().difficulty()));
         
         scoreText.setText(String.valueOf(getFinishScore()));
 
@@ -89,8 +93,19 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         }
     }
 
+    public void setDifficulty(String difficulty)
+    {
+        this.currentDifficulty = difficulty;
+    }
+
     public void setItemMode(boolean isItemMode){
         model.setHighScorePath(isItemMode);
+        updateScoreTable();
+    }
+
+    public void clearScoreBoard(boolean isItemMode){
+        setItemMode(isItemMode);
+        model.clear();
         updateScoreTable();
     }
 }
