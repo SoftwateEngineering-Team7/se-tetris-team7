@@ -265,21 +265,30 @@ public class Board extends BaseModel {
         }
     }
     
-    public void clearBomb(Point center)
-    {
-        int rCenter = center.r;
-        int cCenter = center.c;
+    public java.util.List<Point> clearBomb(Point center) {
+        java.util.List<Point> targets = new java.util.ArrayList<>(9);
+
+        int r0 = center.r;
+        int c0 = center.c;
 
         for (int dr = -1; dr <= 1; dr++) {
             for (int dc = -1; dc <= 1; dc++) {
-                int r = rCenter + dr;
-                int c = cCenter + dc;
+                int r = r0 + dr;
+                int c = c0 + dc;
 
-                if (isInBound(r, c)) {
-                    board[r][c] = 0;
-                }
+                if (!isInBound(r, c))
+                    continue;
+
+                // 비어있는 칸(0)은 굳이 추가하지 않으면 불필요한 작업을 줄일 수 있습니다.
+                // 만약 빈칸도 플래시하고 싶다면 아래 조건을 제거하세요.
+                if (board[r][c] == 0)
+                    continue;
+
+                targets.add(new Point(r, c));
             }
         }
+
+        return targets;
     }
 
     private boolean isRowEmpty(int r) {

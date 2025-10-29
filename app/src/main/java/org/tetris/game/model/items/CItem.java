@@ -2,6 +2,7 @@ package org.tetris.game.model.items;
 
 import java.util.Random;
 
+import org.tetris.game.controller.GameController;
 import org.tetris.game.model.Board;
 import org.tetris.game.model.blocks.*;
 import org.util.Point;
@@ -42,9 +43,8 @@ public class CItem extends Item {
         int row = blockPos.r - itemBlock.pivot.r + itemPos.r;
         int col = blockPos.c - itemBlock.pivot.c + itemPos.c;
 
-        board.clearRow(row);
-        board.clearColumn(col);
-        board.collapse();
+        GameController.addClearingCol(col);
+        GameController.addClearingRow(row);
     }
     
 }
