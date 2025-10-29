@@ -475,6 +475,23 @@ public class GameController extends BaseController<GameModel> implements RouterA
                     r * CELL_SIZE, 
                     CELL_SIZE - 2, 
                     CELL_SIZE - 2);
+                
+                String cellText = getCellText(cellValue);
+                if (!cellText.isEmpty()) {
+                    gc.setFill(Color.BLACK); // 텍스트 색상
+                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, CELL_SIZE * 0.6));
+                    
+                    // 텍스트 중앙 정렬
+                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
+                    text.setFont(gc.getFont());
+                    double textWidth = text.getBoundsInLocal().getWidth();
+                    double textHeight = text.getBoundsInLocal().getHeight();
+                    
+                    double textX = c * CELL_SIZE + (CELL_SIZE - textWidth) / 2;
+                    double textY = r * CELL_SIZE + (CELL_SIZE + textHeight) / 2 - 2;
+                    
+                    gc.fillText(cellText, textX, textY);
+                }
             }
         }
     }
@@ -490,6 +507,24 @@ public class GameController extends BaseController<GameModel> implements RouterA
             case 6: return GameColor.PURPLE.getColor();  // TBlock
             case 7: return GameColor.CYAN.getColor();    // ZBlock
             default: return Color.WHITE;
+        }
+    }
+
+    // 셀 값에 따른 문자 반환
+    private String getCellText(int cellValue) {
+        switch (cellValue) {
+            case 9:
+                return "L";
+            case 10:
+                return "W";
+            case 11:
+                return "H";
+            case 12:
+                return "B";
+            case 13:
+                return "C";
+            default:
+                return "";
         }
     }
 
