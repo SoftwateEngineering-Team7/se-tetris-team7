@@ -48,7 +48,7 @@ public class BlockTest {
     {
         // 블럭 좌표 리스트 테스트
         Block block = new TBlock();
-        var positions = block.getBlockPositions();
+        var positions = block.getBlockPoints();
 
         assertEquals(4, positions.size());
 

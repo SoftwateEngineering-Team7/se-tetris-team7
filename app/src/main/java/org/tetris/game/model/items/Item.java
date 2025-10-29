@@ -25,7 +25,7 @@ public abstract class Item {
     public Point getPosition() {
         Point position = new Point(0, 0);
 
-        for (Point p : itemBlock.getBlockPositions()) {
+        for (Point p : itemBlock.getBlockPoints()) {
             if (itemBlock.getCell(p) == itemID) {
                 position = new Point(p);
                 break;

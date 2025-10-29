@@ -22,7 +22,7 @@ public abstract class Block {
 
         setSize();
         setBlockCount();
-        getBlockPositions();
+        getBlockPoints();
     }
 
     public Point getSize() {
@@ -53,16 +53,16 @@ public abstract class Block {
      * 블럭 좌표 리스트 반환 메서드
      * @return 블럭 좌표 리스트
      */
-    public ArrayList<Point> getBlockPositions() {
-        ArrayList<Point> blockPositions = new ArrayList<>();
+    public ArrayList<Point> getBlockPoints() {
+        ArrayList<Point> blockPoints = new ArrayList<>();
         for (int r = 0; r < size.r; r++) {
             for (int c = 0; c < size.c; c++) {
                 if (shape[r][c] != 0) {
-                    blockPositions.add(new Point(r, c));
+                    blockPoints.add(new Point(r, c));
                 }
             }
         }
-        return blockPositions;
+        return blockPoints;
     }
 
     /**

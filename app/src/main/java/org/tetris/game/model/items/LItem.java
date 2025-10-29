@@ -18,23 +18,18 @@ public class LItem extends Item {
     public Block GetItemBlock(Block block) {
         Point size = block.getSize();
         int[][] shape = new int[size.r][size.c];
+        
+        var blockPoints = block.getBlockPoints();
 
-        Random rand = new Random();
-        int itemIndex = rand.nextInt(block.getBlockCount());
-        int count = 0;
-
-        for(int r = 0; r < size.r; r++){
-            for(int c = 0; c < size.c; c++){
-                shape[r][c] = block.getCell(r, c);
-                if(shape[r][c] == 0) continue;
-
-                count++;
-                if (count == itemIndex) {
-                    shape[r][c] = itemID;
-                }
-            }
+        for(Point p : blockPoints){
+            shape[p.r][p.c] = block.getCell(p);
         }
 
+        Random rand = new Random();
+        int itemIndex = rand.nextInt(blockPoints.size());
+        Point itemPoint = blockPoints.get(itemIndex);
+        shape[itemPoint.r][itemPoint.c] = itemID;
+        
         itemBlock = block.reShape(shape);
         return itemBlock;
     }
