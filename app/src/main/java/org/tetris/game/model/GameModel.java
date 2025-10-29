@@ -58,6 +58,10 @@ public class GameModel extends BaseModel {
         return level;
     }
 
+    public boolean isItemMode() {
+        return isItemMode;
+    }
+
     public boolean isGameOver() {
         return isGameOver;
     }

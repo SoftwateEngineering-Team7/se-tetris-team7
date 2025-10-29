@@ -58,12 +58,13 @@ public final class Router {
         }
     }
 
-    public void showScoreBoard(boolean fromGame, int score) {
+    public void showScoreBoard(boolean fromGame, boolean itemMode, int score) {
         var bundle = scoreBoardFactory.create();
         var controller = bundle.controller();
         
         if (controller instanceof ScoreBoardController sbc) {
             sbc.setFromGame(fromGame, score);
+            sbc.setItemMode(itemMode);
         }
 
         showPopup(scoreBoardFactory, "Score Board");
