@@ -1,3 +1,4 @@
+
 plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
@@ -78,6 +79,8 @@ test {
 tasks.register('packageApp', Exec) {
     dependsOn build
     group = 'distribution'
+version = '1.0.0'
+
     description = 'Build executable package with jpackage'
 
     doFirst {
