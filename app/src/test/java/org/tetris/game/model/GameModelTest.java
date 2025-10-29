@@ -204,22 +204,22 @@ public class GameModelTest {
 
         // 보드를 가득 채워서 새 블록을 배치할 수 없게 만듦
         Board board = gameModel.getBoardModel();
-        
-        // 먼저 현재 activeBlock을 제거 (보드 상단을 채우기 위해)
+
         if (board.activeBlock != null) {
             board.removeBlock(board.getCurPos(), board.activeBlock);
             board.activeBlock = null;
         }
-        
-        // 보드 상단 3줄을 채움
-        for (int r = 0; r < 3; r++) {
+
+        // 보드 상단 5줄을 채움 (초기 위치가 -1이고 I블록이 4칸이므로 5줄 채우면 확실)
+        for (int r = 0; r < 5; r++) {
             for (int c = 0; c < 10; c++) {
                 board.getBoard()[r][c] = 1;
             }
         }
 
-        // 새 블록 스폰 시도 -> initpos일때도 안 끝날 수 있어서 한번 더 시도
+        // 새 블록 스폰 시도
         gameModel.spawnNewBlock();
+        // initpos에서 바로 끝나지 않는 경우 존재
         gameModel.spawnNewBlock();
 
         // 게임 오버 상태가 되어야 함
@@ -241,11 +241,13 @@ public class GameModelTest {
     }
 
     @Test
-    public void testGetDropEasyInterval() {
-        // 레벨 1일 때 드롭 인터벌 (EASY 기본값: 0.8)
-        // 60 - round(1 * 5 * 0.8) = 60 - 4 = 56
-        assertEquals("레벨 1일 때 드롭 인터벌은 56이어야 합니다", 56, gameModel.getDropInterval());
-        
+    public void testGetEasyDropInterval() {
+        // 난이도를 EASY로 설정
+        Difficulty.setCurrentDifficulty(Difficulty.EASY_STRING);
+        // 레벨 1일 때 드롭 인터벌
+        // 60 - round(1 * 5 * .8) = 56
+        assertEquals("레벨 1일 때 드롭 인터벌은 56여야 합니다", 56, gameModel.getDropInterval());
+
         // 레벨을 높여서 테스트 (10줄 클리어)
         Board board = gameModel.getBoardModel();
         for (int r = 10; r < 20; r++) {
@@ -253,19 +255,24 @@ public class GameModelTest {
                 board.getBoard()[r][c] = 1;
             }
         }
-        gameModel.lockBlockAndClearLines();
-        
-        // 레벨 2일 때 드롭 인터벌 ==> 60 - round(2 * 5 * 0.8) = 60 - 8 = 52
-        assertEquals("레벨 2일 때 드롭 인터벌은 52이어야 합니다", 52, gameModel.getDropInterval());
+        List<Integer> full = board.findFullRows();
+        for (int row : full)
+            board.clearRow(row);
+        gameModel.updateModels(full.size());
+
+        // 레벨 2일 때 드롭 인터벌
+        // 60 - round(2 * 5 * .8) = 52
+        assertEquals("레벨 2일 때 드롭 인터벌은 52여야 합니다", 52, gameModel.getDropInterval());
     }
 
     @Test
-    public void testGetDropNormalInterval() {
-        // 레벨 1일 때 드롭 인터벌 (EASY 기본값: 0.8)
-        // 60 - round(1 * 5 * 0.8) = 60 - 4 = 56
-        assertEquals("레벨 1일 때 드롭 인터벌은 56이어야 합니다", 56, gameModel.getDropInterval());
-        
+    public void testGetNormalDropInterval() {
+        // 난이도를 NORMAL로 설정
         Difficulty.setCurrentDifficulty(Difficulty.NORMAL_STRING);
+        // 레벨 1일 때 드롭 인터벌
+        // 60 - round(1 * 5 * 1.0) = 55
+        assertEquals("레벨 1일 때 드롭 인터벌은 55여야 합니다", 55, gameModel.getDropInterval());
+
 
         // 레벨을 높여서 테스트 (10줄 클리어)
         Board board = gameModel.getBoardModel();
@@ -274,18 +281,23 @@ public class GameModelTest {
                 board.getBoard()[r][c] = 1;
             }
         }
-        gameModel.lockBlockAndClearLines();
-        // 레벨 2일 때 드롭 인터벌 NORMAL 배율 적용 ==> 60 - round(2 * 5 * 1.0) = 60 - 10 = 50
+        List<Integer> full = board.findFullRows();
+        for (int row : full)
+            board.clearRow(row);
+        gameModel.updateModels(full.size());
+
+        // 레벨 2일 때 드롭 인터벌
+        // 60 - round(2 * 5 * 1.0) = 50
         assertEquals("레벨 2일 때 드롭 인터벌은 50이어야 합니다", 50, gameModel.getDropInterval());
     }
 
     @Test
-    public void testGetDropHardInterval() {
-        // 레벨 1일 때 드롭 인터벌 (EASY 기본값: 0.8)
-        // 60 - round(1 * 5 * 0.8) = 60 - 4 = 56
-        assertEquals("레벨 1일 때 드롭 인터벌은 56이어야 합니다", 56, gameModel.getDropInterval());
-        
+    public void testGetHardDropInterval() {
+        // 난이도를 HARD로 설정
         Difficulty.setCurrentDifficulty(Difficulty.HARD_STRING);
+        // 레벨 1일 때 드롭 인터벌
+        // 60 - round(1 * 5 * 1.2) = 54
+        assertEquals("레벨 1일 때 드롭 인터벌은 54여야 합니다", 54, gameModel.getDropInterval());
 
         // 레벨을 높여서 테스트 (10줄 클리어)
         Board board = gameModel.getBoardModel();
@@ -294,9 +306,13 @@ public class GameModelTest {
                 board.getBoard()[r][c] = 1;
             }
         }
-        gameModel.lockBlockAndClearLines();
+        List<Integer> full = board.findFullRows();
+        for (int row : full)
+            board.clearRow(row);
+        gameModel.updateModels(full.size());
 
-        // 레벨 2일 때 드롭 인터벌 HARD 배율 적용 ==> 60 - round(2 * 5 * 1.2) = 60 - 12 = 48
+        // 레벨 2일 때 드롭 인터벌
+        // 60 - round(2 * 5 * 1.2) = 48
         assertEquals("레벨 2일 때 드롭 인터벌은 48이어야 합니다", 48, gameModel.getDropInterval());
     }
 }
