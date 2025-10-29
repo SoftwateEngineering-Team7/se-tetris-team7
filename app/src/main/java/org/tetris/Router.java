@@ -7,7 +7,7 @@ import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.controller.GameController;
 import org.tetris.scoreboard.controller.ScoreBoardController;
-
+import org.tetris.scoreboard.model.ScoreBoard;
 import org.tetris.shared.*;
 import org.util.ScreenPreset;
 
@@ -22,7 +22,7 @@ public final class Router {
     private final Setting setting; // 전역 Setting 객체
     private final MvcFactory<?, ?> settingsFactory;
     private final MvcFactory<?, ?> gameFactory;
-    private final MvcFactory<?, ?> scoreBoardFactory;
+    private final MvcFactory<ScoreBoard, ScoreBoardController> scoreBoardFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -77,6 +77,10 @@ public final class Router {
     // Setting getter (필요한 경우)
     public Setting getSetting() {
         return setting;
+    }
+
+    public ScoreBoardController getScoreBoardController() {
+        return scoreBoardFactory.create().controller();
     }
 
     public void setStageSize() {

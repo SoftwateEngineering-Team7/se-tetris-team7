@@ -93,4 +93,10 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         model.setHighScorePath(isItemMode);
         updateScoreTable();
     }
+
+    public void clearScoreBoard(boolean isItemMode){
+        setItemMode(isItemMode);
+        model.clear();
+        updateScoreTable();
+    }
 }
