@@ -30,3 +30,7 @@ replay_pid*
 build
 
 .vscode/
+app/bin/main/fxml
+app/bin/main/css
+
+!gradle/wrapper/gradle-wrapper.jar

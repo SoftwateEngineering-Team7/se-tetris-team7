@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
+
+<StackPane fx:id="root" xmlns="http://javafx.com/javafx"
+    xmlns:fx="http://javafx.com/fxml"
+    prefWidth="800" prefHeight="600"
+    stylesheets="@/css/startmenu.css"
+    style="-fx-background-color: black;">
+
+    <BorderPane>
+        <!-- BorderPane은 레이아웃 구조용으로만 사용 -->
+    </BorderPane>
+
+    <!-- ============== 타이틀과 메뉴를 중앙 오버레이로 배치 ============== -->
+    <VBox alignment="TOP_CENTER" spacing="40" StackPane.alignment="CENTER">
+        <children>
+            <!-- 타이틀 -->
+            <Label fx:id="titleLabel" text="TETRIS" styleClass="title">
+                <font>
+                    <Font name="Arial Black" size="100.0" />
+                </font>
+                <effect>
+                    <DropShadow height="20.0" radius="9.5" width="20.0">
+                        <color>
+                            <Color opacity="0.75" />
+                        </color>
+                    </DropShadow>
+                </effect>
+                <VBox.margin>
+                    <Insets top="40.0" />
+                </VBox.margin>
+            </Label>
+
+            <!-- 메뉴 버튼들 -->
+            <VBox fx:id="menuBox" alignment="CENTER" spacing="20" fillWidth="false">
+                <!-- 버튼은 컨트롤러에서 동적 생성 -->
+                <VBox.margin>
+                    <Insets bottom="40.0" />
+                </VBox.margin>
+            </VBox>
+        </children>
+    </VBox>
+
+    <!-- 우하단 안내 라벨 (중앙 VBox 밖으로 이동) -->
+    <Label fx:id="wrongInputLabel" text="올바르지 않은 인풋입니다"
+        visible="false" styleClass="label-error"
+        StackPane.alignment="BOTTOM_RIGHT">
+        <font>
+            <Font name="Arial" size="16.0" />
+        </font>
+        <StackPane.margin>
+            <Insets right="16.0" bottom="16.0" />
+        </StackPane.margin>
+    </Label>
+
+</StackPane>
