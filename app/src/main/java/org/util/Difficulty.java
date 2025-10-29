@@ -1,5 +1,7 @@
 package org.util;
 
+import org.tetris.game.model.NextBlockModel;
+
 public class Difficulty {
     public static final String EASY_STRING = "EASY";
     public static final String NORMAL_STRING = "NORMAL";
@@ -24,6 +26,17 @@ public class Difficulty {
             case NORMAL_STRING: return NORMAL.speedMultiplier;
             case HARD_STRING: return HARD.speedMultiplier;
             default: return EASY.speedMultiplier;
+        }
+    }
+
+    public static int[][] getBlockProbList() {
+        switch (currentDifficulty) {
+            case EASY_STRING:
+                return new int[][] { NextBlockModel.EASY_BLOCK_PROB_LIST };
+            case HARD_STRING:
+                return new int[][] { NextBlockModel.HARD_BLOCK_PROB_LIST };
+            default:
+                return new int[][] { NextBlockModel.DEFAULT_BLOCK_PROB_LIST };
         }
     }
 
