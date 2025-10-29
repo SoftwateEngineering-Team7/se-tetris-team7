@@ -335,7 +335,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // 시간 기반 블록 낙하 처리
         long timeSinceLastDrop = now - lastDropTime;
         if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = boardModel.autoDown();
+            boolean moved = gameModel.autoDown();
 
             if (!moved) {
                 lockCurrentBlock();
@@ -353,6 +353,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void lockCurrentBlock() {
+        gameModel.activateItem();
+        
         // 라인 검사
         List<Integer> fullRows = boardModel.findFullRows();
 

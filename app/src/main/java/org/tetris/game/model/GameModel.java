@@ -18,7 +18,7 @@ public class GameModel extends BaseModel {
     private int level;
 
     private boolean isItemMode = false;
-    private boolean isItemUsed = false;
+    private boolean isItemUsed = true;
     private Item activeItem = Item.getRandomItem();
 
     // 게임 상태
@@ -81,7 +81,7 @@ public class GameModel extends BaseModel {
 
     public void setDifficulty(Difficulty difficulty)
     {
-        // this.nextBlockModel.setBlockProbList(difficulty.getBlockProbList());
+        //this.nextBlockModel.setBlockProbList(difficulty.getBlockProbList());
     }
 
     // 새 블럭 생성 (게임 오버 판단은 Model에서)
@@ -98,14 +98,14 @@ public class GameModel extends BaseModel {
         }
     }
 
+    public boolean autoDown()
+    {
+        boolean moved; 
+        moved = board.moveDown();
+        return moved;
+    }
+
     public void updateModels(int linesCleared) {
-
-        if (isItemMode && !isItemUsed) {
-            isItemUsed = true;
-            activateItem();
-            scoreModel.itemActivated();
-        }
-
 
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
@@ -139,8 +139,11 @@ public class GameModel extends BaseModel {
 
     public void activateItem()
     {
-        if (!isItemMode) return;
-        activeItem.Activate(board);
+        if (isItemMode && !isItemUsed) {
+            isItemUsed = true;
+            activeItem.Activate(board);
+            scoreModel.itemActivated();
+        }
     }
     
     // 게임 리셋
