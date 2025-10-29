@@ -79,9 +79,9 @@ public class GameModel extends BaseModel {
         System.out.println("Item Mode: " + itemMode);
     }
 
-    public void setDifficulty(Difficulty difficulty)
+    public void setDifficulty()
     {
-        //this.nextBlockModel.setBlockProbList(difficulty.getBlockProbList());
+        this.nextBlockModel.setBlockProbList(Difficulty.getBlockProbList());
     }
 
     // 새 블럭 생성 (게임 오버 판단은 Model에서)

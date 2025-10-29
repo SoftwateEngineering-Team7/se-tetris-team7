@@ -265,7 +265,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
             boardModel.rotate();
             updateGameBoard();
         } else if(code == KeyLayout.getDownKey()) {
-            boardModel.moveDown();
+            boolean moved = boardModel.moveDown();
+            if (moved) {
+                scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
+            }
             updateGameBoard();
         } else if(code == KeyCode.SPACE) {
             handleHardDrop();
@@ -289,10 +292,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
      * @param itemMode 아이템 모드 여부
      * @param difficulty 난이도
      */
-    public void setUpGameMode(boolean itemMode, Difficulty difficulty)
+    public void setUpGameMode(boolean itemMode)
     {
         gameModel.setItemMode(itemMode);
-        gameModel.setDifficulty(difficulty);
+        gameModel.setDifficulty();
     }
 
     private void startGameLoop() {
@@ -337,7 +340,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
         if (timeSinceLastDrop >= dropIntervalNanos) {
             boolean moved = gameModel.autoDown();
 
-            if (!moved) {
+            if (moved) {
+                // 자동으로 1칸 떨어질 때마다 점수 획득
+                scoreModel.blockDropped();
+            } else {
                 lockCurrentBlock();
             }
 
@@ -430,6 +436,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
             gameLoop.stop();
         }
         showGameOver();
+        
     }
 
     private void updateGameBoard() {
@@ -675,6 +682,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void showGameOver() {
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
+        
+        router.showScoreBoard(true, scoreModel.getScore());
     }
 
     @Override

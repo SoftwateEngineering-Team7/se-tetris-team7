@@ -29,15 +29,6 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         return model;
     }
 
-    /**
-     * 제출 버튼 클릭 시 호출되는 메서드입니다.
-     * @param name 플레이어 이름
-     */
-    public void OnSubmitClick(String name)
-    {
-        submitCurrentScore(finishScore, name);
-    }
-
     private void submitCurrentScore(int score, String name)
     {
         model.insert(new ScoreInfo(score, name));
@@ -53,7 +44,6 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
     @FXML private TextField nameField;
     @FXML private Button submitButton;
 
-
     @Override
     public void initialize()
     {
@@ -65,6 +55,11 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         
         scoreText.setText(String.valueOf(getFinishScore()));
 
+        updateScoreTable();
+    }
+
+    private void updateScoreTable()
+    {
         scoreTable.setItems(getScoreBoard().getScoreList());
     }
 
@@ -72,7 +67,12 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
     private void onSubmitPressed()
     {
         String playerName = nameField.getText();
-        OnSubmitClick(playerName);
+
+        submitCurrentScore(finishScore, playerName);
+
+        submitButton.setDisable(true);
+
+        updateScoreTable();
     }
 
     public void setFromGame(boolean fromGame, int score)
@@ -80,10 +80,17 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         this.finishScore = score;
         scoreText.setText(String.valueOf(finishScore));
 
+        submitButton.setDisable(false);
+
         if (fromGame) {
             inputPane.setVisible(true);
         } else {
             inputPane.setVisible(false);
         }
+    }
+
+    public void setItemMode(boolean isItemMode){
+        model.setHighScorePath(isItemMode);
+        updateScoreTable();
     }
 }

@@ -57,6 +57,37 @@ public class ScoreModelTest {
     }
 
     @Test
+    public void testItemActivated() {
+        ScoreModel scoreModel = new ScoreModel();
+        scoreModel.itemActivated();
+        assertEquals(1000, scoreModel.getScore());
+        
+        scoreModel.itemActivated();
+        assertEquals(2000, scoreModel.getScore());
+    }
+
+    @Test
+    public void testBlockDropped() {
+        ScoreModel scoreModel = new ScoreModel();
+        scoreModel.blockDropped();
+        assertEquals(1, scoreModel.getScore());
+        
+        scoreModel.blockDropped();
+        scoreModel.blockDropped();
+        assertEquals(3, scoreModel.getScore());
+    }
+
+    @Test
+    public void testSoftDrop() {
+        ScoreModel scoreModel = new ScoreModel();
+        scoreModel.softDrop(5);
+        assertEquals(5, scoreModel.getScore());
+        
+        scoreModel.softDrop(3);
+        assertEquals(8, scoreModel.getScore());
+    }
+
+    @Test
     public void testToString() {
         ScoreModel scoreModel = new ScoreModel();
         assertEquals("00000000", scoreModel.toString());

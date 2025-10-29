@@ -16,9 +16,10 @@ import javafx.collections.ObservableList;
 
 public class ScoreBoard extends BaseModel
 {
-    private final static String DEFAULT_HIGH_SCORE_LIST_PATH = "src/main/java/org/tetris/scoreboard/HighScore.csv";  
+    private final static String DEFAULT_HIGH_SCORE_LIST_PATH = "src/main/java/org/tetris/scoreboard/DefaultHighScore.csv";
+    private final static String ITEM_HIGH_SCORE_LIST_PATH = "src/main/java/org/tetris/scoreboard/ItemHighScore.csv";
 
-    private final String highScorePath;
+    private String highScorePath;
     private final int maxScores;
 
     private ArrayList<ScoreInfo> highScoreList;
@@ -44,6 +45,31 @@ public class ScoreBoard extends BaseModel
 
     public ArrayList<ScoreInfo> getHighScoreList(){
         return highScoreList;
+    }
+
+    /**
+     * 최고 점수 파일 경로를 설정합니다.
+     * @param path 새로운 최고 점수 파일 경로
+     */
+    public void setHighScorePath(boolean isItemMode){
+        writeHighScoreList();
+
+        if(isItemMode){
+            this.highScorePath = ITEM_HIGH_SCORE_LIST_PATH;
+        }
+        else{
+            this.highScorePath = DEFAULT_HIGH_SCORE_LIST_PATH;
+        }
+
+        highScoreList = readHighScoreList();
+    }
+
+    /**
+     * 최고 점수 리스트를 초기화합니다.
+     */
+    public void clear(){
+        highScoreList.clear();
+        writeHighScoreList();
     }
 
     /**

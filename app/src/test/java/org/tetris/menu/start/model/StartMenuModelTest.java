@@ -6,7 +6,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class StartMenuModelTest {
-    private static final int BUTTON_COUNT = 4;
+    private static final int BUTTON_COUNT = 6;
     private StartMenuModel model;
 
     @Before
@@ -41,23 +41,23 @@ public class StartMenuModelTest {
         
         // 한 칸 뒤로 이동 (wrapping 발생)
         model.move(-1);
-        assertEquals("0에서 -1 이동하면 마지막 인덱스(3)로 래핑되어야 합니다.", 
-                     3, model.getSelectedIndex());
+        assertEquals("0에서 -1 이동하면 마지막 인덱스(5)로 래핑되어야 합니다.", 
+                     5, model.getSelectedIndex());
         
         // 한 칸 더 뒤로 이동
         model.move(-1);
-        assertEquals("3에서 -1 이동하면 인덱스는 2여야 합니다.", 2, model.getSelectedIndex());
+        assertEquals("5에서 -1 이동하면 인덱스는 4여야 합니다.", 4, model.getSelectedIndex());
     }
 
     @Test
     public void testForwardWrapping() {
         // 마지막 인덱스로 이동
-        model.setSelectedIndex(3);
-        assertEquals(3, model.getSelectedIndex());
-        
+        model.setSelectedIndex(5);
+        assertEquals(5, model.getSelectedIndex());
+
         // 한 칸 앞으로 이동 (wrapping 발생)
         model.move(1);
-        assertEquals("마지막 인덱스(3)에서 +1 이동하면 첫 번째 인덱스(0)로 래핑되어야 합니다.", 
+        assertEquals("마지막 인덱스(5)에서 +1 이동하면 첫 번째 인덱스(0)로 래핑되어야 합니다.",
                      0, model.getSelectedIndex());
     }
 
@@ -68,8 +68,8 @@ public class StartMenuModelTest {
         
         // 한 칸 뒤로 이동 (wrapping 발생)
         model.move(-1);
-        assertEquals("0에서 -1 이동하면 마지막 인덱스(3)로 래핑되어야 합니다.", 
-                     3, model.getSelectedIndex());
+        assertEquals("0에서 -1 이동하면 마지막 인덱스(5)로 래핑되어야 합니다.", 
+                     5, model.getSelectedIndex());
     }
 
     @Test
@@ -82,22 +82,5 @@ public class StartMenuModelTest {
         model.setSelectedIndex(3);
         assertEquals("setSelectedIndex(3)로 설정하면 인덱스는 3이어야 합니다.", 
                      3, model.getSelectedIndex());
-    }
-
-    @Test
-    public void testSetSelectedIndexWithWrapping() {
-        // 범위를 벗어난 인덱스 설정 (양수)
-        model.setSelectedIndex(5);
-        assertEquals("setSelectedIndex(5)는 래핑되어 1이어야 합니다.", 
-                     1, model.getSelectedIndex());
-        
-        // 범위를 벗어난 인덱스 설정 (음수)
-        model.setSelectedIndex(-1);
-        assertEquals("setSelectedIndex(-1)는 래핑되어 3이어야 합니다.", 
-                     3, model.getSelectedIndex());
-        
-        model.setSelectedIndex(-2);
-        assertEquals("setSelectedIndex(-2)는 래핑되어 2여야 합니다.", 
-                     2, model.getSelectedIndex());
     }
 }

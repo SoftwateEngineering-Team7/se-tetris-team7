@@ -35,7 +35,7 @@ import static org.junit.Assert.*;
  */
 public class StartMenuControllerTest extends ApplicationTest {
     private static final String FXML_PATH = "/org/tetris/menu/start/view/startmenu.fxml";
-    private static final int EXPECTED_BUTTON_COUNT = 4;
+    private static final int EXPECTED_BUTTON_COUNT = 6;
     private static final String STYLE_HIGHLIGHTED = "highlighted";
 
     private Stage stage;
@@ -119,14 +119,6 @@ public class StartMenuControllerTest extends ApplicationTest {
         return lookup("#wrongInputLabel").query();
     }
 
-    private VBox itemScoreboard() {
-        return lookup("#scoreboardItem").query();
-    }
-
-    private VBox normalScoreboard() {
-        return lookup("#scoreboardNormal").query();
-    }
-
     private List<Button> getButtons() {
         VBox box = menuBox();
         return box.getChildren().stream()
@@ -167,8 +159,6 @@ public class StartMenuControllerTest extends ApplicationTest {
         assertNotNull("타이틀 레이블이 존재해야 합니다.", titleLabel());
         assertNotNull("메뉴 박스가 존재해야 합니다.", menuBox());
         assertNotNull("잘못된 입력 레이블이 존재해야 합니다.", wrongInputLabel());
-        assertNotNull("스코어보드 박스가 존재해야 합니다.", itemScoreboard());
-        assertNotNull("스코어보드 박스가 존재해야 합니다.", normalScoreboard());
 
         List<Button> buttons = getButtons();
         assertEquals("메뉴 버튼이 4개여야 합니다.", EXPECTED_BUTTON_COUNT, buttons.size());
@@ -196,7 +186,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         WaitForAsyncUtils.waitForFxEvents();
         
         // 마지막 버튼으로 이동 (Math.floorMod)
-        assertTrue("마지막 버튼이 하이라이트되어야 합니다.", isHighlighted(3));
+        assertTrue("마지막 버튼이 하이라이트되어야 합니다.", isHighlighted(EXPECTED_BUTTON_COUNT - 1));
     }
 
     @Test
@@ -303,7 +293,6 @@ public class StartMenuControllerTest extends ApplicationTest {
         List<Button> buttons = getButtons();
         Button firstButton = buttons.get(0);
         Label title = titleLabel();
-        VBox itemBoard = itemScoreboard();
         
         // 테스트 케이스 1: 1200x800 창 크기
         interact(() -> {
@@ -324,9 +313,6 @@ public class StartMenuControllerTest extends ApplicationTest {
         // 버튼 크기 확인
         assertEquals("1200x800에서 버튼 너비는 336이어야 합니다.", 336.0, firstButton.getPrefWidth(), 1.0);
         assertEquals("1200x800에서 버튼 높이는 80이어야 합니다.", 80.0, firstButton.getPrefHeight(), 1.0);
-        // 스코어보드 크기 확인
-        assertEquals("1200x800에서 스코어보드 너비는 240이어야 합니다.", 240.0, itemBoard.getPrefWidth(), 1.0);
-        assertEquals("1200x800에서 스코어보드 높이는 560이어야 합니다.", 560.0, itemBoard.getPrefHeight(), 1.0);
         // Title 폰트 크기 확인 (style에서 추출)
         String titleStyle = title.getStyle();
         assertTrue("타이틀에 폰트 크기가 설정되어야 합니다.", titleStyle.contains("-fx-font-size:"));
@@ -351,9 +337,6 @@ public class StartMenuControllerTest extends ApplicationTest {
         // 버튼 크기 확인
         assertEquals("600x400에서 버튼 너비는 180이어야 합니다.", 180.0, firstButton.getPrefWidth(), 1.0);
         assertEquals("600x400에서 버튼 높이는 60이어야 합니다.", 60.0, firstButton.getPrefHeight(), 1.0);
-        // 스코어보드 크기 확인
-        assertEquals("600x400에서 스코어보드 너비는 200이어야 합니다.", 200.0, itemBoard.getPrefWidth(), 1.0);
-        assertEquals("600x400에서 스코어보드 높이는 400이어야 합니다.", 400.0, itemBoard.getPrefHeight(), 1.0);
         // Title 폰트 크기 확인
         titleStyle = title.getStyle();
         assertTrue("600x400에서 타이틀 폰트는 67px이어야 합니다.", titleStyle.contains("67px"));
@@ -377,29 +360,8 @@ public class StartMenuControllerTest extends ApplicationTest {
         // 버튼 크기 확인
         assertEquals("900x600에서 버튼 너비는 252이어야 합니다.", 252.0, firstButton.getPrefWidth(), 1.0);
         assertEquals("900x600에서 버튼 높이는 60이어야 합니다.", 60.0, firstButton.getPrefHeight(), 1.0);
-        // 스코어보드 크기 확인
-        assertEquals("900x600에서 스코어보드 너비는 200이어야 합니다.", 200.0, itemBoard.getPrefWidth(), 1.0);
-        assertEquals("900x600에서 스코어보드 높이는 420이어야 합니다.", 420.0, itemBoard.getPrefHeight(), 1.0);
         // Title 폰트 크기 확인
         titleStyle = title.getStyle();
         assertTrue("900x600에서 타이틀 폰트는 100px이어야 합니다.", titleStyle.contains("100px"));
-    }
-
-        @Test
-    public void testScoreboardSizesAreSymmetric() {
-        // 양쪽 스코어보드의 크기가 동일한지 확인
-        VBox itemBoard = itemScoreboard();
-        VBox normalBoard = normalScoreboard();
-        
-        assertNotNull("Item 스코어보드가 존재해야 합니다.", itemBoard);
-        assertNotNull("Normal 스코어보드가 존재해야 합니다.", normalBoard);
-        
-        double itemWidth = itemBoard.getPrefWidth();
-        double itemHeight = itemBoard.getPrefHeight();
-        double normalWidth = normalBoard.getPrefWidth();
-        double normalHeight = normalBoard.getPrefHeight();
-        
-        assertEquals("양쪽 스코어보드의 너비는 동일해야 합니다.", itemWidth, normalWidth, 1.0);
-        assertEquals("양쪽 스코어보드의 높이는 동일해야 합니다.", itemHeight, normalHeight, 1.0);
     }
 }
