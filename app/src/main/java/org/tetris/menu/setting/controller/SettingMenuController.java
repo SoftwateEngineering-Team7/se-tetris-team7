@@ -434,11 +434,11 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
     }
 
     private void onResetNormalScoreboard() {
-        // 콜백 실행 (필요시)
+        router.getScoreBoardController().clearScoreBoard(false);
     }
 
     private void onResetItemScoreboard() {
-        // 콜백 실행 (필요시)
+        router.getScoreBoardController().clearScoreBoard(true);
     }
 
     // 모델의 상태를 UI에 반영

@@ -161,7 +161,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         assertNotNull("잘못된 입력 레이블이 존재해야 합니다.", wrongInputLabel());
 
         List<Button> buttons = getButtons();
-        assertEquals("메뉴 버튼이 4개여야 합니다.", EXPECTED_BUTTON_COUNT, buttons.size());
+        assertEquals("메뉴 버튼이 6개여야 합니다.", EXPECTED_BUTTON_COUNT, buttons.size());
     }
 
     @Test

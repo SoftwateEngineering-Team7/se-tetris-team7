@@ -753,7 +753,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
         
-        router.showScoreBoard(true, scoreModel.getScore());
+        router.showScoreBoard(true, gameModel.isItemMode(), scoreModel.getScore());
     }
 
     @Override

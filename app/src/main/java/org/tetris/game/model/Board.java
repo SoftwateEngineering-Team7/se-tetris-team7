@@ -113,7 +113,7 @@ public class Board extends BaseModel {
                 // 2) 위쪽은 스킵, 아래쪽은 차단
                 if (row < 0)
                     continue;
-                if (row >= height)
+                if (row >= height - 1)
                     return false;
             }
         }
