@@ -337,7 +337,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
         if (timeSinceLastDrop >= dropIntervalNanos) {
             boolean moved = boardModel.autoDown();
 
-            if (!moved) {
+            if (moved) {
+                // 자동으로 1칸 떨어질 때마다 점수 획득
+                scoreModel.blockDropped();
+            } else {
                 lockCurrentBlock();
             }
 
