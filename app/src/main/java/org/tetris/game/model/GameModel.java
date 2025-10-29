@@ -9,6 +9,9 @@ public class GameModel extends BaseModel {
 
     private final static int ITEM_MODE_LINE_THRESHOLD = 10;
 
+    public final static int MAX_DROP_INTERVAL = 60; // 최대 낙하 간격 (레벨 1)
+    public final static int MIN_DROP_INTERVAL = 10; // 드롭 간격 감소량
+
     private final NextBlockModel nextBlockModel;
     private final Board board;
     private ScoreModel scoreModel;
@@ -166,6 +169,10 @@ public class GameModel extends BaseModel {
     // 레벨에 따른 낙하 속도 계산
     public int getDropInterval() {
         float difficultyMul = Difficulty.getSpeedMultiplier();
-        return Math.max(10, 60 - Math.round(level * 5 * difficultyMul));
+        int dropInterval = MAX_DROP_INTERVAL - Math.round((level - 1) * 5 * difficultyMul);
+        
+        scoreModel.setGravityMultiplier(dropInterval);
+        
+        return Math.max(MIN_DROP_INTERVAL, dropInterval);
     }
 }
