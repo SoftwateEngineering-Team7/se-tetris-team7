@@ -40,10 +40,10 @@ public abstract class Item {
      * 아이템 풀
      */
     private final static Item[] itemPool = {
-            // new LItem(),
-            // new BItem(),
-            // new CItem(),
-            // new HItem(),
+            new LItem(),
+            new BItem(),
+            new CItem(),
+            new HItem(),
             new WItem(),
     };
 
