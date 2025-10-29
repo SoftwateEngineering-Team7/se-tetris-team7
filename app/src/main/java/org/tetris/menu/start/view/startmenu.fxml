@@ -45,62 +45,23 @@
             <!-- 메뉴 버튼들 -->
             <VBox fx:id="menuBox" alignment="CENTER" spacing="20" fillWidth="false">
                 <!-- 버튼은 컨트롤러에서 동적 생성 -->
+                <VBox.margin>
+                    <Insets bottom="40.0" />
+                </VBox.margin>
             </VBox>
-
-            <!-- ============== 안내 문구 (오류/잘못된 인풋) ============== -->
-            <HBox alignment="CENTER" spacing="8">
-                <children>
-                    <Label fx:id="wrongInputLabel" text="올바르지 않은 인풋입니다"
-                        visible="false" styleClass="label-error">
-                        <font>
-                            <Font name="Arial" size="16.0" />
-                        </font>
-                    </Label>
-                </children>
-            </HBox>
         </children>
     </VBox>
 
-    <!-- ============== 스코어보드 - Item (왼쪽, 타이틀 아래) ============== -->
-    <VBox fx:id="scoreboardItem"
-        styleClass="scoreboard-container"
-        alignment="TOP_CENTER" spacing="6"
-        StackPane.alignment="TOP_LEFT">
-        <children>
-            <Label fx:id="scoreboardItemTitle" text="SCOREBOARD - Item"
-                styleClass="scoreboard-title" />
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                vbarPolicy="AS_NEEDED" hbarPolicy="NEVER">
-                <content>
-                    <!-- Top 10 행이 들어갈 컨테이너 -->
-                    <VBox fx:id="scoreboardItemBox" alignment="CENTER" spacing="8" />
-                </content>
-            </ScrollPane>
-        </children>
+    <!-- 우하단 안내 라벨 (중앙 VBox 밖으로 이동) -->
+    <Label fx:id="wrongInputLabel" text="올바르지 않은 인풋입니다"
+        visible="false" styleClass="label-error"
+        StackPane.alignment="BOTTOM_RIGHT">
+        <font>
+            <Font name="Arial" size="16.0" />
+        </font>
         <StackPane.margin>
-            <Insets left="16.0" top="140.0" />
+            <Insets right="16.0" bottom="16.0" />
         </StackPane.margin>
-    </VBox>
-
-    <!-- ============== 스코어보드 - Normal (오른쪽, 타이틀 아래) ============== -->
-    <VBox fx:id="scoreboardNormal"
-        styleClass="scoreboard-container"
-        alignment="TOP_CENTER" spacing="6"
-        StackPane.alignment="TOP_RIGHT">
-        <children>
-            <Label fx:id="scoreboardNormalTitle" text="SCOREBOARD - Normal"
-                styleClass="scoreboard-title" />
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
-                vbarPolicy="AS_NEEDED" hbarPolicy="NEVER">
-                <content>
-                    <!-- Top 10 행이 들어갈 컨테이너 -->
-                    <VBox fx:id="scoreboardNormalBox" alignment="CENTER" spacing="8" />
-                </content>
-            </ScrollPane>
-        </children>
-        <StackPane.margin>
-            <Insets right="16.0" top="140.0" />
-        </StackPane.margin>
-    </VBox>
+    </Label>
 
 </StackPane>
