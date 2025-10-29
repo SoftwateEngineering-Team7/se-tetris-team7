@@ -1,15 +1,20 @@
 package org.tetris.game.model;
 
+import org.util.Difficulty;
+
 public class ScoreModel {
     private int score;
     private final int[] lineClearScores = {0, 1000, 3000, 5000, 8000}; // 0, 1, 2, 3, 4줄 클리어 시 점수
     private final int itemActivationScore = 1000; // 아이템 활성화 시 점수
     
     // 블록 떨어질 때마다 획득하는 기본 점수 단위
-    private final int blockDropScore = 1;
+    private final int easyBlockDropScore = 1;
+    private final int mediumBlockDropScore = 2;
+    private final int hardBlockDropScore = 3;
     
     // 자동 낙하와 수동 낙하의 점수 배율
     private final int softDropMultiplier = 1;  // 자동 낙하 (기본)
+    private int gravityMultiplier = 1;
 
     public ScoreModel() {
         this.score = 0;
@@ -47,8 +52,25 @@ public class ScoreModel {
      * 블록이 1칸 떨어질 때마다 호출 (자동 낙하)
      * 기본적으로 1점 획득
      */
+
+    public void setGravityMultiplier(int dropInterval) {
+        if (dropInterval >= 50) {
+            gravityMultiplier = 1;
+        } else if (dropInterval >= 30) {
+            gravityMultiplier = 2;
+        } else {
+            gravityMultiplier = 3;
+        }
+    }
+
+
     public void blockDropped() {
-        score += blockDropScore * softDropMultiplier;
+        if (Difficulty.getCurrentDifficulty().equals(Difficulty.EASY_STRING))
+            score += easyBlockDropScore * softDropMultiplier * gravityMultiplier;
+        else if (Difficulty.getCurrentDifficulty().equals(Difficulty.NORMAL_STRING))
+            score += mediumBlockDropScore * softDropMultiplier * gravityMultiplier;
+        else if (Difficulty.getCurrentDifficulty().equals(Difficulty.HARD_STRING))
+            score += hardBlockDropScore * softDropMultiplier * gravityMultiplier;
     }
     
     /**
@@ -57,7 +79,12 @@ public class ScoreModel {
      */
     public void softDrop(int distance) {
         if (distance > 0) {
-            score += blockDropScore * softDropMultiplier * distance;
+            if (Difficulty.getCurrentDifficulty().equals(Difficulty.EASY_STRING))
+                score += easyBlockDropScore * softDropMultiplier * distance * gravityMultiplier;
+            else if (Difficulty.getCurrentDifficulty().equals(Difficulty.NORMAL_STRING))
+                score += mediumBlockDropScore * softDropMultiplier * distance * gravityMultiplier;
+            else if (Difficulty.getCurrentDifficulty().equals(Difficulty.HARD_STRING))
+                score += hardBlockDropScore * softDropMultiplier * distance * gravityMultiplier;
         }
     }
     
