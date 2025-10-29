@@ -1,5 +1,6 @@
 package org.tetris.game.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.tetris.Router;
@@ -13,7 +14,6 @@ import org.tetris.game.model.NextBlockModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 
-import org.util.Difficulty;
 import org.util.GameColor;
 import org.util.KeyLayout;
 import org.util.Point;
@@ -99,16 +99,22 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private boolean isPaused = false;
     private boolean isGameOver = false;
 
-    // 애니메이션을 위한 필드 추가
-    private boolean isFlashingRows = false;
-    private boolean[] rowFlashMask; // r 인덱스별로 해당 행이 플래시 대상인지
-    private List<Integer> clearingRows; // 애니메이션 끝나고 실제로 지울 행들(원본 인덱스)
-    private boolean flashOn = false; // 현재 흰색으로 켜진 상태인지
-    private int flashToggleCount = 0; // on/off 토글 횟수
-    private long nextFlashAt = 0L;
+    // === 아래로 교체 ===
+    private boolean isFlashing = false; // 애니메이션 진행 여부
+    private boolean flashOn = false; // on/off 상태
+    private int flashToggleCount = 0; // 토글 횟수
+    private long nextFlashAt = 0L; // 다음 토글 시각
 
-    private static final int FLASH_TIMES = 2; // 2번 반짝
-    private static final int FLASH_TOGGLES = FLASH_TIMES * 2; // on/off 합쳐서 4회 토글
+    // 격자 단위 마스크: true면 현재 플래시 대상 셀
+    private boolean[][] flashMask;
+
+    // 삭제 대상(애니메이션 종료 시 실제로 지울 것들)
+    public static List<Integer> clearingRows = new java.util.ArrayList<>();
+    public static List<Integer> clearingCols = new java.util.ArrayList<>();
+    public static List<Point> clearingCells = new java.util.ArrayList<>();
+
+    private static final int FLASH_TIMES = 2;
+    private static final int FLASH_TOGGLES = FLASH_TIMES * 2; // on/off 합계
     private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
 
     public GameController(GameModel gameModel) {
@@ -320,9 +326,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private void update(long now) {
         // 애니메이션 동안은 일반 업데이트 중지
-        if (isFlashingRows) {
-            tickRowFlash(now);
-            updateGameBoard(); // 매 프레임 다시 그림
+        if (isFlashing) {
+            tickFlash(now);
+            updateGameBoard();
             return;
         }
 
@@ -359,75 +365,94 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void lockCurrentBlock() {
-        gameModel.activateItem();
-        
-        // 라인 검사
+        clearingRows.clear();
+        clearingCols.clear();
+        clearingCells.clear();
+
         List<Integer> fullRows = boardModel.findFullRows();
+        List<Integer> fullCols = new ArrayList<>(); // 이미 가지고 계신 리스트 사용
 
-        if (!fullRows.isEmpty()) {
-            // 애니메이션부터 시작
-            beginRowFlash(fullRows, System.nanoTime());
-            return;
+        clearingRows.addAll(fullRows);
+
+        gameModel.activateItem();
+
+        if (!clearingRows.isEmpty() || !clearingCols.isEmpty() || !clearingCells.isEmpty()) {
+            beginFlash(fullRows, fullCols, java.util.Collections.emptyList(), System.nanoTime());
+            return; // 애니메이션 끝나면 실제 삭제 수행
         }
 
-        // 평상시 처리 (라인이 없으면 모델 업데이트/스폰만)
-        gameModel.updateModels(0);
+        // 평상시 처리
+        gameModel.updateModels(0); // 필요 시 오버로드(행/열 분리)로 교체 권장
         gameModel.spawnNewBlock();
-
-        if (gameModel.isGameOver()) {
+        if (gameModel.isGameOver())
             handleGameOver();
-        }
-
         updateGameBoard();
     }
 
-    // 플래시 애니메이션 시작
-    private void beginRowFlash(List<Integer> rows, long now) {
-        isFlashingRows = true;
-        clearingRows = new java.util.ArrayList<>(rows);
-        // 실제 삭제 시 인덱스 보존을 위해 내림차순으로 정렬(아래에서 위로 지움)
+    // 행/열/임의셀을 한 번에 받는 시작 진입점
+    private void beginFlash(List<Integer> rows, List<Integer> cols, List<Point> cells, long now) {
+        isFlashing = true;
+
+        if (rows != null)
+            clearingRows.addAll(rows);
+        if (cols != null)
+            clearingCols.addAll(cols);
+        if (cells != null)
+            clearingCells.addAll(cells);
+
         clearingRows.sort(java.util.Comparator.reverseOrder());
+        clearingCols.sort(java.util.Comparator.reverseOrder());
 
         // 마스크 초기화
-        rowFlashMask = new boolean[boardSize.r];
-        for (int r : rows)
-            rowFlashMask[r] = true;
+        flashMask = new boolean[boardSize.r][boardSize.c];
+        markFlashRows(clearingRows, flashMask);
+        markFlashCols(clearingCols, flashMask);
+        markFlashCells(clearingCells, flashMask);
 
-        flashOn = false; // 첫 토글에서 on으로 바뀌게
+        flashOn = false; // 첫 토글에서 on
         flashToggleCount = 0;
-        nextFlashAt = now; // 즉시 첫 토글 시작
+        nextFlashAt = now; // 즉시 시작
     }
 
-    private void tickRowFlash(long now) {
+    private void tickFlash(long now) {
         if (now < nextFlashAt)
             return;
 
-        // on/off 토글
         flashOn = !flashOn;
         flashToggleCount++;
         nextFlashAt = now + FLASH_INTERVAL_NANOS;
 
         if (flashToggleCount >= FLASH_TOGGLES) {
-            // 실제 삭제 수행
-            for (int r : clearingRows) {
-                boardModel.clearRow(r);
-            }
-            int linesCleared = clearingRows.size();
-
-            // 상태 리셋
-            isFlashingRows = false;
+            isFlashing = false;
             flashOn = false;
-            clearingRows.clear();
-            rowFlashMask = null;
+            processClears(); // 실제 삭제
+            flashMask = null;
+        }
+    }
 
-            // 모델 업데이트 및 새 블록
-            gameModel.updateModels(linesCleared);
-            gameModel.spawnNewBlock();
+    private void processClears() {
+        for (int r : clearingRows)
+            boardModel.clearRow(r);
+        int linesCleared = clearingRows.size();
 
-            if (gameModel.isGameOver()) {
-                handleGameOver();
+        for (int c : clearingCols)
+            boardModel.clearColumn(c);
+        int colsCleared = clearingCols.size();
+
+        for (Point p : clearingCells) {
+            if (p.r >= 0 && p.r < boardSize.r && p.c >= 0 && p.c < boardSize.c) {
+                boardModel.getBoard()[p.r][p.c] = 0;
             }
         }
+
+        clearingRows.clear();
+        clearingCols.clear();
+        clearingCells.clear();
+
+        gameModel.updateModels(linesCleared + colsCleared);
+        gameModel.spawnNewBlock();
+        if (gameModel.isGameOver())
+            handleGameOver();
     }
 
     // UI 처리만 담당 (게임 오버 판단은 Model에서)
@@ -451,39 +476,21 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, cols * CELL_SIZE, rows * CELL_SIZE);
 
-        // 각 셀을 그리기
         for (int r = 0; r < rows; r++) {
-            final boolean flashThisRow = isFlashingRows && rowFlashMask != null && rowFlashMask[r] && flashOn;
             for (int c = 0; c < cols; c++) {
+                boolean flashingThisCell = isFlashing && flashMask != null && flashMask[r][c] && flashOn;
                 int cellValue = board[r][c];
 
-                if (cellValue == 0 && !flashThisRow) {
-                    // 빈 칸(플래시 아님)
-                    gc.setFill(Color.BLACK);
-                    gc.fillRect(
-                        c * CELL_SIZE, 
-                        r * CELL_SIZE, 
-                        CELL_SIZE, 
-                        CELL_SIZE);
+                if (cellValue == 0 && !flashingThisCell)
                     continue;
-                }
 
-                // 플래시 중인 행은 백색으로, 아니면 원래 색상
-                Color fill = flashThisRow ? Color.WHITE : getCellColor(cellValue);
+                Color fill = flashingThisCell ? Color.WHITE : getCellColor(cellValue);
                 gc.setFill(fill);
-                gc.fillRect(
-                    c * CELL_SIZE, 
-                    r * CELL_SIZE, 
-                    CELL_SIZE - 2, 
-                    CELL_SIZE - 2);
+                gc.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
 
                 gc.setStroke(Color.WHITE);
                 gc.setLineWidth(1);
-                gc.strokeRect(
-                    c * CELL_SIZE, 
-                    r * CELL_SIZE, 
-                    CELL_SIZE - 2, 
-                    CELL_SIZE - 2);
+                gc.strokeRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
                 
                 String cellText = getCellText(cellValue);
                 if (!cellText.isEmpty()) {
@@ -501,6 +508,26 @@ public class GameController extends BaseController<GameModel> implements RouterA
                     
                     gc.fillText(cellText, textX, textY);
                 }
+            }
+        }
+    }
+
+    public static void addClearingRow(int row) {
+        if (!clearingRows.contains(row)) {
+            clearingRows.add(row);
+        }
+    }
+
+    public static void addClearingCol(int col) {
+        if (!clearingCols.contains(col)) {
+            clearingCols.add(col);
+        }
+    }
+
+    public static void addClearingCells(List<Point> cells) {
+        for (Point cell : cells) {
+            if (!clearingCells.contains(cell)) {
+                clearingCells.add(cell);
             }
         }
     }
@@ -676,6 +703,38 @@ public class GameController extends BaseController<GameModel> implements RouterA
         }
         if (router != null) {
             router.showStartMenu();
+        }
+    }
+
+    private void markFlashRows(List<Integer> rows, boolean[][] mask) {
+        if (rows == null)
+            return;
+        for (int r : rows) {
+            if (r < 0 || r >= boardSize.r)
+                continue;
+            java.util.Arrays.fill(mask[r], true);
+        }
+    }
+
+    private void markFlashCols(List<Integer> cols, boolean[][] mask) {
+        if (cols == null)
+            return;
+        for (int c : cols) {
+            if (c < 0 || c >= boardSize.c)
+                continue;
+            for (int r = 0; r < boardSize.r; r++) {
+                mask[r][c] = true;
+            }
+        }
+    }
+
+    private void markFlashCells(List<Point> cells, boolean[][] mask) {
+        if (cells == null)
+            return;
+        for (Point p : cells) {
+            if (p.r >= 0 && p.r < boardSize.r && p.c >= 0 && p.c < boardSize.c) {
+                mask[p.r][p.c] = true;
+            }
         }
     }
 
