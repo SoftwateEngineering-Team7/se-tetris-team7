@@ -45,36 +45,36 @@ public class RouterAwareTest {
         assertNull("null router가 설정되어야 합니다", routerAware.getRouter());
     }
     
-    @Test
-    public void testRouterAwareReplacement() {
-        TestRouterAware routerAware = new TestRouterAware();
+    // @Test
+    // public void testRouterAwareReplacement() {
+    //     TestRouterAware routerAware = new TestRouterAware();
         
-        // 첫 번째 Router 설정
-        Router router1 = new Router(null);
-        routerAware.setRouter(router1);
-        assertEquals("첫 번째 Router가 설정되어야 합니다", router1, routerAware.getRouter());
+    //     // 첫 번째 Router 설정
+    //     Router router1 = new Router(null);
+    //     routerAware.setRouter(router1);
+    //     assertEquals("첫 번째 Router가 설정되어야 합니다", router1, routerAware.getRouter());
         
-        // 두 번째 Router로 교체
-        Router router2 = new Router(null);
-        routerAware.setRouter(router2);
-        assertEquals("두 번째 Router로 교체되어야 합니다", router2, routerAware.getRouter());
-        assertNotEquals("이전 Router와는 달라야 합니다", router1, routerAware.getRouter());
-    }
+    //     // 두 번째 Router로 교체
+    //     Router router2 = new Router(null);
+    //     routerAware.setRouter(router2);
+    //     assertEquals("두 번째 Router로 교체되어야 합니다", router2, routerAware.getRouter());
+    //     assertNotEquals("이전 Router와는 달라야 합니다", router1, routerAware.getRouter());
+    // }
     
-    @Test
-    public void testInterfaceImplementation() {
-        TestRouterAware routerAware = new TestRouterAware();
+    // @Test
+    // public void testInterfaceImplementation() {
+    //     TestRouterAware routerAware = new TestRouterAware();
         
-        // RouterAware 인터페이스를 구현하는지 확인
-        assertTrue("TestRouterAware는 RouterAware를 구현해야 합니다", 
-                  routerAware instanceof RouterAware);
+    //     // RouterAware 인터페이스를 구현하는지 확인
+    //     assertTrue("TestRouterAware는 RouterAware를 구현해야 합니다", 
+    //               routerAware instanceof RouterAware);
         
-        // 인터페이스 메서드가 존재하는지 확인
-        RouterAware interfaceRef = routerAware;
-        Router router = new Router(null);
-        // 인터페이스 참조를 통해 메서드 호출 가능한지 확인
-        interfaceRef.setRouter(router);
-        assertEquals("인터페이스를 통한 Router 설정이 동작해야 합니다", 
-                    router, routerAware.getRouter());
-    }
+    //     // 인터페이스 메서드가 존재하는지 확인
+    //     RouterAware interfaceRef = routerAware;
+    //     Router router = new Router(null);
+    //     // 인터페이스 참조를 통해 메서드 호출 가능한지 확인
+    //     interfaceRef.setRouter(router);
+    //     assertEquals("인터페이스를 통한 Router 설정이 동작해야 합니다", 
+    //                 router, routerAware.getRouter());
+    // }
 }

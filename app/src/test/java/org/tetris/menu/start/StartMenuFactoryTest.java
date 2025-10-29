@@ -63,12 +63,12 @@ public class StartMenuFactoryTest {
     @Test
     public void testModelCreation() {
         // Factory 내부의 모델 생성 로직 테스트
-        // StartMenuFactory는 3개 버튼으로 모델을 생성함
+        // StartMenuFactory는 6개 버튼으로 모델을 생성함
         try {
             MvcBundle<StartMenuModel, ViewWrap, StartMenuController> bundle = factory.create();
             if (bundle != null) {
                 StartMenuModel model = bundle.model();
-                assertEquals("모델이 3개 버튼으로 초기화되어야 합니다", 0, model.getSelectedIndex());
+                assertEquals("모델이 6개 버튼으로 초기화되어야 합니다", 0, model.getSelectedIndex());
                 
                 // 모델의 이동 테스트
                 model.move(1);
@@ -78,7 +78,16 @@ public class StartMenuFactoryTest {
                 assertEquals("두 번 이동 후 인덱스가 2이어야 합니다", 2, model.getSelectedIndex());
                 
                 model.move(1);
-                assertEquals("세 번 이동 후 순환하여 인덱스가 0이어야 합니다", 0, model.getSelectedIndex());
+                assertEquals("세 번 이동 후 인덱스가 3으로 순환되어야 합니다", 3, model.getSelectedIndex());
+
+                model.move(1);
+                assertEquals("네 번 이동 후 인덱스가 4이어야 합니다", 4, model.getSelectedIndex());
+                
+                model.move(1);
+                assertEquals("다섯 번 이동 후 인덱스가 5이어야 합니다", 5, model.getSelectedIndex());
+
+                model.move(1);
+                assertEquals("여섯 번 이동 후 인덱스가 0으로 순환되어야 합니다", 0, model.getSelectedIndex());
             }
         } catch (RuntimeException e) {
             // FXML 파일 문제로 인한 예외는 예상됨
