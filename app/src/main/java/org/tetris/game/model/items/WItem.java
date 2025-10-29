@@ -24,7 +24,7 @@ public class WItem extends Item {
 
     @Override
     public void Activate(Board board) {
-        
+        while(board.moveDownForce()){}
     }
 
 }
