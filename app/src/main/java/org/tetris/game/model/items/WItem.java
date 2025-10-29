@@ -19,12 +19,16 @@ public class WItem extends Item {
     public Block GetItemBlock(Block block) {
         int[][] shape = W_SHAPE;
         Point pivot = new Point(1, 1);
-        return block.reShape(shape, pivot);
+        itemBlock = block.reShape(shape, pivot);
+        itemBlock.setCanRotate(false);
+        return itemBlock;
     }
 
     @Override
     public void Activate(Board board) {
-        while(board.moveDownForce()){}
+        board.setIsForceDown(true);
+        itemBlock.setCanMove(false);
+        itemBlock.setCanRotate(false);
     }
 
 }
