@@ -1,11 +1,14 @@
 package org.tetris.game.model;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.tetris.game.model.blocks.*;
 import org.tetris.game.model.items.*;
 import org.tetris.shared.BaseModel;
 import org.util.Point;
 
-public class Board extends BaseModel{
+public class Board extends BaseModel {
     private final int height;
     private final int width;
 
@@ -37,7 +40,7 @@ public class Board extends BaseModel{
         return board;
     }
 
-    public Point getSize(){
+    public Point getSize() {
         return new Point(height, width);
     }
 
@@ -70,33 +73,31 @@ public class Board extends BaseModel{
         }
     }
 
-        // 배치 시도 후 가능 여부 반환
+     // 블럭이 해당 위치에 배치 가능한지 확인
     public boolean isValidPos(Point pos, Block activeBlock) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getCell(r, c) != 0) {
-                    int row = pos.r - activeBlock.pivot.r + r;
-                    int col = pos.c - activeBlock.pivot.c + c;
+                if (activeBlock.getCell(r, c) == 0)
+                    continue;
 
-                    // 위쪽 경계를 벗어나는 셀은 무시 (화면 위쪽에서 블록이 시작할 수 있음)
-                    if (row < 0) {
-                        continue;
-                    }
-                    
-                    // 좌, 우, 하 경계를 벗어나면 false 반환
-                    if (col < 0 || col >= width || row >= height) {
-                        return false;
-                    }
-                    
-                    // 경계 안에 있고 충돌이 발생하면 false 반환
-                    if (board[row][col] != 0) {
-                        System.out.println("Collision occurred.");
-                        return false;
-                    }
-                }
+                int row = pos.r + (r - activeBlock.pivot.r); // pos == pivot 좌표 전제
+                int col = pos.c + (c - activeBlock.pivot.c);
+
+                // 1) 좌우 경계는 항상 강제
+                if (col < 0 || col >= width)
+                    return false;
+
+                // 2) 위쪽은 스킵, 아래쪽은 차단
+                if (row < 0)
+                    continue;
+                if (row >= height)
+                    return false;
+
+                // 3) 충돌
+                if (board[row][col] != 0)
+                    return false;
             }
         }
-
         return true;
     }
 
@@ -109,16 +110,16 @@ public class Board extends BaseModel{
     public boolean setActiveBlock(Block block) {
         activeBlock = block;
         curPos = new Point(initialPos);
-        
+
         // 초기 위치에 배치 가능한지 확인
         if (!isValidPos(curPos, activeBlock)) {
             return false; // 게임 오버
         }
-        
+
         placeBlock(curPos, activeBlock);
         return true;
     }
-    
+
     // 현재 블럭 위치 반환
     public Point getCurPos() {
         return curPos;
@@ -205,39 +206,62 @@ public class Board extends BaseModel{
         return isMoved;
     }
 
-    // 라인 클리어 체크 및 처리
-    public int clearLines() {
-        int linesCleared = 0;
-        
-        for (int r = height - 1; r >= 0; r--) {
-            boolean isLineFull = true;
+    public List<Integer> findFullRows() {
+        List<Integer> fullRows = new java.util.ArrayList<>();
+
+        for (int r = 0; r < height; r++) {
+            boolean isFull = true;
             for (int c = 0; c < width; c++) {
                 if (board[r][c] == 0) {
-                    isLineFull = false;
+                    isFull = false;
                     break;
                 }
             }
-            
-            if (isLineFull) {
-                linesCleared++;
-                // 해당 라인 삭제하고 위의 라인들을 아래로 이동
-                for (int row = r; row > 0; row--) {
-                    for (int col = 0; col < width; col++) {
-                        board[row][col] = board[row - 1][col];
-                    }
-                }
-                // 최상단 라인 초기화
-                for (int col = 0; col < width; col++) {
-                    board[0][col] = 0;
-                }
-                r++; // 같은 라인을 다시 체크
+            if (isFull) {
+                fullRows.add(r);
             }
         }
-        
-        return linesCleared;
+
+        return fullRows;
     }
-    
-    
+
+    public void clearColumn(int index) {
+        for (int r = 0; r < height; r++) {
+            board[r][index] = 0;
+        }
+    }
+
+    public void clearRow(int index) {
+        for (int c = 0; c < width; c++) {
+            board[index][c] = 0;
+        }
+    }
+
+    private boolean isRowEmpty(int r) {
+        for (int c = 0; c < width; c++) {
+            if (board[r][c] != 0)
+                return false;
+        }
+        return true;
+    }
+
+    // 보드 한번에 압축
+    public void collapse() {
+        int write = height - 1; // 내려앉힐 위치(아래에서 위로)
+        for (int read = height - 1; read >= 0; read--) { // 위에서 가져올 행 스캐닝
+            if (!isRowEmpty(read)) {
+                if (write != read) {
+                    System.arraycopy(board[read], 0, board[write], 0, width);
+                }
+                write--;
+            }
+        }
+        // 남은 상단 구간을 전부 0으로
+        for (int r = write; r >= 0; r--) {
+            Arrays.fill(board[r], 0);
+        }
+    }
+
     // 보드 초기화
     public void reset() {
         for (int r = 0; r < height; r++) {
