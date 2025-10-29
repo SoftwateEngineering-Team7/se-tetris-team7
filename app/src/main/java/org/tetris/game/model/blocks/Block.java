@@ -15,10 +15,15 @@ public abstract class Block {
     private Point size;
     private int blockCount;
 
+    private boolean canMove;
+    private boolean canRotate;
+
     public Block(int[][] shape, Point pivot, GameColor color) {
         this.shape = shape;
         this.pivot = pivot;
         this.color = color;
+        canMove = true;
+        canRotate = true;
 
         setSize();
         setBlockCount();
@@ -44,13 +49,30 @@ public abstract class Block {
     public int getCell(int r, int c) {
         return shape[r][c];
     }
-    
+
     public int getCell(Point p) {
         return shape[p.r][p.c];
     }
 
+    public boolean getCanRotate() {
+        return canRotate;
+    }
+
+    public boolean getCanMove() {
+        return canMove;
+    }
+
+    public void setCanRotate(boolean canRotate) {
+        this.canRotate = canRotate;
+    }
+
+    public void setCanMove(boolean canMove) {
+        this.canMove = canMove;
+    }
+
     /**
      * 블럭 좌표 리스트 반환 메서드
+     * 
      * @return 블럭 좌표 리스트
      */
     public ArrayList<Point> getBlockPoints() {
@@ -68,6 +90,7 @@ public abstract class Block {
     /**
      * 피벗 기준 좌표 변환 메서드
      * pos - pivot
+     * 
      * @param pos 기준 좌표
      * @return 변환된 좌표
      */

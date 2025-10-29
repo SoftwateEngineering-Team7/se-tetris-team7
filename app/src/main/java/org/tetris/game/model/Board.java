@@ -69,7 +69,7 @@ public class Board extends BaseModel {
         }
     }
 
-     // 블럭이 해당 위치에 배치 가능한지 확인
+    // 블럭이 해당 위치에 배치 가능한지 확인
     public boolean isValidPos(Point pos, Block activeBlock) {
         for (int r = 0; r < activeBlock.height(); r++) {
             for (int c = 0; c < activeBlock.width(); c++) {
@@ -113,7 +113,7 @@ public class Board extends BaseModel {
                 // 2) 위쪽은 스킵, 아래쪽은 차단
                 if (row < 0)
                     continue;
-                if (row >= height)
+                if (row >= height - 1)
                     return false;
             }
         }
@@ -150,6 +150,9 @@ public class Board extends BaseModel {
 
     // 아래로 한칸 이동 함수
     public boolean moveDown() {
+        if (activeBlock.getCanMove() == false)
+            return false;
+
         boolean isMoved = false;
         Point downPos = curPos.down();
         removeBlock(curPos, activeBlock);
@@ -163,22 +166,42 @@ public class Board extends BaseModel {
         return isMoved;
     }
 
-    public boolean moveDownForce()
-    {
+    private boolean isForceDown;
+
+    public boolean getIsForceDown() {
+        return isForceDown;
+    }
+
+    public void setIsForceDown(boolean isForceDown) {
+        this.isForceDown = isForceDown;
+    }
+
+    public boolean moveDownForce() {
+        if (!isForceDown)
+            return false;
+
+        isForceDown = false;
         Point downPos = curPos.down();
         removeBlock(curPos, activeBlock);
 
         if (isInBound(downPos, activeBlock)) {
+            isForceDown = true;
             curPos = downPos;
             placeBlock(downPos, activeBlock);
+
             return true;
 
         }
+
+        placeBlock(downPos, activeBlock);
         return false;
     }
 
     // 오른쪽 한칸 이동 함수
     public boolean moveRight() {
+        if (activeBlock.getCanMove() == false)
+            return false;
+
         boolean isMoved = false;
         Point rightPos = curPos.right();
         removeBlock(curPos, activeBlock);
@@ -194,6 +217,9 @@ public class Board extends BaseModel {
 
     // 왼쪽 한칸 이동 함수
     public boolean moveLeft() {
+        if (activeBlock.getCanMove() == false)
+            return false;
+
         boolean isMoved = false;
         Point leftPos = curPos.left();
         removeBlock(curPos, activeBlock);
@@ -208,6 +234,9 @@ public class Board extends BaseModel {
     }
 
     public int hardDrop() {
+        if (activeBlock.getCanMove() == false)
+            return 0;
+
         removeBlock(curPos, activeBlock);
         int dropDistance = 0;
         while (isValidPos(curPos.down(), activeBlock)) {
@@ -220,6 +249,9 @@ public class Board extends BaseModel {
 
     // 시계방향 90도 회전 함수
     public boolean rotate() {
+        if (activeBlock.getCanRotate() == false)
+            return false;
+
         boolean isMoved = false;
         removeBlock(curPos, activeBlock);
         activeBlock.rotateCW();
@@ -264,7 +296,7 @@ public class Board extends BaseModel {
             board[index][c] = 0;
         }
     }
-    
+
     public java.util.List<Point> clearBomb(Point center) {
         java.util.List<Point> targets = new java.util.ArrayList<>(9);
 

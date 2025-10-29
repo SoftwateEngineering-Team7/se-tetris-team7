@@ -171,7 +171,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         double stageHeight = root.getScene().getWindow().getHeight();
 
         // 화면 크기에 따라 셀 크기 비율 계산
-        cellSize = (int) Math.round(Math.min(stageWidth / 20, stageHeight / 22));
+        cellSize = (int) Math.round(Math.min((stageWidth - 450) / 13, stageHeight / 23));
 
         // 보드 크기에 맞는 Canvas 생성
         int canvasHeight = boardSize.r * cellSize;
@@ -379,6 +379,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
         clearingRows.addAll(fullRows);
 
         gameModel.activateItem();
+
+        if (boardModel.getIsForceDown()) {
+            boardModel.moveDownForce();
+            return;
+        }
 
         if (!clearingRows.isEmpty() || !clearingCols.isEmpty() || !clearingCells.isEmpty()) {
             beginFlash(fullRows, fullCols, java.util.Collections.emptyList(), System.nanoTime());

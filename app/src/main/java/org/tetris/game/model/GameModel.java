@@ -79,8 +79,7 @@ public class GameModel extends BaseModel {
         System.out.println("Item Mode: " + itemMode);
     }
 
-    public void setDifficulty()
-    {
+    public void setDifficulty() {
         this.nextBlockModel.setBlockProbList(Difficulty.getBlockProbList());
     }
 
@@ -98,10 +97,14 @@ public class GameModel extends BaseModel {
         }
     }
 
-    public boolean autoDown()
-    {
-        boolean moved; 
-        moved = board.moveDown();
+    public boolean autoDown() {
+        boolean moved;
+        if (board.getIsForceDown()) {
+            moved = board.moveDownForce();
+        } else {
+            moved = board.moveDown();
+        }
+
         return moved;
     }
 
@@ -126,10 +129,10 @@ public class GameModel extends BaseModel {
         level = (totalLinesCleared / 10) + 1;
     }
 
-    public void updateItemMode()
-    {
-        if (!isItemMode) return;
-    
+    public void updateItemMode() {
+        if (!isItemMode)
+            return;
+
         if (localLineCleared >= ITEM_MODE_LINE_THRESHOLD) {
             localLineCleared = 0;
             activeItem = Item.getRandomItem();
@@ -137,15 +140,14 @@ public class GameModel extends BaseModel {
         }
     }
 
-    public void activateItem()
-    {
+    public void activateItem() {
         if (isItemMode && !isItemUsed) {
             isItemUsed = true;
             activeItem.Activate(board);
             scoreModel.itemActivated();
         }
     }
-    
+
     // 게임 리셋
     public void reset() {
         board.reset();
