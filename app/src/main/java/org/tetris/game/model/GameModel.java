@@ -7,7 +7,7 @@ import org.tetris.game.model.items.*;
 
 public class GameModel extends BaseModel {
 
-    private final static int ITEM_MODE_LINE_THRESHOLD = 5;
+    private final static int ITEM_MODE_LINE_THRESHOLD = 1;
 
     private final NextBlockModel nextBlockModel;
     private final Board board;

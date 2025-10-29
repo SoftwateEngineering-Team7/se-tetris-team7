@@ -40,6 +40,7 @@ public class LItem extends Item {
         Point itemPos = getPosition();
 
         int row = blockPos.r - itemBlock.pivot.r + itemPos.r;
-        board.clearALine(row);
+        board.clearRow(row);
+        board.collapse();
     }
 }
