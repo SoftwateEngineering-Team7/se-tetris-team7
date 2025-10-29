@@ -88,4 +88,9 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
             inputPane.setVisible(false);
         }
     }
+
+    public void setItemMode(boolean isItemMode){
+        model.setHighScorePath(isItemMode);
+        updateScoreTable();
+    }
 }
