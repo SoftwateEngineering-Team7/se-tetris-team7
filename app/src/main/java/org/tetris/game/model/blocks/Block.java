@@ -15,8 +15,6 @@ public abstract class Block {
     private Point size;
     private int blockCount;
 
-    private ArrayList<Point> blockPositions;
-
     public Block(int[][] shape, Point pivot, GameColor color) {
         this.shape = shape;
         this.pivot = pivot;
@@ -56,15 +54,7 @@ public abstract class Block {
      * @return 블럭 좌표 리스트
      */
     public ArrayList<Point> getBlockPositions() {
-        if (blockPositions != null)
-            return blockPositions;
-        setBlockPositions();
-        return blockPositions;
-    }
-
-    private void setBlockPositions()
-    {
-        blockPositions = new ArrayList<>();
+        ArrayList<Point> blockPositions = new ArrayList<>();
         for (int r = 0; r < size.r; r++) {
             for (int c = 0; c < size.c; c++) {
                 if (shape[r][c] != 0) {
@@ -72,6 +62,7 @@ public abstract class Block {
                 }
             }
         }
+        return blockPositions;
     }
 
     /**
@@ -136,7 +127,6 @@ public abstract class Block {
 
         shape = rotated;
         setSize();
-        setBlockPositions();
     }
 
     public void rotateCCW() {
@@ -153,7 +143,6 @@ public abstract class Block {
 
         shape = rotated;
         setSize();
-        setBlockPositions();
     }
 
     public Color getColor() {
