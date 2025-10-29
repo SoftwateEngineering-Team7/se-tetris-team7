@@ -44,6 +44,22 @@ public class TestScoreBoardController extends ApplicationTest {
     }
 
     @Test
+    public void testSetItemMode(){
+        MvcBundle bundle = sbFactory.create();
+        var controller = bundle.controller();
+        if(controller instanceof ScoreBoardController sbc){
+            
+            sbc.setItemMode(true);
+            sleep(1000);
+            // 아이템 모드용 최고점수 파일이 로드되었는지 확인하는 로직 추가 필요
+
+            sbc.setItemMode(false);
+            sleep(1000);
+            // 기본 모드용 최고점수 파일이 로드되었는지 확인하는 로직 추가 필요
+        }
+    }
+
+    @Test
     public void testNameFieldInput() {
         clickOn("#nameField").write("TestPlayer");
         verifyThat("#nameField", TextInputControlMatchers.hasText("TestPlayer"));

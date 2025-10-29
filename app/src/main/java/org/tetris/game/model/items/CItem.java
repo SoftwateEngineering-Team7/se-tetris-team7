@@ -18,29 +18,33 @@ public class CItem extends Item {
     public Block GetItemBlock(Block block) {
         Point size = block.getSize();
         int[][] shape = new int[size.r][size.c];
+        
+        var blockPoints = block.getBlockPoints();
 
-        Random rand = new Random();
-        int itemIndex = rand.nextInt(block.getBlockCount());
-        int count = 0;
-
-        for(int r = 0; r < size.r; r++){
-            for(int c = 0; c < size.c; c++){
-                shape[r][c] = block.getCell(r, c);
-                if(shape[r][c] == 0) continue;
-
-                count++;
-                if (count == itemIndex) {
-                    shape[r][c] = itemID;
-                }
-            }
+        for(Point p : blockPoints){
+            shape[p.r][p.c] = block.getCell(p);
         }
 
-        return block.reShape(shape);
+        Random rand = new Random();
+        int itemIndex = rand.nextInt(blockPoints.size());
+        Point itemPoint = blockPoints.get(itemIndex);
+        shape[itemPoint.r][itemPoint.c] = itemID;
+        
+        itemBlock = block.reShape(shape);
+        return itemBlock;
     }
 
     @Override
     public void Activate(Board board) {
-        // Activate the item (e.g., apply its effect)
+        Point blockPos = board.getCurPos();
+        Point itemPos = getPosition();
+
+        int row = blockPos.r - itemBlock.pivot.r + itemPos.r;
+        int col = blockPos.c - itemBlock.pivot.c + itemPos.c;
+
+        board.clearRow(row);
+        board.clearColumn(col);
+        board.collapse();
     }
     
 }

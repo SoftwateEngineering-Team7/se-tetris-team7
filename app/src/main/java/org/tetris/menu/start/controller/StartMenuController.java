@@ -29,6 +29,8 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     // 메뉴 버튼 텍스트 상수
     private static final String TEXT_NORMAL_MODE = "일반 모드\n게임 시작";
     private static final String TEXT_ITEM_MODE = "아이템 모드\n게임 시작";
+    private static final String TEXT_NORMALSCOREBOARD = "스코어보드\n보기";
+    private static final String TEXT_ITEM_SCOREBOARD = "아이템 스코어보드\n보기";
     private static final String TEXT_SETTINGS = "설정";
     private static final String TEXT_EXIT = "종료";
     
@@ -52,23 +54,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     @FXML
     private Label wrongInputLabel;
 
-    // 스코어보드 영역 - Item (왼쪽)
-    @FXML
-    private VBox scoreboardItem;
-    @FXML
-    private Label scoreboardItemTitle;
-    @FXML
-    private VBox scoreboardItemBox;
-
-    // 스코어보드 영역 - Normal (오른쪽)
-    @FXML
-    private VBox scoreboardNormal;
-    @FXML
-    private Label scoreboardNormalTitle;
-    @FXML
-    private VBox scoreboardNormalBox;
-
-
     private Router router;
     private final ArrayList<Button> buttons = new ArrayList<>();
     private Timeline hideMessageTimeline;
@@ -78,7 +63,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         super.initialize();
 
         createMenuButtons();
-        setupWrongInputLabelText();
 
         // 첫 번째 버튼 하이라이트
         if (!buttons.isEmpty()) {
@@ -106,11 +90,15 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         Button normalStartButton = createMenuButton(TEXT_NORMAL_MODE);
         Button itemStarButton = createMenuButton(TEXT_ITEM_MODE);
         Button settingButton = createMenuButton(TEXT_SETTINGS);
+        Button normalScoreBoardButton = createMenuButton(TEXT_NORMALSCOREBOARD);
+        Button itemScoreBoardButton = createMenuButton(TEXT_ITEM_SCOREBOARD);
         Button exitButton = createMenuButton(TEXT_EXIT);
 
         buttons.add(normalStartButton);
         buttons.add(itemStarButton);
         buttons.add(settingButton);
+        buttons.add(normalScoreBoardButton);
+        buttons.add(itemScoreBoardButton);
         buttons.add(exitButton);
 
         menuBox.getChildren().addAll(buttons);
@@ -121,10 +109,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         button.setFocusTraversable(false);
         button.getStyleClass().add(STYLE_MENU_BUTTON);
         return button;
-    }
-
-    private void setupWrongInputLabelText() {
-        wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
     }
 
     public void bindInput() {
@@ -168,14 +152,18 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
             showWrongInputLabel();
     }
 
-    private void showWrongInputLabel() {
-        wrongInputLabel.setVisible(true);
-        
-        if(KeyLayout.getCurrentLayout() == KeyLayout.KEY_ARROWS) {
+    private void setupWrongInputLabelText() {
+        if(KeyLayout.getCurrentLayout().equals(KeyLayout.KEY_ARROWS)) {
             wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
         } else {
             wrongInputLabel.setText(TEXT_WRONG_INPUT_WASD);
         }
+    }
+
+    private void showWrongInputLabel() {
+        wrongInputLabel.setVisible(true);
+        
+        setupWrongInputLabelText();
 
         if (hideMessageTimeline != null)
             hideMessageTimeline.stop();
@@ -246,6 +234,16 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         router.exitGame();
     }
 
+    @FXML
+    public void onShowNormalScoreboard() {
+        
+    }
+
+    @FXML
+    public void onShowItemScoreboard() {
+        
+    }
+
     /*
      * =========================
      * 반응형(화면 크기 대응)
@@ -268,8 +266,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
         updateTitleSizes(w, h);
 
         updateButtonSizes(w, h);
-
-        updateScoreboardSizes(w, h);
     }
 
     private void updateTitleSizes(double w, double h) {
@@ -295,42 +291,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
             // 인라인 스타일로 폰트 크기만 덧입힘(기타 CSS는 그대로 유지)
             b.setStyle(STYLE_TITLE + Math.round(btnFontPx) + PX_STRING);
         }
-    }
-
-    private void updateScoreboardSizes(double screenW, double screenH) {
-        // 스코어보드 너비: 화면 너비에 비례, 클램프
-        double sbWidth = clamp(screenW * 0.20, 200, 400);
-        
-        // 스코어보드 높이: 화면 높이에 비례, 클램프
-        double sbHeight = clamp(screenH * 0.7, 400, 800);
-        
-        // 스코어보드 타이틀 폰트 크기
-        double sbTitleFontPx = clamp(screenW * 0.012, 11, 16);
-
-        // Item 스코어보드 적용
-        if (scoreboardItem != null) {
-            scoreboardItem.setPrefWidth(sbWidth);
-            scoreboardItem.setPrefHeight(sbHeight);
-            scoreboardItem.setMaxWidth(sbWidth);
-            scoreboardItem.setMaxHeight(sbHeight);
-        }
-        if (scoreboardItemTitle != null) {
-            scoreboardItemTitle.setStyle(STYLE_TITLE + Math.round(sbTitleFontPx) + PX_STRING);
-        }
-
-        // Normal 스코어보드 적용
-        if (scoreboardNormal != null) {
-            scoreboardNormal.setPrefWidth(sbWidth);
-            scoreboardNormal.setPrefHeight(sbHeight);
-            scoreboardNormal.setMaxWidth(sbWidth);
-            scoreboardNormal.setMaxHeight(sbHeight);
-        }
-        if (scoreboardNormalTitle != null) {
-            scoreboardNormalTitle.setStyle(STYLE_TITLE + Math.round(sbTitleFontPx) + PX_STRING);
-        }
-
-        // 스코어 행 폰트는 동적 생성 시 적용되므로 여기서는 변수만 저장
-        // (필요시 ScoreRow 생성 시 참조할 수 있도록 필드에 저장)
     }
 
     private static double clamp(double v, double min, double max) {

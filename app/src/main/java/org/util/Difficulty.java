@@ -29,14 +29,14 @@ public class Difficulty {
         }
     }
 
-    public static int[][] getBlockProbList() {
+    public static int[] getBlockProbList() {
         switch (currentDifficulty) {
             case EASY_STRING:
-                return new int[][] { NextBlockModel.EASY_BLOCK_PROB_LIST };
+                return NextBlockModel.EASY_BLOCK_PROB_LIST;
             case HARD_STRING:
-                return new int[][] { NextBlockModel.HARD_BLOCK_PROB_LIST };
+                return NextBlockModel.HARD_BLOCK_PROB_LIST;
             default:
-                return new int[][] { NextBlockModel.DEFAULT_BLOCK_PROB_LIST };
+                return NextBlockModel.DEFAULT_BLOCK_PROB_LIST;
         }
     }
 

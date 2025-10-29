@@ -97,6 +97,29 @@ public class Board extends BaseModel {
         return true;
     }
 
+    public boolean isInBound(Point pos, Block activeBlock) {
+        for (int r = 0; r < activeBlock.height(); r++) {
+            for (int c = 0; c < activeBlock.width(); c++) {
+                if (activeBlock.getCell(r, c) == 0)
+                    continue;
+
+                int row = pos.r + (r - activeBlock.pivot.r); // pos == pivot 좌표 전제
+                int col = pos.c + (c - activeBlock.pivot.c);
+
+                // 1) 좌우 경계는 항상 강제
+                if (col < 0 || col >= width)
+                    return false;
+
+                // 2) 위쪽은 스킵, 아래쪽은 차단
+                if (row < 0)
+                    continue;
+                if (row >= height)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     // 보드 크기 에 있는지 확인
     public boolean isInBound(int row, int col) {
         return row >= 0 && row < height && col >= 0 && col < width;
@@ -140,6 +163,20 @@ public class Board extends BaseModel {
         return isMoved;
     }
 
+    public boolean moveDownForce()
+    {
+        Point downPos = curPos.down();
+        removeBlock(curPos, activeBlock);
+
+        if (isInBound(downPos, activeBlock)) {
+            curPos = downPos;
+            placeBlock(downPos, activeBlock);
+            return true;
+
+        }
+        return false;
+    }
+
     // 오른쪽 한칸 이동 함수
     public boolean moveRight() {
         boolean isMoved = false;
@@ -168,11 +205,6 @@ public class Board extends BaseModel {
 
         placeBlock(curPos, activeBlock);
         return isMoved;
-    }
-
-    // 매 임의의 시간마다 아래로 한칸 이동하는 함수 (이동이 불가하면 false 반환)
-    public boolean autoDown() {
-        return moveDown();
     }
 
     public int hardDrop() {
@@ -230,6 +262,23 @@ public class Board extends BaseModel {
     public void clearRow(int index) {
         for (int c = 0; c < width; c++) {
             board[index][c] = 0;
+        }
+    }
+    
+    public void clearBomb(Point center)
+    {
+        int rCenter = center.r;
+        int cCenter = center.c;
+
+        for (int dr = -1; dr <= 1; dr++) {
+            for (int dc = -1; dc <= 1; dc++) {
+                int r = rCenter + dr;
+                int c = cCenter + dc;
+
+                if (isInBound(r, c)) {
+                    board[r][c] = 0;
+                }
+            }
         }
     }
 

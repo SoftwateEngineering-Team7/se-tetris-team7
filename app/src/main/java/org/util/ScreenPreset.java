@@ -5,9 +5,17 @@ public class ScreenPreset {
     public static final String MIDDLE_STRING = "MIDDLE";
     public static final String LARGE_STRING = "LARGE";
 
-    public static final String SMALL_SIZE = "800x600";
-    public static final String MIDDLE_SIZE = "1000x700";
-    public static final String LARGE_SIZE = "1200x800";
+    public static final String SMALL_SIZE = "800x800";
+    public static final String MIDDLE_SIZE = "1000x810";
+    public static final String LARGE_SIZE = "1200x820";
+
+    public static final int SMALL_WIDTH = 800;
+    public static final int SMALL_HEIGHT = 800;
+    public static final int MIDDLE_WIDTH = 1000;
+    public static final int MIDDLE_HEIGHT = 810;
+    public static final int LARGE_WIDTH = 1200;
+    public static final int LARGE_HEIGHT = 820;
+
 
     private static String currentPreset = SMALL_STRING;
     
@@ -63,9 +71,9 @@ public class ScreenPreset {
 
     // region 화면 크기 정의
 
-    public static final ScreenPreset SMALL = new ScreenPreset(ScreenPreset.SMALL_STRING, 800, 600);
-    public static final ScreenPreset MIDDLE = new ScreenPreset(ScreenPreset.MIDDLE_STRING, 1000, 700);
-    public static final ScreenPreset LARGE = new ScreenPreset(ScreenPreset.LARGE_STRING, 1200, 800);
+    public static final ScreenPreset SMALL = new ScreenPreset(ScreenPreset.SMALL_STRING, ScreenPreset.SMALL_WIDTH, ScreenPreset.SMALL_HEIGHT);
+    public static final ScreenPreset MIDDLE = new ScreenPreset(ScreenPreset.MIDDLE_STRING, ScreenPreset.MIDDLE_WIDTH, ScreenPreset.MIDDLE_HEIGHT);
+    public static final ScreenPreset LARGE = new ScreenPreset(ScreenPreset.LARGE_STRING, ScreenPreset.LARGE_WIDTH, ScreenPreset.LARGE_HEIGHT);
 
     // endregion
 }

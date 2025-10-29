@@ -186,7 +186,7 @@ public class BoardTest {
 
         board.setActiveBlock(block);
 
-        boolean moved = board.autoDown();
+        boolean moved = board.moveDown();
 
         assertTrue(moved);
     }
@@ -203,7 +203,7 @@ public class BoardTest {
             // 계속 이동
         }
 
-        boolean moved = board.autoDown();
+        boolean moved = board.moveDown();
 
         assertFalse(moved);
     }

@@ -272,7 +272,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
             boardModel.rotate();
             updateGameBoard();
         } else if(code == KeyLayout.getDownKey()) {
-            boardModel.moveDown();
+            boolean moved = boardModel.moveDown();
+            if (moved) {
+                scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
+            }
             updateGameBoard();
         } else if(code == KeyCode.SPACE) {
             handleHardDrop();
@@ -296,10 +299,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
      * @param itemMode 아이템 모드 여부
      * @param difficulty 난이도
      */
-    public void setUpGameMode(boolean itemMode, Difficulty difficulty)
+    public void setUpGameMode(boolean itemMode)
     {
         gameModel.setItemMode(itemMode);
-        gameModel.setDifficulty(difficulty);
+        gameModel.setDifficulty();
     }
 
     private void startGameLoop() {
@@ -342,9 +345,12 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // 시간 기반 블록 낙하 처리
         long timeSinceLastDrop = now - lastDropTime;
         if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = boardModel.autoDown();
+            boolean moved = gameModel.autoDown();
 
-            if (!moved) {
+            if (moved) {
+                // 자동으로 1칸 떨어질 때마다 점수 획득
+                scoreModel.blockDropped();
+            } else {
                 lockCurrentBlock();
             }
 
@@ -360,6 +366,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void lockCurrentBlock() {
+        gameModel.activateItem();
+        
         // 라인 검사
         List<Integer> fullRows = boardModel.findFullRows();
 
@@ -435,6 +443,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
             gameLoop.stop();
         }
         showGameOver();
+        
     }
 
     private void updateGameBoard() {
@@ -478,10 +487,27 @@ public class GameController extends BaseController<GameModel> implements RouterA
                 gc.setStroke(Color.WHITE);
                 gc.setLineWidth(1);
                 gc.strokeRect(
-                        c * cellSize,
-                        r * cellSize,
-                        cellSize - 2,
-                        cellSize - 2);
+                    c * CELL_SIZE, 
+                    r * CELL_SIZE, 
+                    CELL_SIZE - 2, 
+                    CELL_SIZE - 2);
+                
+                String cellText = getCellText(cellValue);
+                if (!cellText.isEmpty()) {
+                    gc.setFill(Color.BLACK); // 텍스트 색상
+                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, CELL_SIZE * 0.6));
+                    
+                    // 텍스트 중앙 정렬
+                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
+                    text.setFont(gc.getFont());
+                    double textWidth = text.getBoundsInLocal().getWidth();
+                    double textHeight = text.getBoundsInLocal().getHeight();
+                    
+                    double textX = c * CELL_SIZE + (CELL_SIZE - textWidth) / 2;
+                    double textY = r * CELL_SIZE + (CELL_SIZE + textHeight) / 2 - 2;
+                    
+                    gc.fillText(cellText, textX, textY);
+                }
             }
         }
     }
@@ -497,6 +523,24 @@ public class GameController extends BaseController<GameModel> implements RouterA
             case 6: return GameColor.PURPLE.getColor();  // TBlock
             case 7: return GameColor.CYAN.getColor();    // ZBlock
             default: return Color.WHITE;
+        }
+    }
+
+    // 셀 값에 따른 문자 반환
+    private String getCellText(int cellValue) {
+        switch (cellValue) {
+            case 9:
+                return "L";
+            case 10:
+                return "W";
+            case 11:
+                return "H";
+            case 12:
+                return "B";
+            case 13:
+                return "C";
+            default:
+                return "";
         }
     }
 
@@ -645,6 +689,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void showGameOver() {
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
+        
+        router.showScoreBoard(true, scoreModel.getScore());
     }
 
     @Override
