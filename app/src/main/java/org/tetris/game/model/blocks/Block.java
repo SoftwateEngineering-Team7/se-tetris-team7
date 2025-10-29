@@ -58,7 +58,12 @@ public abstract class Block {
     public ArrayList<Point> getBlockPositions() {
         if (blockPositions != null)
             return blockPositions;
+        setBlockPositions();
+        return blockPositions;
+    }
 
+    private void setBlockPositions()
+    {
         blockPositions = new ArrayList<>();
         for (int r = 0; r < size.r; r++) {
             for (int c = 0; c < size.c; c++) {
@@ -67,7 +72,6 @@ public abstract class Block {
                 }
             }
         }
-        return blockPositions;
     }
 
     /**
@@ -132,6 +136,7 @@ public abstract class Block {
 
         shape = rotated;
         setSize();
+        setBlockPositions();
     }
 
     public void rotateCCW() {
@@ -148,6 +153,7 @@ public abstract class Block {
 
         shape = rotated;
         setSize();
+        setBlockPositions();
     }
 
     public Color getColor() {
