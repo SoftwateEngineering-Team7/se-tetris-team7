@@ -1,0 +1,74 @@
+/* ScoreBoard Table Styles - Game Theme */
+
+#scoreTable {
+    -fx-background-color: #0f3460;
+    -fx-border-color: #533483;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+}
+
+/* Table Header */
+#scoreTable .column-header-background {
+    -fx-background-color: #533483;
+}
+
+#scoreTable .column-header {
+    -fx-background-color: #533483;
+    -fx-text-fill: white;
+    -fx-font-family: "Arial Black";
+    -fx-font-size: 14px;
+    -fx-alignment: CENTER;
+}
+
+#scoreTable .column-header .label {
+    -fx-text-fill: #e94560;
+    -fx-font-weight: bold;
+}
+
+/* Table Cells */
+#scoreTable .table-row-cell {
+    -fx-background-color: #0f3460;
+    -fx-text-fill: white;
+    -fx-font-family: "Consolas";
+    -fx-font-size: 13px;
+}
+
+#scoreTable .table-row-cell:odd {
+    -fx-background-color: #16213e;
+}
+
+#scoreTable .table-row-cell:selected {
+    -fx-background-color: #533483;
+    -fx-text-fill: white;
+}
+
+#scoreTable .table-row-cell:hover {
+    -fx-background-color: #1a3a5c;
+}
+
+#scoreTable .table-cell {
+    -fx-text-fill: white;
+    -fx-alignment: CENTER;
+    -fx-border-color: transparent;
+}
+
+/* Scrollbar */
+#scoreTable .scroll-bar:vertical {
+    -fx-background-color: #0f3460;
+}
+
+#scoreTable .scroll-bar:vertical .track {
+    -fx-background-color: #0f3460;
+    -fx-border-radius: 5;
+}
+
+#scoreTable .scroll-bar:vertical .thumb {
+    -fx-background-color: #533483;
+    -fx-border-radius: 5;
+}
+
+#scoreTable .scroll-bar:vertical .increment-button,
+#scoreTable .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+}
+

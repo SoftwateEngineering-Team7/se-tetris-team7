@@ -136,8 +136,8 @@ public final class Router {
         popupStage.setResizable(false);
         
         // 팝업 크기 설정 (필요에 따라 조정)
-        popupStage.setWidth(500);
-        popupStage.setHeight(425);
+        popupStage.setWidth(600);
+        popupStage.setHeight(440);
         popupStage.centerOnScreen();
 
         // 팝업 표시
