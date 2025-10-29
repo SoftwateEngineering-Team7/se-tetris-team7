@@ -113,7 +113,7 @@ public class Board extends BaseModel {
                 // 2) 위쪽은 스킵, 아래쪽은 차단
                 if (row < 0)
                     continue;
-                if (row >= height - 1)
+                if (row >= height)
                     return false;
             }
         }
@@ -187,13 +187,11 @@ public class Board extends BaseModel {
         if (isInBound(downPos, activeBlock)) {
             isForceDown = true;
             curPos = downPos;
-            placeBlock(downPos, activeBlock);
+            placeBlock(curPos, activeBlock);
 
             return true;
 
         }
-
-        placeBlock(downPos, activeBlock);
         return false;
     }
 
