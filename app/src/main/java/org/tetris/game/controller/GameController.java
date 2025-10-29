@@ -21,7 +21,7 @@ import org.util.Point;
 import javafx.fxml.FXML;
 
 import javafx.animation.AnimationTimer;
-import javafx.application.Platform;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
@@ -91,7 +91,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private GraphicsContext gc;
     private Canvas nextBlockCanvas;
     private GraphicsContext nextBlockGc;
-    private int cellSize = 26; // 각 셀의 크기 (픽셀)
+    private static final int CELL_SIZE = 26; // 각 셀의 크기 (픽셀)
     private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
 
     private Point boardSize;
@@ -125,7 +125,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     @FXML
-    public void initialize() {
+    protected void initialize() {
         super.initialize();
 
         // 이전 게임 루프가 있으면 정리
@@ -139,8 +139,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         lastDropTime = 0;
 
         setBoardSize();
-        Platform.runLater(() -> setupUI());
-        // setupUI();
+        setupUI();
         setupEventHandlers();
         startGameLoop();
     }
@@ -164,14 +163,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void setupCanvas() {
-        double stageWidth = root.getScene().getWindow().getWidth();
-        double stageHeight = root.getScene().getWindow().getHeight();
-
-        cellSize = (int) Math.round(Math.min(stageWidth / 20, stageHeight / 22));
-
         // 보드 크기에 맞는 Canvas 생성
-        int canvasHeight = boardSize.r * cellSize;
-        int canvasWidth = boardSize.c * cellSize;
+        int canvasHeight = boardSize.r * CELL_SIZE;
+        int canvasWidth = boardSize.c * CELL_SIZE;
 
         boardCanvas = new Canvas(canvasWidth, canvasHeight);
         gc = boardCanvas.getGraphicsContext2D();
@@ -261,23 +255,23 @@ public class GameController extends BaseController<GameModel> implements RouterA
         KeyCode code = e.getCode();
 
         // switch문으로는 static 메서드 호출이 불가능하므로 if-else로 처리
-        if (code == KeyLayout.getLeftKey()) {
+        if(code == KeyLayout.getLeftKey()) {
             boardModel.moveLeft();
             updateGameBoard();
-        } else if (code == KeyLayout.getRightKey()) {
+        } else if(code == KeyLayout.getRightKey()) {
             boardModel.moveRight();
             updateGameBoard();
-        } else if (code == KeyLayout.getUpKey()) {
+        } else if(code == KeyLayout.getUpKey()) {
             boardModel.rotate();
             updateGameBoard();
-        } else if (code == KeyLayout.getDownKey()) {
+        } else if(code == KeyLayout.getDownKey()) {
             boardModel.moveDown();
             updateGameBoard();
-        } else if (code == KeyCode.SPACE) {
+        } else if(code == KeyCode.SPACE) {
             handleHardDrop();
-        } else if (code == KeyCode.P) {
+        } else if(code == KeyCode.P) {
             togglePause();
-        } else {
+        } else{
             // 기타 키는 무시
         }
 
@@ -289,14 +283,14 @@ public class GameController extends BaseController<GameModel> implements RouterA
         scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
         lockCurrentBlock();
     }
-
+    
     /**
      * 게임 모드 설정
-     * 
-     * @param itemMode   아이템 모드 여부
+     * @param itemMode 아이템 모드 여부
      * @param difficulty 난이도
      */
-    public void setUpGameMode(boolean itemMode, Difficulty difficulty) {
+    public void setUpGameMode(boolean itemMode, Difficulty difficulty)
+    {
         gameModel.setItemMode(itemMode);
         gameModel.setDifficulty(difficulty);
     }
@@ -446,7 +440,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         // 전체 Canvas 초기화 (검은색 배경)
         gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, cols * cellSize, rows * cellSize);
+        gc.fillRect(0, 0, cols * CELL_SIZE, rows * CELL_SIZE);
 
         // 각 셀을 그리기
         for (int r = 0; r < rows; r++) {
@@ -458,10 +452,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
                     // 빈 칸(플래시 아님)
                     gc.setFill(Color.BLACK);
                     gc.fillRect(
-                            c * cellSize,
-                            r * cellSize,
-                            cellSize,
-                            cellSize);
+                        c * CELL_SIZE, 
+                        r * CELL_SIZE, 
+                        CELL_SIZE, 
+                        CELL_SIZE);
                     continue;
                 }
 
@@ -469,18 +463,18 @@ public class GameController extends BaseController<GameModel> implements RouterA
                 Color fill = flashThisRow ? Color.WHITE : getCellColor(cellValue);
                 gc.setFill(fill);
                 gc.fillRect(
-                        c * cellSize,
-                        r * cellSize,
-                        cellSize - 2,
-                        cellSize - 2);
+                    c * CELL_SIZE, 
+                    r * CELL_SIZE, 
+                    CELL_SIZE - 2, 
+                    CELL_SIZE - 2);
 
                 gc.setStroke(Color.WHITE);
                 gc.setLineWidth(1);
                 gc.strokeRect(
-                        c * cellSize,
-                        r * cellSize,
-                        cellSize - 2,
-                        cellSize - 2);
+                    c * CELL_SIZE, 
+                    r * CELL_SIZE, 
+                    CELL_SIZE - 2, 
+                    CELL_SIZE - 2);
             }
         }
     }
@@ -488,22 +482,14 @@ public class GameController extends BaseController<GameModel> implements RouterA
     // 셀 값에 따른 색상 반환
     private Color getCellColor(int cellValue) {
         switch (cellValue) {
-            case 1:
-                return GameColor.BLUE.getColor(); // IBlock
-            case 2:
-                return GameColor.ORANGE.getColor(); // JBlock
-            case 3:
-                return GameColor.YELLOW.getColor(); // LBlock
-            case 4:
-                return GameColor.GREEN.getColor(); // OBlock
-            case 5:
-                return GameColor.RED.getColor(); // SBlock
-            case 6:
-                return GameColor.PURPLE.getColor(); // TBlock
-            case 7:
-                return GameColor.CYAN.getColor(); // ZBlock
-            default:
-                return Color.WHITE;
+            case 1: return GameColor.BLUE.getColor();    // IBlock
+            case 2: return GameColor.ORANGE.getColor();  // JBlock
+            case 3: return GameColor.YELLOW.getColor();  // LBlock
+            case 4: return GameColor.GREEN.getColor();   // OBlock
+            case 5: return GameColor.RED.getColor();     // SBlock
+            case 6: return GameColor.PURPLE.getColor();  // TBlock
+            case 7: return GameColor.CYAN.getColor();    // ZBlock
+            default: return Color.WHITE;
         }
     }
 
@@ -520,8 +506,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void updateNextBlockPreview() {
-        if (nextBlockGc == null)
-            return;
+        if (nextBlockGc == null) return;
 
         double canvasWidth = nextBlockCanvas.getWidth();
         double canvasHeight = nextBlockCanvas.getHeight();
@@ -531,8 +516,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         // 다음 블록 가져오기
         Block nextBlock = nextBlockModel.peekNext();
-        if (nextBlock == null)
-            return;
+        if (nextBlock == null) return;
 
         Color blockColor = nextBlock.getColor();
 
@@ -553,7 +537,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
                             offsetX + c * PREVIEW_CELL_SIZE,
                             offsetY + r * PREVIEW_CELL_SIZE,
                             PREVIEW_CELL_SIZE - 2,
-                            PREVIEW_CELL_SIZE - 2);
+                        PREVIEW_CELL_SIZE - 2
+                    );
 
                     // 테두리 효과
                     nextBlockGc.setStroke(Color.WHITE);
@@ -562,15 +547,15 @@ public class GameController extends BaseController<GameModel> implements RouterA
                             offsetX + c * PREVIEW_CELL_SIZE,
                             offsetY + r * PREVIEW_CELL_SIZE,
                             PREVIEW_CELL_SIZE - 2,
-                            PREVIEW_CELL_SIZE - 2);
+                            PREVIEW_CELL_SIZE - 2
+                    );
                 }
             }
         }
     }
 
     private void togglePause() {
-        if (gameModel.isGameOver())
-            return;
+        if (gameModel.isGameOver()) return;
 
         gameModel.setPaused(!gameModel.isPaused());
 
