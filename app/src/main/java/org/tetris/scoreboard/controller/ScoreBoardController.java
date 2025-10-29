@@ -15,6 +15,7 @@ import javafx.scene.text.Text;
 public class ScoreBoardController extends BaseController<ScoreBoard> {
 
     private int finishScore;
+    private String currentDifficulty;
 
     public ScoreBoardController(ScoreBoard scoreBoard)
     {
@@ -31,7 +32,7 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
 
     private void submitCurrentScore(int score, String name)
     {
-        model.insert(new ScoreInfo(score, name));
+        model.insert(new ScoreInfo(score, name, currentDifficulty != null ? currentDifficulty : "EASY"));
         model.writeHighScoreList();
     }
 
@@ -87,6 +88,11 @@ public class ScoreBoardController extends BaseController<ScoreBoard> {
         } else {
             inputPane.setVisible(false);
         }
+    }
+
+    public void setDifficulty(String difficulty)
+    {
+        this.currentDifficulty = difficulty;
     }
 
     public void setItemMode(boolean isItemMode){

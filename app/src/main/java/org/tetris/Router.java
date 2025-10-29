@@ -65,6 +65,7 @@ public final class Router {
         if (controller instanceof ScoreBoardController sbc) {
             sbc.setFromGame(fromGame, score);
             sbc.setItemMode(itemMode);
+            sbc.setDifficulty(setting.getDifficulty());
         }
 
         showPopup(scoreBoardFactory, "Score Board");

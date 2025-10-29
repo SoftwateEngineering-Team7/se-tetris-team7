@@ -110,10 +110,12 @@ public class ScoreBoard extends BaseModel
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 2) {
+                if (parts.length == 3) {
+                    // 형식 (score, name, difficulty)
                     int score = Integer.parseInt(parts[0]);
                     String name = parts[1];
-                    scoreList.add(new ScoreInfo(score, name));
+                    String difficulty = parts[2];
+                    scoreList.add(new ScoreInfo(score, name, difficulty));
                 }
             }
         } catch (IOException e) {
@@ -129,7 +131,7 @@ public class ScoreBoard extends BaseModel
     {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(highScorePath))) {
             for (ScoreInfo scoreInfo : highScoreList) {
-                bw.write(scoreInfo.score() + "," + scoreInfo.name());
+                bw.write(scoreInfo.score() + "," + scoreInfo.name() + "," + scoreInfo.difficulty());
                 bw.newLine();
             }
         } catch (IOException e) {
