@@ -2,70 +2,117 @@ package org.util;
 
 import javafx.scene.input.KeyCode;
 
+/**
+ * 키 바인딩을 관리하는 클래스
+ * 사용자가 각 동작(왼쪽, 오른쪽, 위, 아래, 하드드롭)에 대해 원하는 키를 설정할 수 있습니다.
+ */
 public class KeyLayout {
-    public static final String KEY_ARROWS = "ARROWS";
-    public static final String KEY_WASD = "WASD";
-
-    private static String currentLayout = KEY_ARROWS; // 기본값
-    
-    private final String name;
-    private final KeyCode leftKey;
-    private final KeyCode rightKey;
-    private final KeyCode downKey;
-    private final KeyCode upKey;
-
-    private KeyLayout(String name, KeyCode left, KeyCode right, KeyCode down, KeyCode up) {
-        this.name = name;
-        this.leftKey = left;
-        this.rightKey = right;
-        this.downKey = down;
-        this.upKey = up;
-    }
+    // 현재 설정된 키들
+    private static KeyCode leftKey = KeyCode.LEFT;
+    private static KeyCode rightKey = KeyCode.RIGHT;
+    private static KeyCode downKey = KeyCode.DOWN;
+    private static KeyCode upKey = KeyCode.UP;
+    private static KeyCode hardDropKey = KeyCode.SPACE;
 
     /**
-     * 현재 설정된 레이아웃의 키 코드를 반환
+     * 왼쪽 이동 키 반환
      */
     public static KeyCode getLeftKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.leftKey : WASD.leftKey;
-    }
-
-    public static KeyCode getRightKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.rightKey : WASD.rightKey;
-    }
-
-    public static KeyCode getDownKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.downKey : WASD.downKey;
-    }
-
-    public static KeyCode getUpKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.upKey : WASD.upKey;
+        return leftKey;
     }
 
     /**
-     * 레이아웃 설정
-     * @param layout 레이아웃 이름 ("ARROWS" 또는 "WASD")
+     * 오른쪽 이동 키 반환
      */
-    public static void setCurrentLayout(String layout) {
-        if (layout != null && (layout.equals(KEY_ARROWS) || layout.equals(KEY_WASD))) {
-            currentLayout = layout;
+    public static KeyCode getRightKey() {
+        return rightKey;
+    }
+
+    /**
+     * 아래 이동 키 반환
+     */
+    public static KeyCode getDownKey() {
+        return downKey;
+    }
+
+    /**
+     * 위 이동 키 반환
+     */
+    public static KeyCode getUpKey() {
+        return upKey;
+    }
+
+    /**
+     * 하드 드롭 키 반환
+     */
+    public static KeyCode getHardDropKey() {
+        return hardDropKey;
+    }
+
+    /**
+     * 왼쪽 이동 키 설정
+     */
+    public static void setLeftKey(KeyCode key) {
+        if (key != null) {
+            leftKey = key;
         }
     }
 
     /**
-     * 현재 레이아웃 이름 반환
+     * 오른쪽 이동 키 설정
      */
-    public static String getCurrentLayout() {
-        return currentLayout;
+    public static void setRightKey(KeyCode key) {
+        if (key != null) {
+            rightKey = key;
+        }
     }
 
-    public String getName() {
-        return name;
+    /**
+     * 아래 이동 키 설정
+     */
+    public static void setDownKey(KeyCode key) {
+        if (key != null) {
+            downKey = key;
+        }
     }
 
-    // region 레이아웃 정의
+    /**
+     * 위 이동 키 설정
+     */
+    public static void setUpKey(KeyCode key) {
+        if (key != null) {
+            upKey = key;
+        }
+    }
 
-    public static final KeyLayout ARROWS = new KeyLayout(KEY_ARROWS, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.DOWN, KeyCode.UP);
-    public static final KeyLayout WASD = new KeyLayout(KEY_WASD, KeyCode.A, KeyCode.D, KeyCode.S, KeyCode.W);
+    /**
+     * 하드 드롭 키 설정
+     */
+    public static void setHardDropKey(KeyCode key) {
+        if (key != null) {
+            hardDropKey = key;
+        }
+    }
 
-    // endregion
+    /**
+     * 하드 드롭 포함 모든 키를 한 번에 설정
+     */
+    public static void setKeys(KeyCode left, KeyCode right, KeyCode down, KeyCode up, KeyCode hardDrop) {
+        if (left != null) leftKey = left;
+        if (right != null) rightKey = right;
+        if (down != null) downKey = down;
+        if (up != null) upKey = up;
+        if (hardDrop != null) hardDropKey = hardDrop;
+    }
+
+    /**
+     * 기본 키 설정으로 초기화 (방향키 + SPACE)
+     */
+    public static void resetToDefault() {
+        leftKey = KeyCode.LEFT;
+        rightKey = KeyCode.RIGHT;
+        downKey = KeyCode.DOWN;
+        upKey = KeyCode.UP;
+        hardDropKey = KeyCode.SPACE;
+    }
 }
