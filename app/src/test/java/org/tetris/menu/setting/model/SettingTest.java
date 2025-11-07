@@ -15,6 +15,8 @@ import org.util.GameColor;
 import org.util.KeyLayout;
 import org.util.ScreenPreset;
 
+import javafx.scene.input.KeyCode;
+
 public class SettingTest {
     
     private Setting setting;
@@ -44,9 +46,77 @@ public class SettingTest {
     @Test
     public void testDefaultValues() {
         assertEquals("기본 색맹 모드는 false여야 합니다", false, setting.isColorBlind());
-        assertEquals("기본 키 레이아웃은 ARROWS여야 합니다", "ARROWS", setting.getKeyLayout());
         assertEquals("기본 화면 프리셋은 SMALL이어야 합니다", "SMALL", setting.getScreenPreset());
         assertEquals("기본 난이도는 EASY여야 합니다", "EASY", setting.getDifficulty());
+    }
+
+    @Test
+    public void testDefaultPlayer1Keys() {
+        assertEquals("Player 1 왼쪽 키 기본값은 LEFT", "LEFT", setting.getKeyLeft());
+        assertEquals("Player 1 오른쪽 키 기본값은 RIGHT", "RIGHT", setting.getKeyRight());
+        assertEquals("Player 1 위 키 기본값은 UP", "UP", setting.getKeyUp());
+        assertEquals("Player 1 아래 키 기본값은 DOWN", "DOWN", setting.getKeyDown());
+        assertEquals("Player 1 하드드롭 키 기본값은 SPACE", "SPACE", setting.getKeyHardDrop());
+    }
+
+    @Test
+    public void testDefaultPlayer2Keys() {
+        assertEquals("Player 2 왼쪽 키 기본값은 A", "A", setting.getKeyLeft2());
+        assertEquals("Player 2 오른쪽 키 기본값은 D", "D", setting.getKeyRight2());
+        assertEquals("Player 2 위 키 기본값은 W", "W", setting.getKeyUp2());
+        assertEquals("Player 2 아래 키 기본값은 S", "S", setting.getKeyDown2());
+        assertEquals("Player 2 하드드롭 키 기본값은 SHIFT", "SHIFT", setting.getKeyHardDrop2());
+    }
+
+    @Test
+    public void testSaveAndLoadPlayer1Keys() {
+        setting.setKeyLeft("A");
+        setting.setKeyRight("D");
+        setting.setKeyUp("W");
+        setting.setKeyDown("S");
+        setting.setKeyHardDrop("Q");
+
+        // 새 인스턴스로 로드
+        Setting newSetting = new Setting();
+        assertEquals("저장된 Player 1 왼쪽 키", "A", newSetting.getKeyLeft());
+        assertEquals("저장된 Player 1 오른쪽 키", "D", newSetting.getKeyRight());
+        assertEquals("저장된 Player 1 위 키", "W", newSetting.getKeyUp());
+        assertEquals("저장된 Player 1 아래 키", "S", newSetting.getKeyDown());
+        assertEquals("저장된 Player 1 하드드롭 키", "Q", newSetting.getKeyHardDrop());
+    }
+
+    @Test
+    public void testSaveAndLoadPlayer2Keys() {
+        setting.setKeyLeft2("J");
+        setting.setKeyRight2("L");
+        setting.setKeyUp2("I");
+        setting.setKeyDown2("K");
+        setting.setKeyHardDrop2("U");
+
+        // 새 인스턴스로 로드
+        Setting newSetting = new Setting();
+        assertEquals("저장된 Player 2 왼쪽 키", "J", newSetting.getKeyLeft2());
+        assertEquals("저장된 Player 2 오른쪽 키", "L", newSetting.getKeyRight2());
+        assertEquals("저장된 Player 2 위 키", "I", newSetting.getKeyUp2());
+        assertEquals("저장된 Player 2 아래 키", "K", newSetting.getKeyDown2());
+        assertEquals("저장된 Player 2 하드드롭 키", "U", newSetting.getKeyHardDrop2());
+    }
+
+    @Test
+    public void testKeyLayoutSyncWithPlayer1() {
+        // Player 1 키 변경
+        setting.setKeyLeft("A");
+        setting.setKeyRight("D");
+        setting.setKeyUp("W");
+        setting.setKeyDown("S");
+        setting.setKeyHardDrop("SHIFT");
+
+        // KeyLayout이 Player 1 키로 동기화되었는지 확인
+        assertEquals("KeyLayout 왼쪽 키가 A로 동기화", KeyCode.A, KeyLayout.getLeftKey());
+        assertEquals("KeyLayout 오른쪽 키가 D로 동기화", KeyCode.D, KeyLayout.getRightKey());
+        assertEquals("KeyLayout 위 키가 W로 동기화", KeyCode.W, KeyLayout.getUpKey());
+        assertEquals("KeyLayout 아래 키가 S로 동기화", KeyCode.S, KeyLayout.getDownKey());
+        assertEquals("KeyLayout 하드드롭 키가 SHIFT로 동기화", KeyCode.SHIFT, KeyLayout.getHardDropKey());
     }
     
     @Test
@@ -60,19 +130,6 @@ public class SettingTest {
         assertFalse("색맹 모드가 false로 설정되어야 합니다", setting.isColorBlind());
         assertFalse("GameColor의 색맹 모드도 동기화되어야 합니다", 
                    GameColor.getColorBlind());
-    }
-    
-    @Test
-    public void testSetKeyLayout() {
-        setting.setKeyLayout("WASD");
-        assertEquals("키 레이아웃이 WASD로 설정되어야 합니다", "WASD", setting.getKeyLayout());
-        assertEquals("KeyLayout의 현재 레이아웃도 동기화되어야 합니다", 
-                    "WASD", KeyLayout.getCurrentLayout());
-        
-        setting.setKeyLayout("ARROWS");
-        assertEquals("키 레이아웃이 ARROWS로 설정되어야 합니다", "ARROWS", setting.getKeyLayout());
-        assertEquals("KeyLayout의 현재 레이아웃도 동기화되어야 합니다", 
-                    "ARROWS", KeyLayout.getCurrentLayout());
     }
     
     @Test
@@ -105,7 +162,6 @@ public class SettingTest {
     public void testSetDefaultsAndSave() {
         // 먼저 값을 변경
         setting.setColorBlind(true);
-        setting.setKeyLayout("WASD");
         setting.setScreenPreset("LARGE");
         setting.setDifficulty("HARD");
         
@@ -115,8 +171,6 @@ public class SettingTest {
         assertEquals("기본값으로 초기화 후 색맹 모드는 false여야 합니다", 
                     false, setting.isColorBlind());
         assertEquals("기본값으로 초기화 후 키 레이아웃은 ARROWS여야 합니다", 
-                    "ARROWS", setting.getKeyLayout());
-        assertEquals("기본값으로 초기화 후 화면 프리셋은 SMALL이어야 합니다", 
                     "SMALL", setting.getScreenPreset());
         assertEquals("기본값으로 초기화 후 난이도는 EASY여야 합니다", 
                     "EASY", setting.getDifficulty());
@@ -126,7 +180,6 @@ public class SettingTest {
     public void testSettingFilePersistence() {
         // 설정 변경
         setting.setColorBlind(true);
-        setting.setKeyLayout("WASD");
         setting.setScreenPreset("MIDDLE");
         setting.setDifficulty("NORMAL");
         
@@ -135,8 +188,6 @@ public class SettingTest {
         
         assertEquals("파일에서 로드된 색맹 모드가 일치해야 합니다", 
                     true, newSetting.isColorBlind());
-        assertEquals("파일에서 로드된 키 레이아웃이 일치해야 합니다", 
-                    "WASD", newSetting.getKeyLayout());
         assertEquals("파일에서 로드된 화면 프리셋이 일치해야 합니다", 
                     "MIDDLE", newSetting.getScreenPreset());
         assertEquals("파일에서 로드된 난이도가 일치해야 합니다", 
