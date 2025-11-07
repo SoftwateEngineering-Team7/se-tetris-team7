@@ -121,7 +121,7 @@
     -fx-background-color: white;
 }
 
-.radio-button.highlighted-child {
+.radio-button.highlighted {
     -fx-text-fill: #F0E442;
     -fx-border-color: #F0E442;
     -fx-border-width: 2px;
@@ -131,7 +131,7 @@
     -fx-background-color: rgba(240, 228, 66, 0.1);
 }
 
-.radio-button.highlighted-child .radio {
+.radio-button.highlighted .radio {
     -fx-border-color: #F0E442;
     -fx-border-width: 2px;
 }
@@ -140,4 +140,34 @@
 .label {
     -fx-text-fill: #56B4E9;
     -fx-font-size: 11px;
+}
+
+/* ===== 키 바인딩 버튼 스타일 ===== */
+.key-binding-button {
+    -fx-background-color: white;
+    -fx-text-fill: black;
+    -fx-border-color: #666666;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-cursor: hand;
+}
+
+.key-binding-button.highlighted {
+    -fx-background-color: #56B4E9;
+    -fx-text-fill: black;
+    -fx-border-color: #0072B2;
+    -fx-border-width: 0px;
+}
+
+.key-binding-button.waiting-for-key {
+    -fx-background-color: #009E73;
+    -fx-text-fill: white;
+    -fx-border-color: #F0E442;
+    -fx-border-width: 3px;
+    -fx-effect: dropshadow(gaussian, #F0E442, 10, 0.5, 0, 0);
 }
