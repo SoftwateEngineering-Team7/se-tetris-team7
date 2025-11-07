@@ -626,6 +626,7 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
         };
     }
 
+    // 문자열을 최대 max 개로 자르는 헬퍼
     private static String truncateToCodePoints(String s, int max) {
         if (s == null)
             return "";
@@ -651,19 +652,8 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
     }
 
     private void setKeyText(Button b, String label, String keyName) {
-        // 단일 키 버튼의 표시 텍스트를 갱신(없으면 "?")
-        if (b == null)
-            return;
-        if (keyName == null) {
-            b.setText(label + ": ?");
-            return;
-        }
-        try {
-            String pretty = getKeyDisplayName(KeyCode.valueOf(keyName));
-            b.setText(label + ": " + pretty);
-        } catch (Exception e) {
-            b.setText(label + ": " + keyName);
-        }
+        String pretty = getKeyDisplayName(KeyCode.valueOf(keyName));
+        b.setText(label + ": " + pretty);
     }
 
     // ------------------------------
