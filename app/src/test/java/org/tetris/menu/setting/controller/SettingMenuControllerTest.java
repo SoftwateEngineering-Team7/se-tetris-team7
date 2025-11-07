@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -24,10 +25,9 @@ import org.testfx.util.WaitForAsyncUtils;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.input.KeyCode;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
@@ -67,8 +67,9 @@ public class SettingMenuControllerTest extends ApplicationTest {
         // FXML 로드
         BorderPane root = loader.load();
         
+        
         // Scene 설정
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 800, 800);
         stage.setScene(scene);
         stage.setTitle("Setting Menu Test");
         stage.show();
@@ -115,12 +116,10 @@ public class SettingMenuControllerTest extends ApplicationTest {
      * Helper Methods
      * ======================================== */
     
+    private static final String STYLE_HIGHLIGHTED = "highlighted";
+    
     private BorderPane rootPane() {
         return lookup("#root").query();
-    }
-    
-    private VBox mainVBox() {
-        return lookup("#mainVBox").query();
     }
     
     private Button saveButton() {
@@ -142,21 +141,56 @@ public class SettingMenuControllerTest extends ApplicationTest {
                 .collect(Collectors.toList());
     }
     
-    private List<RadioButton> getRadioButtonsInPane(String paneId) {
-        VBox pane = lookup(paneId).query();
-        if (pane == null) return List.of();
+    /**
+     * 모든 포커스 가능한 노드들을 가져옵니다 (RadioButton, Button 등)
+     */
+    private List<javafx.scene.Node> getAllFocusableNodes() {
+        List<javafx.scene.Node> nodes = new ArrayList<>();
         
-        return pane.getChildrenUnmodifiable().stream()
-                .filter(n -> n instanceof RadioButton)
-                .map(n -> (RadioButton) n)
-                .collect(Collectors.toList());
+        // RadioButton들 추가
+        nodes.addAll(getAllRadioButtons());
+        
+        // 하단 버튼들 추가
+        nodes.add(saveButton());
+        nodes.add(resetButton());
+        nodes.add(backButton());
+        
+        // 키 바인딩 버튼들 추가
+        lookup(".key-binding-button").queryAll().stream()
+                .forEach(nodes::add);
+        
+        return nodes;
     }
     
-    private RadioButton getSelectedRadioButton(ToggleGroup group) {
-        if (group == null || group.getSelectedToggle() == null) {
-            return null;
+    /**
+     * 특정 노드가 highlighted 상태인지 확인
+     */
+    private boolean isHighlighted(javafx.scene.Node node) {
+        if (node == null) return false;
+        return node.getStyleClass().contains(STYLE_HIGHLIGHTED);
+    }
+    
+    /**
+     * highlighted 상태인 노드를 반환
+     */
+    private javafx.scene.Node getHighlightedNode() {
+        return getAllFocusableNodes().stream()
+                .filter(this::isHighlighted)
+                .findFirst()
+                .orElse(null);
+    }
+    
+    /**
+     * highlighted 상태인 노드의 인덱스를 반환 (-1이면 없음)
+     */
+    private int getHighlightedIndex() {
+        List<javafx.scene.Node> nodes = getAllFocusableNodes();
+        for (int i = 0; i < nodes.size(); i++) {
+            if (isHighlighted(nodes.get(i))) {
+                return i;
+            }
         }
-        return (RadioButton) group.getSelectedToggle();
+        return -1;
     }
     
     /*
@@ -417,7 +451,7 @@ public class SettingMenuControllerTest extends ApplicationTest {
         // 테스트 케이스 3: 초기 크기로 복원
         interact(() -> {
             stage.setWidth(800);
-            stage.setHeight(600);
+            stage.setHeight(800);
         });
         WaitForAsyncUtils.waitForFxEvents();
         WaitForAsyncUtils.sleep(100, TimeUnit.MILLISECONDS);
@@ -433,5 +467,301 @@ public class SettingMenuControllerTest extends ApplicationTest {
             assertNotNull("버튼이 존재해야 합니다", btn);
             assertTrue("버튼이 표시되어야 합니다", btn.isVisible());
         }
+    }
+
+    /* ========================================
+     * Key binding button tests (new key binding system)
+     * ======================================== */
+
+    @Test
+    public void testKeyBindingButtonsExistAndDefaultDisplay() {
+        // key-binding 버튼은 P1(5) + P2(5)로 총 10개 존재해야 함
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertEquals("키 바인딩 버튼은 10개여야 합니다", 10, nodes.size());
+
+        // 텍스트 목록 중에 화살표/Space/Shift/WASD가 포함되어 있는지 확인
+        List<String> texts = nodes.stream()
+                .filter(n -> n instanceof Button)
+                .map(n -> ((Button) n).getText())
+                .toList();
+
+        // Player1 화살표와 Space
+        assertTrue("왼쪽 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("←")));
+        assertTrue("오른쪽 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("→")));
+        assertTrue("위 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("↑")));
+        assertTrue("아래 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("↓")));
+        assertTrue("Space가 표시되어야 합니다", texts.stream().anyMatch(t -> t.toLowerCase().contains("space") || t.contains("Space")));
+
+        // Player2 WASD + Shift
+        assertTrue("A 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bA\\b.*") || t.contains("A:")));
+        assertTrue("W 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bW\\b.*") || t.contains("W:")));
+        assertTrue("S 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bS\\b.*") || t.contains("S:")));
+        assertTrue("D 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bD\\b.*") || t.contains("D:")));
+        assertTrue("Shift가 표시되어야 합니다", texts.stream().anyMatch(t -> t.toLowerCase().contains("shift") || t.contains("Shift")));
+    }
+
+    @Test
+    public void testClickKeyBindingAssignKey() {
+        // 첫 번째 key-binding 버튼을 클릭하고 새 키를 할당하면 버튼 텍스트가 갱신되어야 함
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 비어있어선 안됩니다", nodes.isEmpty());
+
+        Button btn = (Button) nodes.iterator().next();
+        // 클릭하여 바인딩 모드로 진입
+        clickOn(btn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+
+        // 새 키 입력 (예: J)
+        push(KeyCode.J);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+
+        // 버튼 텍스트에 J가 포함되어야 함
+        assertTrue("버튼 텍스트에 새로 입력한 키가 포함되어야 합니다: " + btn.getText(), btn.getText().contains("J"));
+    }
+    
+    /* ========================================
+     * updateSizes 반응형 크기 조정 테스트
+     * ======================================== */
+    
+    @Test
+    public void testUpdateSizesWithDifferentWindowSizes() {
+        Button saveBtn = saveButton();
+        Button resetBtn = resetButton();
+        
+        // 800x800 (초기 크기) - 버튼 크기 확인
+        interact(() -> {
+            stage.setWidth(800);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double width800 = saveBtn.getPrefWidth();
+        double height800 = saveBtn.getPrefHeight();
+        
+        assertTrue("800x800에서 버튼 너비가 설정되어야 합니다", width800 > 0);
+        assertTrue("800x800에서 버튼 높이가 설정되어야 합니다", height800 > 0);
+        
+        // 1200x800 (큰 창) - 버튼 크기가 증가해야 함
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double width1200 = saveBtn.getPrefWidth();
+        double height1200 = saveBtn.getPrefHeight();
+        
+        assertTrue("1200x800에서 버튼 너비가 800x800보다 커야 합니다", width1200 >= width800);
+        
+        // 600x400 (작은 창) - 버튼 크기가 감소해야 함
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double width600 = saveBtn.getPrefWidth();
+        double height600 = saveBtn.getPrefHeight();
+        
+        assertTrue("600x400에서 버튼이 여전히 표시되어야 합니다", saveBtn.isVisible());
+        assertTrue("600x400에서 버튼 너비가 800x800보다 작거나 같아야 합니다", width600 <= width800);
+    }
+    
+    @Test
+    public void testKeyBindingButtonSizeAdjustment() {
+        // 키 바인딩 버튼들의 크기도 반응형으로 조정되는지 확인
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 존재해야 합니다", nodes.isEmpty());
+        
+        Button keyBtn = (Button) nodes.iterator().next();
+        
+        // 큰 창
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthLarge = keyBtn.getPrefWidth();
+        double heightLarge = keyBtn.getPrefHeight();
+        
+        assertTrue("큰 창에서 키 바인딩 버튼 너비가 설정되어야 합니다", widthLarge > 0);
+        assertTrue("큰 창에서 키 바인딩 버튼 높이가 설정되어야 합니다", heightLarge > 0);
+        
+        // 작은 창
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthSmall = keyBtn.getPrefWidth();
+        
+        assertTrue("작은 창에서도 키 바인딩 버튼이 표시되어야 합니다", keyBtn.isVisible());
+        assertTrue("작은 창에서 키 바인딩 버튼이 적절한 최소 크기를 유지해야 합니다", widthSmall >= 150);
+    }
+    
+    @Test
+    public void testButtonSpacingAdjustment() {
+        // buttonBox의 간격이 창 크기에 따라 조정되는지 확인
+        var buttonBox = lookup("#buttonBox").query();
+        assertNotNull("buttonBox가 존재해야 합니다", buttonBox);
+        
+        // 큰 창
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        assertTrue("큰 창에서 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
+        
+        // 작은 창
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        assertTrue("작은 창에서도 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
+    }
+    
+    /* ========================================
+     * Highlight (하이라이트) 상태 테스트
+     * ======================================== */
+    
+    @Test
+    public void testMouseHoverHighlightsButton() {
+        // 버튼에 마우스를 올리면 highlighted 클래스가 추가되는지 확인
+        Button saveBtn = saveButton();
+        
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(saveBtn));
+        
+        // 마우스 호버
+        moveTo(saveBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 상태 확인
+        assertTrue("마우스 호버 시 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
+    }
+    
+    @Test
+    public void testMouseLeaveRemovesHighlight() {
+        // 마우스가 버튼을 떠나면 highlighted 클래스가 제거되는지 확인
+        Button saveBtn = saveButton();
+        
+        // 마우스 호버
+        moveTo(saveBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertTrue("호버 시 highlighted 되어야 합니다", isHighlighted(saveBtn));
+        
+        // 마우스를 다른 곳으로 이동
+        moveTo(rootPane());
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 상태 해제 확인
+        assertFalse("마우스가 떠나면 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
+    }
+    
+    @Test
+    public void testKeyBindingButtonHighlight() {
+        // 키 바인딩 버튼도 마우스 호버 시 highlighted 되는지 확인
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 존재해야 합니다", nodes.isEmpty());
+        
+        Button keyBtn = (Button) nodes.iterator().next();
+        
+        // 초기 상태
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(keyBtn));
+        
+        // 마우스 호버
+        moveTo(keyBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 상태 확인
+        assertTrue("마우스 호버 시 키 바인딩 버튼이 highlighted 되어야 합니다", isHighlighted(keyBtn));
+    }
+    
+    @Test
+    public void testMultipleButtonsHighlightTransition() {
+        // 여러 버튼 간 마우스 이동 시 highlighted가 올바르게 전환되는지 확인
+        Button saveBtn = saveButton();
+        Button resetBtn = resetButton();
+        
+        // 첫 번째 버튼 호버
+        moveTo(saveBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertTrue("Save 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
+        assertFalse("Reset 버튼은 highlighted가 아니어야 합니다", isHighlighted(resetBtn));
+        
+        // 두 번째 버튼으로 이동
+        moveTo(resetBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertFalse("Save 버튼의 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
+        assertTrue("Reset 버튼이 highlighted 되어야 합니다", isHighlighted(resetBtn));
+    }
+    
+    @Test
+    public void testRadioButtonHighlight() {
+        // RadioButton도 마우스 호버 시 highlighted 되는지 확인
+        List<RadioButton> radioButtons = getAllRadioButtons();
+        
+        if (!radioButtons.isEmpty()) {
+            RadioButton radio = radioButtons.get(0);
+            
+            // 초기 상태
+            assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(radio));
+            
+            // 마우스 호버
+            moveTo(radio);
+            WaitForAsyncUtils.waitForFxEvents();
+            waitFor(50);
+            
+            // highlighted 상태 확인
+            assertTrue("마우스 호버 시 RadioButton이 highlighted 되어야 합니다", isHighlighted(radio));
+        }
+    }
+    
+    @Test
+    public void testHighlightPersistsDuringClick() {
+        // 버튼 클릭 중에도 highlighted 상태가 유지되는지 확인
+        Button saveBtn = saveButton();
+        
+        // 마우스 호버
+        moveTo(saveBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertTrue("호버 시 highlighted 되어야 합니다", isHighlighted(saveBtn));
+        
+        // 클릭
+        clickOn(saveBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // 클릭 후에도 여전히 마우스가 위에 있으므로 highlighted 유지
+        assertTrue("클릭 후에도 마우스가 위에 있으면 highlighted가 유지되어야 합니다", isHighlighted(saveBtn));
     }
 }
