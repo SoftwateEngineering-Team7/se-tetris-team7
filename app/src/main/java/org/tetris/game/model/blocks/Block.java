@@ -135,37 +135,33 @@ public abstract class Block {
         this.blockCount = count;
     }
 
-    public void rotateCW() {
+    private void rotate(boolean clockwise) {
         int[][] rotated = new int[size.c][size.r];
 
         for (int r = 0; r < size.r; r++) {
             for (int c = 0; c < size.c; c++) {
-                rotated[c][size.r - 1 - r] = shape[r][c];
+                if (clockwise) {
+                    rotated[c][size.r - 1 - r] = shape[r][c];
+                } else {
+                    rotated[size.c - 1 - c][r] = shape[r][c];
+                }
             }
         }
 
-        int newRow = pivot.c;
-        int newCol = size.r - 1 - pivot.r;
+        int newRow = clockwise ? pivot.c : size.c - 1 - pivot.c;
+        int newCol = clockwise ? size.r - 1 - pivot.r : pivot.r;
         pivot = new Point(newRow, newCol);
 
         shape = rotated;
         setSize();
     }
 
+    public void rotateCW() {
+        rotate(true);
+    }
+
     public void rotateCCW() {
-        int[][] rotated = new int[size.c][size.r];
-        for (int r = 0; r < size.r; r++) {
-            for (int c = 0; c < size.c; c++) {
-                rotated[size.c - 1 - c][r] = shape[r][c];
-            }
-        }
-
-        int newRow = size.c - 1 - pivot.c;
-        int newCol = pivot.r;
-        pivot = new Point(newRow, newCol);
-
-        shape = rotated;
-        setSize();
+        rotate(false);
     }
 
     public Color getColor() {
