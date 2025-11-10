@@ -159,7 +159,7 @@ public class Board extends BaseModel {
 
     // 오른쪽 한칸 이동 함수
     public boolean moveRight() {
-        if (activeBlock.getCanMove() == false)
+        if (!activeBlock.getCanMove())
             return false;
 
         return tryMove(curPos.right(), false);
@@ -167,14 +167,14 @@ public class Board extends BaseModel {
 
     // 왼쪽 한칸 이동 함수
     public boolean moveLeft() {
-        if (activeBlock.getCanMove() == false)
+        if (!activeBlock.getCanMove())
             return false;
 
         return tryMove(curPos.left(), false);
     }
 
     public int hardDrop() {
-        if (activeBlock.getCanMove() == false)
+        if (!activeBlock.getCanMove())
             return 0;
 
         removeBlock(curPos, activeBlock);
@@ -191,11 +191,12 @@ public class Board extends BaseModel {
 
     // 시계방향 90도 회전 함수
     public boolean rotate() {
-        if (activeBlock.getCanRotate() == false)
+        if (!activeBlock.getCanRotate())
             return false;
 
         boolean isMoved = false;
         removeBlock(curPos, activeBlock);
+        
         activeBlock.rotateCW();
 
         if (isValidPos(curPos, activeBlock)) {
