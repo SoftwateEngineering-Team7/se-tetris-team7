@@ -58,10 +58,6 @@ public class Board extends BaseModel {
         }
     }
 
-    public boolean isValidPos(Point pos, Block block) {
-        return isValidPos(pos, block, false);
-    }
-
     // 블럭이 해당 위치에 배치 가능한지 확인
     public boolean isValidPos(Point pos, Block block, boolean force) {
         for (Point bp : block.getBlockPoints()) {
@@ -79,15 +75,19 @@ public class Board extends BaseModel {
         return true;
     }
 
-    public boolean isInBound(Point pos) {
+    public boolean isValidPos(Point pos, Block block) {
+        return isValidPos(pos, block, false);
+    }
+
+    private boolean isInBound(Point pos) {
         return pos.r >= 0 && pos.r < height && pos.c >= 0 && pos.c < width;
     }
 
-    public boolean isOutBound(Point pos) {
+    private boolean isOutBound(Point pos) {
         return pos.c < 0 || pos.c >= width || pos.r >= height;
     }
 
-    public boolean hasBlock(Point pos) {
+    private boolean hasBlock(Point pos) {
         return board[pos.r][pos.c] != 0;
     }
 
@@ -196,7 +196,7 @@ public class Board extends BaseModel {
 
         boolean isMoved = false;
         removeBlock(curPos, activeBlock);
-        
+
         activeBlock.rotateCW();
 
         if (isValidPos(curPos, activeBlock)) {
