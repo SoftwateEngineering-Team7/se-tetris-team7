@@ -120,4 +120,18 @@ public class NextBlockModel
 
 		return nextBlocks.peek();
 	}
+
+	/**
+	 * 큐의 맨 앞 블록을 새로운 블록으로 교체합니다.
+	 * 큐가 비어있는 경우 자동으로 새로운 랜덤 블록들로 채운 후 교체합니다.
+	 * 
+	 * @param block 교체할 새로운 블록
+	 */
+	public void swapNext(Block block)
+	{
+		if(nextBlocks.isEmpty())
+			fill();
+
+		((LinkedList<Block>) nextBlocks).set(0,block);
+	}
 }
