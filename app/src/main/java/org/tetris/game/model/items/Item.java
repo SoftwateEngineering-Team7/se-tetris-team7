@@ -35,26 +35,4 @@ public abstract class Item {
 
         return position;
     }
-
-    /**
-     * 아이템 풀
-     */
-    private final static Item[] itemPool = {
-            new LItem(),
-            new BItem(),
-            new CItem(),
-            new HItem(),
-            new WItem(),
-    };
-
-    /**
-     * 랜덤 아이템 반환 메서드
-     * 
-     * @return 랜덤 아이템
-     */
-    public static Item getRandomItem() {
-        int poolSize = itemPool.length;
-        int randomIndex = (int) (Math.random() * poolSize);
-        return itemPool[randomIndex];
-    }
 }

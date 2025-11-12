@@ -18,6 +18,8 @@ public abstract class Block {
     private boolean canMove;
     private boolean canRotate;
 
+    private boolean isItemBlock = false;
+
     public Block(int[][] shape, Point pivot, GameColor color) {
         this.shape = shape;
         this.pivot = pivot;
@@ -68,6 +70,14 @@ public abstract class Block {
 
     public void setCanMove(boolean canMove) {
         this.canMove = canMove;
+    }
+
+    public void setIsItemBlock(boolean isItemBlock) {
+        this.isItemBlock = isItemBlock;
+    }
+
+    public boolean isItemBlock() {
+        return isItemBlock;
     }
 
     /**

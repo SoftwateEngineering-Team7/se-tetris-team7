@@ -11,7 +11,7 @@ public class WItem extends Item {
             { 10, 10, 10, 10 }
     };
 
-    protected WItem() {
+    public WItem() {
         super(10);
     }
 
