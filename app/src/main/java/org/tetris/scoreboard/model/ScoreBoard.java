@@ -75,11 +75,12 @@ public class ScoreBoard extends BaseModel
     /**
      * 새로운 점수를 삽입합니다. 점수는 내림차순으로 정렬됩니다.
      * @param scoreInfo 삽입할 점수 정보
+     * @return 삽입된 인덱스 (삽입되지 않은 경우 -1)
      */
-    public void insert(ScoreInfo scoreInfo){
+    public int insert(ScoreInfo scoreInfo){
         if(highScoreList.isEmpty()) {
             highScoreList.add(scoreInfo);
-            return;
+            return 0;
         }
 
         for(int i = 0; i < highScoreList.size(); i++) {
@@ -88,13 +89,16 @@ public class ScoreBoard extends BaseModel
                 if(highScoreList.size() > maxScores) {
                     highScoreList.remove(maxScores);
                 }
-                return;
+                return i;
             }
         }
         
         if(highScoreList.size() < maxScores) {
             highScoreList.add(scoreInfo);
+            return highScoreList.size() - 1;
         }
+        
+        return -1; // 삽입되지 않은 경우
     }
 
     // region I/O
