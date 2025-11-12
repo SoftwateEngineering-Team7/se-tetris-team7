@@ -2,12 +2,10 @@ package org.tetris.game.model;
 
 import org.tetris.shared.BaseModel;
 import org.util.Difficulty;
+import org.tetris.game.controller.ItemController;
 import org.tetris.game.model.blocks.*;
-import org.tetris.game.model.items.*;
 
 public class GameModel extends BaseModel {
-
-    private final static int ITEM_MODE_LINE_THRESHOLD = 10;
 
     public final static int MAX_DROP_INTERVAL = 60; // 최대 낙하 간격 (레벨 1)
     public final static int MIN_DROP_INTERVAL = 10; // 드롭 간격 감소량
@@ -17,12 +15,10 @@ public class GameModel extends BaseModel {
     private ScoreModel scoreModel;
 
     private int totalLinesCleared;
-    private int localLineCleared = 0;
     private int level;
 
     private boolean isItemMode = false;
-    private boolean isItemUsed = true;
-    private Item activeItem = Item.getRandomItem();
+    private ItemController itemController = new ItemController();
 
     // 게임 상태
     private boolean isGameOver;
@@ -94,13 +90,16 @@ public class GameModel extends BaseModel {
     public void spawnNewBlock() {
         Block newBlock = nextBlockModel.getBlock();
 
-        if (isItemMode && !isItemUsed) {
-            newBlock = activeItem.GetItemBlock(newBlock);
-        }
-
         boolean spawned = board.setActiveBlock(newBlock);
         if (!spawned) {
             isGameOver = true; // Model이 게임 오버 상태 관리
+        }
+
+        if (!isItemMode) return; // ITEM_MODE
+        if (itemController.canSpawnItem()) {
+            Block targetBlock = nextBlockModel.peekNext();
+            targetBlock = itemController.spawnItem(targetBlock);
+            nextBlockModel.swapNext(targetBlock);
         }
     }
 
@@ -119,40 +118,30 @@ public class GameModel extends BaseModel {
 
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
-            localLineCleared += linesCleared;
             board.collapse();
 
             scoreModel.lineCleared(linesCleared);
 
             updateLevel();
-            updateItemMode();
+
+            if (!isItemMode) return; // ITEM_MODE
+            itemController.onLineCleared(linesCleared);
         }
 
         return;
     }
 
+    public boolean tryActivateItem() {
+        if (!isItemMode) return false;
+        if (!board.activeBlock.isItemBlock()) return false;
+
+        itemController.activateItem(board);
+        return true;
+    }
+
     // 레벨 업데이트 (10줄마다 레벨 증가)
     private void updateLevel() {
         level = (totalLinesCleared / 10) + 1;
-    }
-
-    public void updateItemMode() {
-        if (!isItemMode)
-            return;
-
-        if (localLineCleared >= ITEM_MODE_LINE_THRESHOLD) {
-            localLineCleared = 0;
-            activeItem = Item.getRandomItem();
-            isItemUsed = false;
-        }
-    }
-
-    public void activateItem() {
-        if (isItemMode && !isItemUsed) {
-            isItemUsed = true;
-            activeItem.Activate(board);
-            scoreModel.itemActivated();
-        }
     }
 
     // 게임 리셋
