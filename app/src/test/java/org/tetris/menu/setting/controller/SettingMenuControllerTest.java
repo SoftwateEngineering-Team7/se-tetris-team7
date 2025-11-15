@@ -17,13 +17,13 @@ import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.model.SettingMenuModel;
+import org.tetris.shared.MvcBundle;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.input.KeyCode;
 import javafx.scene.control.RadioButton;
@@ -36,41 +36,32 @@ import javafx.stage.Stage;
  */
 public class SettingMenuControllerTest extends ApplicationTest {
     
-    private Stage stage;
-    private Setting setting;
-    private SettingMenuModel model;
+    private SettingMenuFactory settingMenuFactory;
     private SettingMenuController controller;
+    private SettingMenuModel model;
+    private Stage stage;
     private final Path testFilePath = Paths.get("setting.txt");
     
     /**
      * TestFX의 start 메서드 - JavaFX 애플리케이션 시작
-     * Stage를 설정하고 FXML을 로드하여 Scene을 생성합니다.
+     * MvcBundle을 사용하여 초기화합니다.
      */
     @Override
     public void start(Stage s) throws Exception {
         this.stage = s;
         deleteSettingFile();
         
-        // Setting과 Model 초기화
-        setting = new Setting();
-        model = new SettingMenuModel(setting);
+        // Setting 생성 및 Factory 초기화
+        Setting setting = new Setting();
+        settingMenuFactory = new SettingMenuFactory(setting);
         
-        // FXML 로드
-        FXMLLoader loader = new FXMLLoader(
-            getClass().getResource("/org/tetris/menu/setting/view/settingmenu.fxml")
-        );
-        
-        // Controller를 먼저 생성하고 FXMLLoader에 설정
-        controller = new SettingMenuController(model);
-        loader.setController(controller);
-        
-        // FXML 로드
-        BorderPane root = loader.load();
-        
+        // MvcBundle을 통해 컴포넌트 생성
+        MvcBundle<SettingMenuModel, ?, SettingMenuController> bundle = settingMenuFactory.create();
+        controller = bundle.controller();
+        model = bundle.model();
         
         // Scene 설정
-        Scene scene = new Scene(root, 800, 800);
-        stage.setScene(scene);
+        stage.setScene(bundle.view().getScene());
         stage.setTitle("Setting Menu Test");
         stage.show();
         stage.toFront();
@@ -250,7 +241,7 @@ public class SettingMenuControllerTest extends ApplicationTest {
     }
     
     /* ========================================
-     * RadioButton 선택 테스트
+     * RadioButton 선택 테스트 - Highlight 검증
      * ======================================== */
     
     @Test
@@ -263,12 +254,17 @@ public class SettingMenuControllerTest extends ApplicationTest {
         if (allRadioButtons.size() > 1) {
             RadioButton secondRadio = allRadioButtons.get(1);
             
+            // 클릭 전 highlighted 아님
+            assertFalse("클릭 전에는 highlighted가 아니어야 합니다", isHighlighted(secondRadio));
+            
             clickOn(secondRadio);
             WaitForAsyncUtils.waitForFxEvents();
             waitFor(100);
             
             // 선택되었는지 확인
             assertTrue("클릭한 라디오 버튼이 선택되어야 합니다", secondRadio.isSelected());
+            // 클릭 후 마우스가 위에 있으므로 highlighted 상태
+            assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(secondRadio));
         }
     }
     
@@ -289,11 +285,13 @@ public class SettingMenuControllerTest extends ApplicationTest {
                 WaitForAsyncUtils.waitForFxEvents();
                 assertTrue("첫 번째 버튼이 선택되어야 합니다", first.isSelected());
                 assertFalse("두 번째 버튼은 선택 해제되어야 합니다", second.isSelected());
+                assertTrue("클릭한 첫 번째 버튼이 highlighted 되어야 합니다", isHighlighted(first));
                 
                 clickOn(second);
                 WaitForAsyncUtils.waitForFxEvents();
                 assertFalse("첫 번째 버튼은 선택 해제되어야 합니다", first.isSelected());
                 assertTrue("두 번째 버튼이 선택되어야 합니다", second.isSelected());
+                assertTrue("클릭한 두 번째 버튼이 highlighted 되어야 합니다", isHighlighted(second));
             }
         }
     }
@@ -305,17 +303,22 @@ public class SettingMenuControllerTest extends ApplicationTest {
         if (!allRadioButtons.isEmpty()) {
             RadioButton firstRadio = allRadioButtons.get(0);
             
+            // 초기 상태: highlighted 아님
+            assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(firstRadio));
+            
             // 마우스를 라디오 버튼 위로 이동
             moveTo(firstRadio);
             WaitForAsyncUtils.waitForFxEvents();
+            waitFor(50);
             
-            // 호버 상태 확인 (hover pseudo-class 또는 스타일 변경)
+            // highlighted 상태 확인
+            assertTrue("마우스 호버 시 라디오 버튼이 highlighted 되어야 합니다", isHighlighted(firstRadio));
             assertTrue("라디오 버튼이 hover 상태여야 합니다", firstRadio.isHover());
         }
     }
     
     /* ========================================
-     * 버튼 클릭 테스트
+     * 버튼 클릭 테스트 - Highlight 검증
      * ======================================== */
     
     @Test
@@ -323,13 +326,16 @@ public class SettingMenuControllerTest extends ApplicationTest {
         Button saveBtn = saveButton();
         assertNotNull("Save 버튼이 존재해야 합니다", saveBtn);
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(saveBtn));
+        
         // Save 버튼 클릭
         clickOn(saveBtn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(100);
         
-        // 버튼이 클릭 가능한지 확인 (예외가 발생하지 않으면 성공)
-        assertTrue("Save 버튼이 클릭 가능해야 합니다", true);
+        // 클릭 후 마우스가 위에 있으므로 highlighted
+        assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(saveBtn));
     }
     
     @Test
@@ -337,13 +343,16 @@ public class SettingMenuControllerTest extends ApplicationTest {
         Button resetBtn = resetButton();
         assertNotNull("Reset 버튼이 존재해야 합니다", resetBtn);
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(resetBtn));
+        
         // Reset 버튼 클릭
         clickOn(resetBtn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(100);
         
-        // 버튼이 클릭 가능한지 확인
-        assertTrue("Reset 버튼이 클릭 가능해야 합니다", true);
+        // 클릭 후 highlighted 상태 확인
+        assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(resetBtn));
     }
     
     @Test
@@ -351,47 +360,70 @@ public class SettingMenuControllerTest extends ApplicationTest {
         Button backBtn = backButton();
         assertNotNull("Back 버튼이 존재해야 합니다", backBtn);
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(backBtn));
+        
         // Back 버튼 클릭
         clickOn(backBtn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(100);
         
-        assertTrue("Back 버튼이 클릭 가능해야 합니다", true);
+        // 클릭 후 highlighted 상태 확인
+        assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(backBtn));
     }
     
     @Test
     public void testButtonMouseHover() {
         Button saveBtn = saveButton();
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(saveBtn));
+        
         // 마우스를 버튼 위로 이동
         moveTo(saveBtn);
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
         
-        // 호버 상태 확인
+        // highlighted 및 호버 상태 확인
+        assertTrue("마우스 호버 시 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
         assertTrue("버튼이 hover 상태여야 합니다", saveBtn.isHover());
         
         // 마우스를 다른 곳으로 이동
         moveTo(rootPane());
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
         
-        // 호버 상태 해제 확인
+        // highlighted 및 호버 상태 해제 확인
+        assertFalse("마우스가 떠나면 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
         assertFalse("마우스가 떠나면 hover 상태가 해제되어야 합니다", saveBtn.isHover());
     }
     
     @Test
     public void testMultipleButtonClicks() {
-        // 여러 버튼을 순차적으로 클릭
-        clickOn(saveButton());
-        WaitForAsyncUtils.waitForFxEvents();
+        // 여러 버튼을 순차적으로 클릭하며 각각 highlighted 확인
+        Button saveBtn = saveButton();
+        Button resetBtn = resetButton();
+        Button backBtn = backButton();
         
-        clickOn(resetButton());
+        // Save 버튼 클릭
+        clickOn(saveBtn);
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertTrue("Save 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
         
-        clickOn(backButton());
+        // Reset 버튼으로 이동 및 클릭
+        clickOn(resetBtn);
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertFalse("Save 버튼의 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
+        assertTrue("Reset 버튼이 highlighted 되어야 합니다", isHighlighted(resetBtn));
         
-        // 모든 클릭이 성공적으로 수행되면 테스트 통과
-        assertTrue("모든 버튼이 순차적으로 클릭 가능해야 합니다", true);
+        // Back 버튼으로 이동 및 클릭
+        clickOn(backBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertFalse("Reset 버튼의 highlighted가 해제되어야 합니다", isHighlighted(resetBtn));
+        assertTrue("Back 버튼이 highlighted 되어야 합니다", isHighlighted(backBtn));
     }
 
     /* ========================================
@@ -470,7 +502,7 @@ public class SettingMenuControllerTest extends ApplicationTest {
     }
 
     /* ========================================
-     * Key binding button tests (new key binding system)
+     * Key binding button tests - Highlight 검증
      * ======================================== */
 
     @Test
@@ -507,10 +539,17 @@ public class SettingMenuControllerTest extends ApplicationTest {
         assertFalse("키 바인딩 버튼이 비어있어선 안됩니다", nodes.isEmpty());
 
         Button btn = (Button) nodes.iterator().next();
+        
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(btn));
+        
         // 클릭하여 바인딩 모드로 진입
         clickOn(btn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(50);
+        
+        // 클릭 후 highlighted 상태 확인
+        assertTrue("클릭 후 버튼이 highlighted 되어야 합니다", isHighlighted(btn));
 
         // 새 키 입력 (예: J)
         push(KeyCode.J);
@@ -521,6 +560,34 @@ public class SettingMenuControllerTest extends ApplicationTest {
         assertTrue("버튼 텍스트에 새로 입력한 키가 포함되어야 합니다: " + btn.getText(), btn.getText().contains("J"));
     }
     
+    @Test
+    public void testKeyBindingButtonMouseHover() {
+        // 키 바인딩 버튼에 마우스를 올리면 highlighted 되는지 확인
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 존재해야 합니다", nodes.isEmpty());
+        
+        Button keyBtn = (Button) nodes.iterator().next();
+        
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(keyBtn));
+        
+        // 마우스 호버
+        moveTo(keyBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 상태 확인
+        assertTrue("마우스 호버 시 키 바인딩 버튼이 highlighted 되어야 합니다", isHighlighted(keyBtn));
+        
+        // 마우스를 다른 곳으로 이동
+        moveTo(rootPane());
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 해제 확인
+        assertFalse("마우스가 떠나면 highlighted가 해제되어야 합니다", isHighlighted(keyBtn));
+    }
+    
     /* ========================================
      * updateSizes 반응형 크기 조정 테스트
      * ======================================== */
@@ -528,7 +595,6 @@ public class SettingMenuControllerTest extends ApplicationTest {
     @Test
     public void testUpdateSizesWithDifferentWindowSizes() {
         Button saveBtn = saveButton();
-        Button resetBtn = resetButton();
         
         // 800x800 (초기 크기) - 버튼 크기 확인
         interact(() -> {
@@ -555,7 +621,6 @@ public class SettingMenuControllerTest extends ApplicationTest {
         WaitForAsyncUtils.waitForFxEvents();
         
         double width1200 = saveBtn.getPrefWidth();
-        double height1200 = saveBtn.getPrefHeight();
         
         assertTrue("1200x800에서 버튼 너비가 800x800보다 커야 합니다", width1200 >= width800);
         
@@ -569,7 +634,6 @@ public class SettingMenuControllerTest extends ApplicationTest {
         WaitForAsyncUtils.waitForFxEvents();
         
         double width600 = saveBtn.getPrefWidth();
-        double height600 = saveBtn.getPrefHeight();
         
         assertTrue("600x400에서 버튼이 여전히 표시되어야 합니다", saveBtn.isVisible());
         assertTrue("600x400에서 버튼 너비가 800x800보다 작거나 같아야 합니다", width600 <= width800);
@@ -629,6 +693,7 @@ public class SettingMenuControllerTest extends ApplicationTest {
         WaitForAsyncUtils.waitForFxEvents();
         
         assertTrue("큰 창에서 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(buttonBox));
         
         // 작은 창
         interact(() -> {
@@ -640,128 +705,5 @@ public class SettingMenuControllerTest extends ApplicationTest {
         WaitForAsyncUtils.waitForFxEvents();
         
         assertTrue("작은 창에서도 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
-    }
-    
-    /* ========================================
-     * Highlight (하이라이트) 상태 테스트
-     * ======================================== */
-    
-    @Test
-    public void testMouseHoverHighlightsButton() {
-        // 버튼에 마우스를 올리면 highlighted 클래스가 추가되는지 확인
-        Button saveBtn = saveButton();
-        
-        // 초기 상태: highlighted 아님
-        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(saveBtn));
-        
-        // 마우스 호버
-        moveTo(saveBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        
-        // highlighted 상태 확인
-        assertTrue("마우스 호버 시 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
-    }
-    
-    @Test
-    public void testMouseLeaveRemovesHighlight() {
-        // 마우스가 버튼을 떠나면 highlighted 클래스가 제거되는지 확인
-        Button saveBtn = saveButton();
-        
-        // 마우스 호버
-        moveTo(saveBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        assertTrue("호버 시 highlighted 되어야 합니다", isHighlighted(saveBtn));
-        
-        // 마우스를 다른 곳으로 이동
-        moveTo(rootPane());
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        
-        // highlighted 상태 해제 확인
-        assertFalse("마우스가 떠나면 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
-    }
-    
-    @Test
-    public void testKeyBindingButtonHighlight() {
-        // 키 바인딩 버튼도 마우스 호버 시 highlighted 되는지 확인
-        var nodes = lookup(".key-binding-button").queryAll();
-        assertFalse("키 바인딩 버튼이 존재해야 합니다", nodes.isEmpty());
-        
-        Button keyBtn = (Button) nodes.iterator().next();
-        
-        // 초기 상태
-        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(keyBtn));
-        
-        // 마우스 호버
-        moveTo(keyBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        
-        // highlighted 상태 확인
-        assertTrue("마우스 호버 시 키 바인딩 버튼이 highlighted 되어야 합니다", isHighlighted(keyBtn));
-    }
-    
-    @Test
-    public void testMultipleButtonsHighlightTransition() {
-        // 여러 버튼 간 마우스 이동 시 highlighted가 올바르게 전환되는지 확인
-        Button saveBtn = saveButton();
-        Button resetBtn = resetButton();
-        
-        // 첫 번째 버튼 호버
-        moveTo(saveBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        assertTrue("Save 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
-        assertFalse("Reset 버튼은 highlighted가 아니어야 합니다", isHighlighted(resetBtn));
-        
-        // 두 번째 버튼으로 이동
-        moveTo(resetBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        assertFalse("Save 버튼의 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
-        assertTrue("Reset 버튼이 highlighted 되어야 합니다", isHighlighted(resetBtn));
-    }
-    
-    @Test
-    public void testRadioButtonHighlight() {
-        // RadioButton도 마우스 호버 시 highlighted 되는지 확인
-        List<RadioButton> radioButtons = getAllRadioButtons();
-        
-        if (!radioButtons.isEmpty()) {
-            RadioButton radio = radioButtons.get(0);
-            
-            // 초기 상태
-            assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(radio));
-            
-            // 마우스 호버
-            moveTo(radio);
-            WaitForAsyncUtils.waitForFxEvents();
-            waitFor(50);
-            
-            // highlighted 상태 확인
-            assertTrue("마우스 호버 시 RadioButton이 highlighted 되어야 합니다", isHighlighted(radio));
-        }
-    }
-    
-    @Test
-    public void testHighlightPersistsDuringClick() {
-        // 버튼 클릭 중에도 highlighted 상태가 유지되는지 확인
-        Button saveBtn = saveButton();
-        
-        // 마우스 호버
-        moveTo(saveBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        assertTrue("호버 시 highlighted 되어야 합니다", isHighlighted(saveBtn));
-        
-        // 클릭
-        clickOn(saveBtn);
-        WaitForAsyncUtils.waitForFxEvents();
-        waitFor(50);
-        
-        // 클릭 후에도 여전히 마우스가 위에 있으므로 highlighted 유지
-        assertTrue("클릭 후에도 마우스가 위에 있으면 highlighted가 유지되어야 합니다", isHighlighted(saveBtn));
     }
 }
