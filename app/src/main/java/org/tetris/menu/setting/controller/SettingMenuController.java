@@ -5,6 +5,7 @@ import org.tetris.menu.setting.model.SettingMenuModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.Difficulty;
+import org.util.PlayerId;
 import org.util.ScreenPreset;
 
 import javafx.application.Platform;
@@ -533,11 +534,11 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
                 return;
             }
             switch (direction) {
-                case "LEFT" -> model.setKeyLeft(keyName);
-                case "RIGHT" -> model.setKeyRight(keyName);
-                case "DOWN" -> model.setKeyDown(keyName);
-                case "UP" -> model.setKeyUp(keyName);
-                case "HARD_DROP" -> model.setKeyHardDrop(keyName);
+                case "LEFT" -> model.setKeyLeft(PlayerId.PLAYER1, keyName);
+                case "RIGHT" -> model.setKeyRight(PlayerId.PLAYER1, keyName);
+                case "DOWN" -> model.setKeyDown(PlayerId.PLAYER1, keyName);
+                case "UP" -> model.setKeyUp(PlayerId.PLAYER1, keyName);
+                case "HARD_DROP" -> model.setKeyHardDrop(PlayerId.PLAYER1, keyName);
             }
         } else {
             if (isKeyAlreadyBound(keyName, direction)) {
@@ -545,11 +546,11 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
                 return;
             }
             switch (direction) {
-                case "LEFT2" -> model.setKeyLeft2(keyName);
-                case "RIGHT2" -> model.setKeyRight2(keyName);
-                case "DOWN2" -> model.setKeyDown2(keyName);
-                case "UP2" -> model.setKeyUp2(keyName);
-                case "HARD_DROP2" -> model.setKeyHardDrop2(keyName);
+                case "LEFT2" -> model.setKeyLeft(PlayerId.PLAYER2, keyName);
+                case "RIGHT2" -> model.setKeyRight(PlayerId.PLAYER2, keyName);
+                case "DOWN2" -> model.setKeyDown(PlayerId.PLAYER2, keyName);
+                case "UP2" -> model.setKeyUp(PlayerId.PLAYER2, keyName);
+                case "HARD_DROP2" -> model.setKeyHardDrop(PlayerId.PLAYER2, keyName);
             }
         }
 
@@ -576,17 +577,17 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
 
     private boolean isKeyAlreadyBound(String keyName, String exceptDirection) {
         // P1 P2 키셋 중복 방지
-        return (!"LEFT".equals(exceptDirection) && keyEquals(model.getKeyLeft(), keyName)) ||
-                (!"RIGHT".equals(exceptDirection) && keyEquals(model.getKeyRight(), keyName)) ||
-                (!"DOWN".equals(exceptDirection) && keyEquals(model.getKeyDown(), keyName)) ||
-                (!"UP".equals(exceptDirection) && keyEquals(model.getKeyUp(), keyName)) ||
-                (!"HARD_DROP".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(), keyName)) ||
+        return (!"LEFT".equals(exceptDirection) && keyEquals(model.getKeyLeft(PlayerId.PLAYER1), keyName)) ||
+                (!"RIGHT".equals(exceptDirection) && keyEquals(model.getKeyRight(PlayerId.PLAYER1), keyName)) ||
+                (!"DOWN".equals(exceptDirection) && keyEquals(model.getKeyDown(PlayerId.PLAYER1), keyName)) ||
+                (!"UP".equals(exceptDirection) && keyEquals(model.getKeyUp(PlayerId.PLAYER1), keyName)) ||
+                (!"HARD_DROP".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(PlayerId.PLAYER1), keyName)) ||
 
-                (!"LEFT2".equals(exceptDirection) && keyEquals(model.getKeyLeft2(), keyName)) ||
-                (!"RIGHT2".equals(exceptDirection) && keyEquals(model.getKeyRight2(), keyName)) ||
-                (!"DOWN2".equals(exceptDirection) && keyEquals(model.getKeyDown2(), keyName)) ||
-                (!"UP2".equals(exceptDirection) && keyEquals(model.getKeyUp2(), keyName)) ||
-                (!"HARD_DROP2".equals(exceptDirection) && keyEquals(model.getKeyHardDrop2(), keyName));
+                (!"LEFT2".equals(exceptDirection) && keyEquals(model.getKeyLeft(PlayerId.PLAYER2), keyName)) ||
+                (!"RIGHT2".equals(exceptDirection) && keyEquals(model.getKeyRight(PlayerId.PLAYER2), keyName)) ||
+                (!"DOWN2".equals(exceptDirection) && keyEquals(model.getKeyDown(PlayerId.PLAYER2), keyName)) ||
+                (!"UP2".equals(exceptDirection) && keyEquals(model.getKeyUp(PlayerId.PLAYER2), keyName)) ||
+                (!"HARD_DROP2".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(PlayerId.PLAYER2), keyName));
     }
 
     private boolean keyEquals(String a, String b) {
@@ -638,17 +639,17 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
 
     private void updateKeyBindingButtons() {
         // 모델의 현재 바인딩 값을 읽어 모든 키 버튼 라벨을 갱신
-        setKeyText(keyButtonsP1.get("LEFT"), "왼쪽", model.getKeyLeft());
-        setKeyText(keyButtonsP1.get("RIGHT"), "오른쪽", model.getKeyRight());
-        setKeyText(keyButtonsP1.get("DOWN"), "아래", model.getKeyDown());
-        setKeyText(keyButtonsP1.get("UP"), "회전", model.getKeyUp());
-        setKeyText(keyButtonsP1.get("HARD_DROP"), "하드 드롭", model.getKeyHardDrop());
+        setKeyText(keyButtonsP1.get("LEFT"), "왼쪽", model.getKeyLeft(PlayerId.PLAYER1));
+        setKeyText(keyButtonsP1.get("RIGHT"), "오른쪽", model.getKeyRight(PlayerId.PLAYER1));
+        setKeyText(keyButtonsP1.get("DOWN"), "아래", model.getKeyDown(PlayerId.PLAYER1));
+        setKeyText(keyButtonsP1.get("UP"), "회전", model.getKeyUp(PlayerId.PLAYER1));
+        setKeyText(keyButtonsP1.get("HARD_DROP"), "하드 드롭", model.getKeyHardDrop(PlayerId.PLAYER1));
 
-        setKeyText(keyButtonsP2.get("LEFT2"), "왼쪽", model.getKeyLeft2());
-        setKeyText(keyButtonsP2.get("RIGHT2"), "오른쪽", model.getKeyRight2());
-        setKeyText(keyButtonsP2.get("DOWN2"), "아래", model.getKeyDown2());
-        setKeyText(keyButtonsP2.get("UP2"), "회전", model.getKeyUp2());
-        setKeyText(keyButtonsP2.get("HARD_DROP2"), "하드 드롭", model.getKeyHardDrop2());
+        setKeyText(keyButtonsP2.get("LEFT2"), "왼쪽", model.getKeyLeft(PlayerId.PLAYER2));
+        setKeyText(keyButtonsP2.get("RIGHT2"), "오른쪽", model.getKeyRight(PlayerId.PLAYER2));
+        setKeyText(keyButtonsP2.get("DOWN2"), "아래", model.getKeyDown(PlayerId.PLAYER2));
+        setKeyText(keyButtonsP2.get("UP2"), "회전", model.getKeyUp(PlayerId.PLAYER2));
+        setKeyText(keyButtonsP2.get("HARD_DROP2"), "하드 드롭", model.getKeyHardDrop(PlayerId.PLAYER2));
     }
 
     private void setKeyText(Button b, String label, String keyName) {
