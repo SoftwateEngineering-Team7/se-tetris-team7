@@ -16,6 +16,7 @@ import org.tetris.shared.RouterAware;
 
 import org.util.GameColor;
 import org.util.KeyLayout;
+import org.util.PlayerId;
 import org.util.Point;
 
 import javafx.fxml.FXML;
@@ -265,22 +266,22 @@ public class GameController extends BaseController<GameModel> implements RouterA
         KeyCode code = e.getCode();
 
         // switch문으로는 static 메서드 호출이 불가능하므로 if-else로 처리
-        if(code == KeyLayout.getLeftKey()) {
+        if(code == KeyLayout.getLeftKey(PlayerId.PLAYER1)) {
             boardModel.moveLeft();
             updateGameBoard();
-        } else if(code == KeyLayout.getRightKey()) {
+        } else if(code == KeyLayout.getRightKey(PlayerId.PLAYER1)) {
             boardModel.moveRight();
             updateGameBoard();
-        } else if(code == KeyLayout.getUpKey()) {
+        } else if(code == KeyLayout.getUpKey(PlayerId.PLAYER1)) {
             boardModel.rotate();
             updateGameBoard();
-        } else if(code == KeyLayout.getDownKey()) {
+        } else if(code == KeyLayout.getDownKey(PlayerId.PLAYER1)) {
             boolean moved = boardModel.moveDown();
             if (moved) {
                 scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
             }
             updateGameBoard();
-        } else if(code == KeyCode.SPACE) {
+        } else if(code == KeyLayout.getHardDropKey(PlayerId.PLAYER1)) {
             handleHardDrop();
         } else if(code == KeyCode.P) {
             togglePause();
