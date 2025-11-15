@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.util.Difficulty;
 import org.util.GameColor;
 import org.util.KeyLayout;
+import org.util.PlayerId;
 import org.util.ScreenPreset;
 
 import javafx.scene.input.KeyCode;
@@ -52,71 +53,71 @@ public class SettingTest {
 
     @Test
     public void testDefaultPlayer1Keys() {
-        assertEquals("Player 1 왼쪽 키 기본값은 LEFT", "LEFT", setting.getKeyLeft());
-        assertEquals("Player 1 오른쪽 키 기본값은 RIGHT", "RIGHT", setting.getKeyRight());
-        assertEquals("Player 1 위 키 기본값은 UP", "UP", setting.getKeyUp());
-        assertEquals("Player 1 아래 키 기본값은 DOWN", "DOWN", setting.getKeyDown());
-        assertEquals("Player 1 하드드롭 키 기본값은 SPACE", "SPACE", setting.getKeyHardDrop());
+        assertEquals("Player 1 왼쪽 키 기본값은 LEFT", "LEFT", setting.getKeyLeft(PlayerId.PLAYER1));
+        assertEquals("Player 1 오른쪽 키 기본값은 RIGHT", "RIGHT", setting.getKeyRight(PlayerId.PLAYER1));
+        assertEquals("Player 1 위 키 기본값은 UP", "UP", setting.getKeyUp(PlayerId.PLAYER1));
+        assertEquals("Player 1 아래 키 기본값은 DOWN", "DOWN", setting.getKeyDown(PlayerId.PLAYER1));
+        assertEquals("Player 1 하드드롭 키 기본값은 SPACE", "SPACE", setting.getKeyHardDrop(PlayerId.PLAYER1));
     }
 
     @Test
     public void testDefaultPlayer2Keys() {
-        assertEquals("Player 2 왼쪽 키 기본값은 A", "A", setting.getKeyLeft2());
-        assertEquals("Player 2 오른쪽 키 기본값은 D", "D", setting.getKeyRight2());
-        assertEquals("Player 2 위 키 기본값은 W", "W", setting.getKeyUp2());
-        assertEquals("Player 2 아래 키 기본값은 S", "S", setting.getKeyDown2());
-        assertEquals("Player 2 하드드롭 키 기본값은 SHIFT", "SHIFT", setting.getKeyHardDrop2());
+        assertEquals("Player 2 왼쪽 키 기본값은 A", "A", setting.getKeyLeft(PlayerId.PLAYER2));
+        assertEquals("Player 2 오른쪽 키 기본값은 D", "D", setting.getKeyRight(PlayerId.PLAYER2));
+        assertEquals("Player 2 위 키 기본값은 W", "W", setting.getKeyUp(PlayerId.PLAYER2));
+        assertEquals("Player 2 아래 키 기본값은 S", "S", setting.getKeyDown(PlayerId.PLAYER2));
+        assertEquals("Player 2 하드드롭 키 기본값은 SHIFT", "SHIFT", setting.getKeyHardDrop(PlayerId.PLAYER2));
     }
 
     @Test
     public void testSaveAndLoadPlayer1Keys() {
-        setting.setKeyLeft("A");
-        setting.setKeyRight("D");
-        setting.setKeyUp("W");
-        setting.setKeyDown("S");
-        setting.setKeyHardDrop("Q");
+        setting.setKeyLeft(PlayerId.PLAYER1, "A");
+        setting.setKeyRight(PlayerId.PLAYER1, "D");
+        setting.setKeyUp(PlayerId.PLAYER1, "W");
+        setting.setKeyDown(PlayerId.PLAYER1, "S");
+        setting.setKeyHardDrop(PlayerId.PLAYER1, "Q");
 
         // 새 인스턴스로 로드
         Setting newSetting = new Setting();
-        assertEquals("저장된 Player 1 왼쪽 키", "A", newSetting.getKeyLeft());
-        assertEquals("저장된 Player 1 오른쪽 키", "D", newSetting.getKeyRight());
-        assertEquals("저장된 Player 1 위 키", "W", newSetting.getKeyUp());
-        assertEquals("저장된 Player 1 아래 키", "S", newSetting.getKeyDown());
-        assertEquals("저장된 Player 1 하드드롭 키", "Q", newSetting.getKeyHardDrop());
+        assertEquals("저장된 Player 1 왼쪽 키", "A", newSetting.getKeyLeft(PlayerId.PLAYER1));
+        assertEquals("저장된 Player 1 오른쪽 키", "D", newSetting.getKeyRight(PlayerId.PLAYER1));
+        assertEquals("저장된 Player 1 위 키", "W", newSetting.getKeyUp(PlayerId.PLAYER1));
+        assertEquals("저장된 Player 1 아래 키", "S", newSetting.getKeyDown(PlayerId.PLAYER1));
+        assertEquals("저장된 Player 1 하드드롭 키", "Q", newSetting.getKeyHardDrop(PlayerId.PLAYER1));
     }
 
     @Test
     public void testSaveAndLoadPlayer2Keys() {
-        setting.setKeyLeft2("J");
-        setting.setKeyRight2("L");
-        setting.setKeyUp2("I");
-        setting.setKeyDown2("K");
-        setting.setKeyHardDrop2("U");
+        setting.setKeyLeft(PlayerId.PLAYER2, "J");
+        setting.setKeyRight(PlayerId.PLAYER2, "L");
+        setting.setKeyUp(PlayerId.PLAYER2, "I");
+        setting.setKeyDown(PlayerId.PLAYER2, "K");
+        setting.setKeyHardDrop(PlayerId.PLAYER2, "U");
 
         // 새 인스턴스로 로드
         Setting newSetting = new Setting();
-        assertEquals("저장된 Player 2 왼쪽 키", "J", newSetting.getKeyLeft2());
-        assertEquals("저장된 Player 2 오른쪽 키", "L", newSetting.getKeyRight2());
-        assertEquals("저장된 Player 2 위 키", "I", newSetting.getKeyUp2());
-        assertEquals("저장된 Player 2 아래 키", "K", newSetting.getKeyDown2());
-        assertEquals("저장된 Player 2 하드드롭 키", "U", newSetting.getKeyHardDrop2());
+        assertEquals("저장된 Player 2 왼쪽 키", "J", newSetting.getKeyLeft(PlayerId.PLAYER2));
+        assertEquals("저장된 Player 2 오른쪽 키", "L", newSetting.getKeyRight(PlayerId.PLAYER2));
+        assertEquals("저장된 Player 2 위 키", "I", newSetting.getKeyUp(PlayerId.PLAYER2));
+        assertEquals("저장된 Player 2 아래 키", "K", newSetting.getKeyDown(PlayerId.PLAYER2));
+        assertEquals("저장된 Player 2 하드드롭 키", "U", newSetting.getKeyHardDrop(PlayerId.PLAYER2));
     }
 
     @Test
     public void testKeyLayoutSyncWithPlayer1() {
         // Player 1 키 변경
-        setting.setKeyLeft("A");
-        setting.setKeyRight("D");
-        setting.setKeyUp("W");
-        setting.setKeyDown("S");
-        setting.setKeyHardDrop("SHIFT");
+        setting.setKeyLeft(PlayerId.PLAYER1, "A");
+        setting.setKeyRight(PlayerId.PLAYER1, "D");
+        setting.setKeyUp(PlayerId.PLAYER1, "W");
+        setting.setKeyDown(PlayerId.PLAYER1, "S");
+        setting.setKeyHardDrop(PlayerId.PLAYER1, "SHIFT");
 
         // KeyLayout이 Player 1 키로 동기화되었는지 확인
-        assertEquals("KeyLayout 왼쪽 키가 A로 동기화", KeyCode.A, KeyLayout.getLeftKey());
-        assertEquals("KeyLayout 오른쪽 키가 D로 동기화", KeyCode.D, KeyLayout.getRightKey());
-        assertEquals("KeyLayout 위 키가 W로 동기화", KeyCode.W, KeyLayout.getUpKey());
-        assertEquals("KeyLayout 아래 키가 S로 동기화", KeyCode.S, KeyLayout.getDownKey());
-        assertEquals("KeyLayout 하드드롭 키가 SHIFT로 동기화", KeyCode.SHIFT, KeyLayout.getHardDropKey());
+        assertEquals("KeyLayout 왼쪽 키가 A로 동기화", KeyCode.A, KeyLayout.getLeftKey(PlayerId.PLAYER1));
+        assertEquals("KeyLayout 오른쪽 키가 D로 동기화", KeyCode.D, KeyLayout.getRightKey(PlayerId.PLAYER1));
+        assertEquals("KeyLayout 위 키가 W로 동기화", KeyCode.W, KeyLayout.getUpKey(PlayerId.PLAYER1));
+        assertEquals("KeyLayout 아래 키가 S로 동기화", KeyCode.S, KeyLayout.getDownKey(PlayerId.PLAYER1));
+        assertEquals("KeyLayout 하드드롭 키가 SHIFT로 동기화", KeyCode.SHIFT, KeyLayout.getHardDropKey(PlayerId.PLAYER1));
     }
     
     @Test
