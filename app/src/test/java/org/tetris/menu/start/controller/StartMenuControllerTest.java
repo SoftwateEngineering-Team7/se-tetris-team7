@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 import org.tetris.menu.start.model.StartMenuModel;
-import org.util.KeyLayout;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -170,7 +169,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         int initialIndex = getHighlightedIndex();
         assertTrue("첫 번째 버튼이 하이라이트 인덱스여야 합니다 (actual: " + initialIndex + ")", initialIndex == 0);
         
-        press(KeyLayout.getDownKey()).release(KeyLayout.getDownKey());
+        press(KeyCode.DOWN).release(KeyCode.DOWN);
         WaitForAsyncUtils.waitForFxEvents();
         int afterDownIndex = getHighlightedIndex();
         assertTrue("두 번째 버튼이 하이라이트되어야 합니다 (actual: " + afterDownIndex + ")", isHighlighted(1));
@@ -182,7 +181,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         assertTrue("첫 번째 버튼이 하이라이트 인덱스여야 합니다.", getHighlightedIndex() == 0);
         
         // UP 키 입력 (wrapping 발생)
-        press(KeyLayout.getUpKey()).release(KeyLayout.getUpKey());
+        press(KeyCode.UP).release(KeyCode.UP);
         WaitForAsyncUtils.waitForFxEvents();
         
         // 마지막 버튼으로 이동 (Math.floorMod)
@@ -198,12 +197,12 @@ public class StartMenuControllerTest extends ApplicationTest {
         assertTrue("첫 번째 버튼이 하이라이트 인덱스여야 합니다.", getHighlightedIndex() == 0);
         
         // UP 키 - 마지막으로 wrap
-        press(KeyLayout.getUpKey()).release(KeyLayout.getUpKey());
+        press(KeyCode.UP).release(KeyCode.UP);
         WaitForAsyncUtils.waitForFxEvents();
         assertTrue("마지막 버튼이 하이라이트되어야 합니다.", isHighlighted(n - 1));
         
         // DOWN 키 - 다시 첫 번째로 wrap
-        press(KeyLayout.getDownKey()).release(KeyLayout.getDownKey());
+        press(KeyCode.DOWN).release(KeyCode.DOWN);
         WaitForAsyncUtils.waitForFxEvents();
         assertTrue("첫 번째 버튼이 하이라이트되어야 합니다.", isHighlighted(0));
     }
@@ -264,7 +263,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         
         // 여러 번 이동하면서 항상 하나의 버튼만 하이라이트되는지 확인
         for (int i = 0; i < buttons.size() * 2; i++) {
-            press(KeyLayout.getDownKey()).release(KeyLayout.getDownKey());
+            press(KeyCode.DOWN).release(KeyCode.DOWN);
             WaitForAsyncUtils.waitForFxEvents();
             
             int highlightCount = 0;
