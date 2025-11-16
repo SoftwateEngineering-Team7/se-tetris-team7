@@ -85,12 +85,9 @@ public class BoardTest {
 
         board.moveDown();
 
-        // initialPos가 (-1, 2)이고, moveDown() 후 (0, 2)
-        // ZBlock pivot이 (1, 1)이므로 실제 블록 위치는 (0, 2) - (1, 1) = (-1, 1)
-        // -1행은 화면 밖이므로 무시되고, 0행에만 ZBlock의 첫 번째 줄이 보임
         String expected = 
+                "0 7 7 0 0 \n" +
                 "0 0 7 7 0 \n" +
-                "0 0 0 0 0 \n" +
                 "0 0 0 0 0 \n" +
                 "0 0 0 0 0 \n" +
                 "0 0 0 0 0 \n";

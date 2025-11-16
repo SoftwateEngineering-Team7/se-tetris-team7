@@ -28,7 +28,7 @@ public class Board extends BaseModel {
         board = new int[height][width];
         activeBlock = null;
 
-        initialPos = new Point(-1, width / 2);
+        initialPos = new Point(0, width / 2);
         curPos = new Point(initialPos);
     }
 
@@ -86,6 +86,7 @@ public class Board extends BaseModel {
                 // 2) 위쪽은 스킵, 아래쪽은 차단
                 if (row < 0)
                     continue;
+                    
                 if (row >= height)
                     return false;
 
