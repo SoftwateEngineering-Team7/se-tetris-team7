@@ -2,7 +2,6 @@ package org.tetris.game.model.items;
 
 import java.util.Random;
 
-import org.tetris.game.controller.GameController;
 import org.tetris.game.model.Board;
 import org.tetris.game.model.blocks.*;
 import org.util.Point;
@@ -16,7 +15,7 @@ public class CItem extends Item {
     }
 
     @Override
-    public Block GetItemBlock(Block block) {
+    public Block getItemBlock(Block block) {
         Point size = block.getSize();
         int[][] shape = new int[size.r][size.c];
         
@@ -36,15 +35,15 @@ public class CItem extends Item {
     }
 
     @Override
-    public void Activate(Board board) {
+    public void activate(Board board, ItemActivation context) {
         Point blockPos = board.getCurPos();
         Point itemPos = getPosition();
 
         int row = blockPos.r - itemBlock.pivot.r + itemPos.r;
         int col = blockPos.c - itemBlock.pivot.c + itemPos.c;
 
-        GameController.addClearingCol(col);
-        GameController.addClearingRow(row);
+        context.addClearingCol(col);
+        context.addClearingRow(row);
     }
     
 }
