@@ -2,7 +2,7 @@ name: Java CI with Gradle (JDK 21)
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: ["dev"]
   pull_request:
     branches: ["dev"]
 
@@ -27,7 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libgtk-3-0 \
-            libasound2 \
+            libasound2t64 \
             libxi6 \
             libxrender1 \
             libxtst6 \
