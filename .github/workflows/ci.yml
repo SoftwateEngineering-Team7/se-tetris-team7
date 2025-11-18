@@ -1,6 +1,8 @@
 name: Java CI with Gradle (JDK 21)
 
 on:
+  push:
+    branches: [ "dev" ]
   pull_request:
     branches: ["dev"]
 
