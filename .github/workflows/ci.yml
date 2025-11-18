@@ -28,7 +28,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run model tests only (exclude JavaFX controller tests)
-        run: ./gradlew clean test --exclude-test "**/controller/**" --info
+        run: ./gradlew clean test --info
 
       - name: Upload test results
         if: always()
