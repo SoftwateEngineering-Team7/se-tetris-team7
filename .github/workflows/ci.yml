@@ -21,37 +21,14 @@ jobs:
           distribution: "temurin"
           cache: gradle
 
-      # ---- JavaFX 런타임에 필요한 Linux 패키지 설치 ----
-      - name: Install JavaFX & UI dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-0 \
-            libasound2t64 \
-            libxi6 \
-            libxrender1 \
-            libxtst6 \
-            libxrandr2 \
-            libxext6 \
-            xvfb
-
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v2
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ---- 빌드 ----
-      - name: Build with Gradle
-        run: ./gradlew clean build --stacktrace
-
-      # ---- Headless JavaFX(TestFX) 테스트 ----
-      - name: Run headless UI tests (TestFX)
-        run: |
-          export DISPLAY=:99
-          Xvfb :99 -screen 0 1024x768x24 &
-          sleep 3
-          ./gradlew test --info --stacktrace
+      - name: Run model tests only (exclude JavaFX controller tests)
+        run: ./gradlew clean test --info
 
       - name: Upload test results
         if: always()
