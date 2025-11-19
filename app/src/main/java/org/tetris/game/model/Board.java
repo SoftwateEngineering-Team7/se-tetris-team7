@@ -350,14 +350,19 @@ public class Board extends BaseModel {
     /**
      * 보드를 한 칸 위로 밀고, 새로운 행을 맨 아래에 추가합니다.
      * @param newRow 추가할 새로운 행
+     * @return 게임 오버 여부 (위로 밀었을 때 블록이 보드 밖으로 나가면 true 반환)
      */
-    public void pushUp(int[] newRow)
+    public boolean pushUp(int[] newRow)
     {
         for (int r = 0; r < height - 1; r++) {
+            if (!isRowEmpty(r)) 
+                return false; // 게임 오버
+            
             System.arraycopy(board[r + 1], 0, board[r], 0, width);
         }
-        
+
         System.arraycopy(newRow, 0, board[height - 1], 0, width);
+        return true;
     }
 
     /**
