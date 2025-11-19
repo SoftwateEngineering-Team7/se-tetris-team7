@@ -197,10 +197,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         updateLinesDisplay();
         updateNextBlockPreview();
 
-        gameOverOverlay.setVisible(false);
-        gameOverOverlay.setManaged(false);
-        pauseOverlay.setVisible(false);
-        pauseOverlay.setManaged(false);
+        hideGameOverlay();
+        hidePauseOverlay();
     }
 
     private void setupEventHandlers() {
@@ -361,10 +359,6 @@ public class GameController extends BaseController<GameModel> implements RouterA
     // ===== 블록 고정 / 라인 클리어 / 플래시 =====
 
     private void lockCurrentBlock() {
-        player.clearingRows.clear();
-        player.clearingCols.clear();
-        player.clearingCells.clear();
-
         List<Integer> fullRows = player.boardModel.findFullRows();
         player.clearingRows.addAll(fullRows);
 
@@ -418,6 +412,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void tickFlash(long now) {
         if (player == null || !player.isFlashing || player.flashMask == null)
             return;
+
         if (now < player.nextFlashAt)
             return;
 
@@ -534,6 +529,17 @@ public class GameController extends BaseController<GameModel> implements RouterA
         root.requestFocus();
     }
 
+    private void showGameOverlay() {
+        gameOverOverlay.setVisible(true);
+        gameOverOverlay.setManaged(true);
+    }
+
+    private void hideGameOverlay() {
+        gameOverOverlay.setVisible(false);
+        gameOverOverlay.setManaged(false);
+        root.requestFocus();
+    }
+
     private void resumeGame() {
         gameModel.setPaused(false);
         hidePauseOverlay();
@@ -550,6 +556,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private void goToMenuFromPause() {
         resetGameController();
+        hidePauseOverlay();
+
         if (router != null) {
             router.showStartMenu();
         }
@@ -557,6 +565,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private void restartGame() {
         resetGameController();
+        setupUI();
+
         if(gameLoop != null)
              gameLoop.start();
         else
@@ -567,28 +577,35 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private void goToMenu() {
         resetGameController();
+        hideGameOverlay();
+        
         if (router != null) {
             router.showStartMenu();
         }
     }
 
-
     private void resetGameController() {
+        resetGameLoop();
+        gameModel.reset();
+        resetPlayerSlot();
+    }
+
+    private void resetGameLoop() {
         if (gameLoop != null) {
             gameLoop.stop();
         }
 
-        gameModel.reset();
-        
+        lastUpdate = 0;
         lastDropTime = 0;
-        lastDropTime = 0;
+    }
 
+    private void resetPlayerSlot() {
         if (player != null) {
             player.isFlashing = false;
             player.flashOn = false;
             player.flashToggleCount = 0;
             player.flashMask = null;
-            
+
             player.clearingRows.clear();
             player.clearingCols.clear();
             player.clearingCells.clear();
@@ -605,8 +622,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void showGameOver() {
-        gameOverOverlay.setVisible(true);
-        gameOverOverlay.setManaged(true);
+        showGameOverlay();
 
         router.showScoreBoard(true, gameModel.isItemMode(), player.scoreModel.getScore());
     }
