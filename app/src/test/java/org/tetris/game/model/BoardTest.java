@@ -364,4 +364,29 @@ public class BoardTest {
                 "5 5 5 5 5 \n";
         assertEquals(expected, board.toString());
     }
+
+    @Test
+    public void testPushUp() {
+        Board board = new Board(5, 5);
+
+        // 초기 상태 설정
+        for (int r = 0; r < 5; r++) {
+            for (int c = 0; c < 5; c++) {
+                board.getBoard()[r][c] = r + 1;
+            }
+        }
+
+        board.pushUp(new int[] {0, 0, 0, 0, 0});
+
+        String expected = 
+                "2 2 2 2 2 \n" +
+                "3 3 3 3 3 \n" +
+                "4 4 4 4 4 \n" +
+                "5 5 5 5 5 \n" +
+                "0 0 0 0 0 \n";
+        
+        System.out.println(board);
+        
+        assertEquals(expected, board.toString());
+    }
 }
