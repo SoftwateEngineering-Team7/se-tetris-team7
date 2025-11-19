@@ -347,7 +347,22 @@ public class Board extends BaseModel {
         }
     }
 
-    // 보드 초기화
+    /**
+     * 보드를 한 칸 위로 밀고, 새로운 행을 맨 아래에 추가합니다.
+     * @param newRow 추가할 새로운 행
+     */
+    public void pushUp(int[] newRow)
+    {
+        for (int r = 0; r < height - 1; r++) {
+            System.arraycopy(board[r + 1], 0, board[r], 0, width);
+        }
+        
+        System.arraycopy(newRow, 0, board[height - 1], 0, width);
+    }
+
+    /**
+     * 보드를 초기 상태로 재설정합니다.
+     */
     public void reset() {
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {
