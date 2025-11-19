@@ -130,7 +130,7 @@
 
         <!-- ============== 홀드 블록 (왼쪽) ============== -->
         <left>
-            <VBox alignment="TOP_CENTER" spacing="30"
+            <VBox alignment="CENTER" spacing="30"
                 prefWidth="200"
                 style="-fx-background-color: #16213e;">
                 <children>
