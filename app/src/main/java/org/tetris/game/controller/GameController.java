@@ -683,6 +683,23 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
                     nextBlockGc.fillText(cellText, textX, textY);
                 }
+
+                String cellText = getCellText(nextBlock.getCell(r, c));
+                if (!cellText.isEmpty()) {
+                    gc.setFill(Color.BLACK); // 텍스트 색상
+                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
+
+                    // 텍스트 중앙 정렬
+                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
+                    text.setFont(gc.getFont());
+                    double textWidth = text.getBoundsInLocal().getWidth();
+                    double textHeight = text.getBoundsInLocal().getHeight();
+
+                    double textX = c * cellSize + (cellSize - textWidth) / 2;
+                    double textY = r * cellSize + (cellSize + textHeight) / 2 - 2;
+
+                    gc.fillText(cellText, textX, textY);
+                }
             }
         }
     }

@@ -3,7 +3,7 @@ package org.tetris.game.model;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-
+import org.tetris.game.controller.ItemController;
 import org.tetris.game.model.blocks.*;
 import org.tetris.game.model.items.*;
 import org.util.Point;
@@ -13,7 +13,7 @@ public class ItemTest {
     @Test
     public void testGetRandomItem() {
         Block block = new ZBlock();
-        Item item = Item.getRandomItem();
+        Item item = ItemController.getRandomItem();
 
         assertNotNull(item);
         System.out.println("Randomly selected item ID\n" + item.GetItemBlock(block));

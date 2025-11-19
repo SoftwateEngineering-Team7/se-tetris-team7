@@ -75,6 +75,14 @@ jacocoTestCoverageVerification {
 test {
     useJUnit()
     ignoreFailures = true
+    
+    if (System.getenv("CI") != null) {
+        // CI 환경에서는 JavaFX GUI 테스트 스킵
+        println "⚠️ CI 환경 감지 — JavaFX UI 테스트 스킵"
+        include '**/model/**'
+        exclude '**/controller/**'
+    }
+
 }
 
 tasks.register('packageApp', Exec) {
