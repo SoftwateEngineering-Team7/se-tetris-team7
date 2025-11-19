@@ -1,6 +1,5 @@
 package org.tetris.game.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.tetris.Router;
@@ -11,11 +10,12 @@ import org.tetris.game.model.ScoreModel;
 import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.items.ItemActivation;
 import org.tetris.game.model.NextBlockModel;
+import org.tetris.game.model.PlayerSlot;
+import org.tetris.game.view.GameViewRenderer;
 
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 
-import org.util.GameColor;
 import org.util.KeyLayout;
 import org.util.Point;
 
@@ -31,11 +31,10 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 
-public class GameController extends BaseController<GameModel> implements RouterAware, ItemActivation{
+public class GameController extends BaseController<GameModel> implements RouterAware, ItemActivation {
+
+    // ===== FXML 바인딩 =====
 
     @FXML
     private BorderPane root;
@@ -76,52 +75,59 @@ public class GameController extends BaseController<GameModel> implements RouterA
     @FXML
     private Button pauseMenuButton;
 
-    /** 모델 및 기타 필드 **/
+    // ===== 모델 및 기타 필드 =====
 
     private GameModel gameModel;
-    private Board boardModel;
-    private NextBlockModel nextBlockModel;
-    private ScoreModel scoreModel;
-
     private Router router;
+
+    private PlayerSlot player; // 싱글플레이용 슬롯 1개
+
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
     private long lastDropTime = 0; // 마지막 블록 낙하 시간
-    private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
+    private static final long FRAME_TIME = 16_666_667; // ~60 FPS (나노초)
 
-    private Canvas boardCanvas;
-    private GraphicsContext gc;
-    private Canvas nextBlockCanvas;
-    private GraphicsContext nextBlockGc;
-    private int cellSize = 26; // 각 셀의 크기 (픽셀)
-    private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
-
-    private Point boardSize;
-
-    // === 아래로 교체 ===
-    private boolean isFlashing = false; // 애니메이션 진행 여부
-    private boolean flashOn = false; // on/off 상태
-    private int flashToggleCount = 0; // 토글 횟수
-    private long nextFlashAt = 0L; // 다음 토글 시각
-
-    // 격자 단위 마스크: true면 현재 플래시 대상 셀
-    private boolean[][] flashMask;
-
-    // 삭제 대상(애니메이션 종료 시 실제로 지울 것들)
-    private static List<Integer> clearingRows = new java.util.ArrayList<>();
-    private static List<Integer> clearingCols = new java.util.ArrayList<>();
-    private static List<Point> clearingCells = new java.util.ArrayList<>();
-
+    // 플래시 애니메이션 파라미터
     private static final int FLASH_TIMES = 2;
     private static final int FLASH_TOGGLES = FLASH_TIMES * 2; // on/off 합계
     private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
 
+    // ===== ItemActivation 구현 (아이템이 지울 행/열/셀 추가) =====
+
+    @Override
+    public void addClearingRow(int row) {
+        if (player == null)
+            return;
+        if (!player.clearingRows.contains(row)) {
+            player.clearingRows.add(row);
+        }
+    }
+
+    @Override
+    public void addClearingCol(int col) {
+        if (player == null)
+            return;
+        if (!player.clearingCols.contains(col)) {
+            player.clearingCols.add(col);
+        }
+    }
+
+    @Override
+    public void addClearingCells(List<Point> cells) {
+        if (player == null || cells == null)
+            return;
+        for (Point cell : cells) {
+            if (!player.clearingCells.contains(cell)) {
+                player.clearingCells.add(cell);
+            }
+        }
+    }
+
+    // ===== 생성자 / Router =====
+
     public GameController(GameModel gameModel) {
         super(gameModel);
         this.gameModel = model;
-        this.boardModel = model.getBoardModel();
-        this.nextBlockModel = model.getNextBlockModel();
-        this.scoreModel = model.getScoreModel();
     }
 
     @Override
@@ -129,34 +135,13 @@ public class GameController extends BaseController<GameModel> implements RouterA
         this.router = router;
     }
 
-    @Override
-    public void addClearingRow(int row) {
-        if(!clearingRows.contains(row)) {
-            clearingRows.add(row);
-        }
-    }
-
-    @Override
-    public void addClearingCol(int col) {
-        if(!clearingCols.contains(col)) {
-            clearingCols.add(col);
-        }
-    }
-
-    @Override
-    public void addClearingCells(List<Point> cells) {
-        for (Point cell : cells) {
-            if (!clearingCells.contains(cell)) {
-                clearingCells.add(cell);
-            }
-        }
-    }
+    // ===== 초기화 =====
 
     @FXML
     public void initialize() {
         super.initialize();
 
-        // 이전 게임 루프가 있으면 정리
+        // 이전 게임 루프 정리
         if (gameLoop != null) {
             gameLoop.stop();
         }
@@ -166,88 +151,56 @@ public class GameController extends BaseController<GameModel> implements RouterA
         lastUpdate = 0;
         lastDropTime = 0;
 
-        setBoardSize();
-        Platform.runLater(() -> setupUI());
+        // Stage 크기가 잡힌 후 PlayerSlot + UI 세팅
+        Platform.runLater(() -> {
+            setupPlayerSlot();
+            setupUI();
+        });
+
         setupEventHandlers();
         startGameLoop();
     }
 
-    private void setupUI() {
-        setupCanvas();
-        setupNextBlockCanvas();
+    // PlayerSlot + BoardRender 생성 (PlayerSlot이 렌더러를 가짐)
+    private void setupPlayerSlot() {
+        if (root.getScene() == null || root.getScene().getWindow() == null) {
+            return;
+        }
 
+        double stageWidth = root.getScene().getWindow().getWidth();
+        double stageHeight = root.getScene().getWindow().getHeight();
+
+        // 화면 크기에 따라 셀 크기 계산
+        int cellSize = (int) Math.round(
+                Math.min((stageWidth - 450) / 13.0, stageHeight / 23.0));
+
+        int previewCellSize = (int)Math.round(cellSize * 0.8);
+
+        // GameModel에서 모델 꺼내서 PlayerSlot 구성
+        Board boardModel = gameModel.getBoardModel();
+        NextBlockModel nextBlockModel = gameModel.getNextBlockModel();
+        ScoreModel scoreModel = gameModel.getScoreModel();
+
+        Point boardSize = boardModel.getSize();
+
+        // 이 플레이어 전용 BoardRender 생성
+        GameViewRenderer renderer = new GameViewRenderer(gameBoard, nextBlockPane, boardSize, cellSize, previewCellSize);
+
+        this.player = new PlayerSlot(boardModel, nextBlockModel, scoreModel, renderer);
+        renderer.setupSinglePlayerLayout();
+    }
+
+    // UI 기본 상태 세팅
+    private void setupUI() {
         updateScoreDisplay();
         updateLevelDisplay();
         updateLinesDisplay();
         updateNextBlockPreview();
+
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
         pauseOverlay.setVisible(false);
         pauseOverlay.setManaged(false);
-    }
-
-    private void setBoardSize() {
-        boardSize = boardModel.getSize();
-    }
-
-    private void setupCanvas() {
-        double stageWidth = root.getScene().getWindow().getWidth();
-        double stageHeight = root.getScene().getWindow().getHeight();
-
-        // 화면 크기에 따라 셀 크기 비율 계산
-        cellSize = (int) Math.round(Math.min((stageWidth - 450) / 13, stageHeight / 23));
-
-        // 보드 크기에 맞는 Canvas 생성
-        int canvasHeight = boardSize.r * cellSize;
-        int canvasWidth = boardSize.c * cellSize;
-
-        boardCanvas = new Canvas(canvasWidth, canvasHeight);
-        gc = boardCanvas.getGraphicsContext2D();
-
-        // gameBoard Pane에 Canvas 추가
-        gameBoard.getChildren().clear();
-        gameBoard.getChildren().add(boardCanvas);
-
-        // Pane의 크기가 결정된 후 Canvas를 중앙에 배치
-        gameBoard.widthProperty().addListener((obs, oldVal, newVal) -> {
-            double centerX = (newVal.doubleValue() - canvasWidth) / 2.0;
-            boardCanvas.setLayoutX(centerX);
-        });
-
-        gameBoard.heightProperty().addListener((obs, oldVal, newVal) -> {
-            double centerY = (newVal.doubleValue() - canvasHeight) / 2.0;
-            boardCanvas.setLayoutY(centerY);
-        });
-
-        // 초기 보드 그리기
-        updateGameBoard();
-    }
-
-    private void setupNextBlockCanvas() {
-        // Next Block 프리뷰를 위한 Canvas 생성 (Pane과 같은 크기)
-        double paneWidth = nextBlockPane.getPrefWidth();
-        double paneHeight = nextBlockPane.getPrefHeight();
-
-        nextBlockCanvas = new Canvas(paneWidth, paneHeight);
-        nextBlockGc = nextBlockCanvas.getGraphicsContext2D();
-
-        // nextBlockPane에 Canvas 추가
-        nextBlockPane.getChildren().clear();
-        nextBlockPane.getChildren().add(nextBlockCanvas);
-
-        // Pane의 크기가 변경되면 Canvas 크기도 조정
-        nextBlockPane.widthProperty().addListener((obs, oldVal, newVal) -> {
-            nextBlockCanvas.setWidth(newVal.doubleValue());
-            updateNextBlockPreview();
-        });
-
-        nextBlockPane.heightProperty().addListener((obs, oldVal, newVal) -> {
-            nextBlockCanvas.setHeight(newVal.doubleValue());
-            updateNextBlockPreview();
-        });
-
-        // 초기 Next Block 그리기
-        updateNextBlockPreview();
     }
 
     private void setupEventHandlers() {
@@ -277,6 +230,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         root.getScene().setOnKeyPressed(this::handleKeyPress);
     }
 
+    // ===== 입력 처리 =====
+
     private void handleKeyPress(KeyEvent e) {
         if (gameModel.isGameOver() || gameModel.isPaused()) {
             if (e.getCode() == KeyCode.P) {
@@ -288,49 +243,63 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         KeyCode code = e.getCode();
 
-        // switch문으로는 static 메서드 호출이 불가능하므로 if-else로 처리
+        if (code == KeyCode.P) {
+            e.consume();
+            togglePause();
+            return;
+        }
+
+        // 플래시 애니메이션 도중에는 입력 무시
+        if (player.isFlashing) {
+            e.consume();
+            return;
+        }
+
         if (code == KeyLayout.getLeftKey()) {
-            boardModel.moveLeft();
+            player.boardModel.moveLeft();
             updateGameBoard();
         } else if (code == KeyLayout.getRightKey()) {
-            boardModel.moveRight();
+            player.boardModel.moveRight();
             updateGameBoard();
         } else if (code == KeyLayout.getUpKey()) {
-            boardModel.rotate();
+            player.boardModel.rotate();
             updateGameBoard();
         } else if (code == KeyLayout.getDownKey()) {
-            boolean moved = boardModel.moveDown();
+            boolean moved = player.boardModel.moveDown();
             if (moved) {
-                scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
+                player.scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
             }
             updateGameBoard();
         } else if (code == KeyCode.SPACE) {
             handleHardDrop();
-        } else if (code == KeyCode.P) {
-            togglePause();
-        } else {
-            // 기타 키는 무시
         }
 
         e.consume();
     }
 
     private void handleHardDrop() {
-        int dropDistance = boardModel.hardDrop();
-        scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
+        if (player == null)
+            return;
+
+        int dropDistance = player.boardModel.hardDrop();
+        player.scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
+        lastDropTime = System.nanoTime(); // 하드 드롭 후 타이머 리셋
         lockCurrentBlock();
     }
+
+    // ===== 게임 모드 설정 =====
 
     /**
      * 게임 모드 설정
      * 
-     * @param itemMode   아이템 모드 여부
-     * @param difficulty 난이도
+     * @param itemMode 아이템 모드 여부
      */
     public void setUpGameMode(boolean itemMode) {
         gameModel.setItemMode(itemMode);
         gameModel.setDifficulty();
     }
+
+    // ===== 메인 게임 루프 =====
 
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
@@ -344,7 +313,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
                 long elapsed = now - lastUpdate;
                 if (elapsed >= FRAME_TIME) {
-                    update(now);
+                    updateGameLoop(now);
                     lastUpdate = now;
                 }
             }
@@ -352,39 +321,36 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameLoop.start();
     }
 
-    private void update(long now) {
-        // 애니메이션 동안은 일반 업데이트 중지
-        if (isFlashing) {
+    private void updateGameLoop(long now) {
+        if (gameModel.isPaused() || gameModel.isGameOver()) {
+            return;
+        }
+
+        if (player != null && player.isFlashing) {
             tickFlash(now);
             updateGameBoard();
             return;
         }
 
-        if (gameModel.isPaused() || gameModel.isGameOver()) {
-            return;
-        }
-
-        // 레벨에 따른 블록 낙하 간격 (밀리초 단위)
-        // dropInterval은 프레임 수이므로, 프레임당 시간(~16.6ms)을 곱함
+        // 레벨에 따른 블록 낙하 간격 (프레임 기준)
         int dropIntervalFrames = gameModel.getDropInterval();
         long dropIntervalNanos = dropIntervalFrames * FRAME_TIME;
 
-        // 시간 기반 블록 낙하 처리
         long timeSinceLastDrop = now - lastDropTime;
         if (timeSinceLastDrop >= dropIntervalNanos) {
             boolean moved = gameModel.autoDown();
 
-            if (moved) {
-                // 자동으로 1칸 떨어질 때마다 점수 획득
-                scoreModel.blockDropped();
-            } else {
-                lockCurrentBlock();
+            if (player != null) {
+                if (moved) {
+                    player.scoreModel.blockDropped();
+                } else {
+                    lockCurrentBlock();
+                }
             }
 
             lastDropTime = now;
         }
 
-        // UI는 매 프레임 업데이트 (60 FPS)
         updateGameBoard();
         updateScoreDisplay();
         updateLevelDisplay();
@@ -392,203 +358,146 @@ public class GameController extends BaseController<GameModel> implements RouterA
         updateNextBlockPreview();
     }
 
+    // ===== 블록 고정 / 라인 클리어 / 플래시 =====
+
     private void lockCurrentBlock() {
-        clearingRows.clear();
-        clearingCols.clear();
-        clearingCells.clear();
+        player.clearingRows.clear();
+        player.clearingCols.clear();
+        player.clearingCells.clear();
 
-        List<Integer> fullRows = boardModel.findFullRows();
-        List<Integer> fullCols = new ArrayList<>(); // 이미 가지고 계신 리스트 사용
+        List<Integer> fullRows = player.boardModel.findFullRows();
+        player.clearingRows.addAll(fullRows);
 
-        clearingRows.addAll(fullRows);
-
+        // 아이템 활성화 (필요 시 rows/cols/cells 추가)
         gameModel.tryActivateItem(this);
 
-        if (boardModel.getIsForceDown()) {
-            boolean moved = boardModel.moveDownForce();
+        if (player.boardModel.getIsForceDown()) {
+            boolean moved = player.boardModel.moveDownForce();
             if (!moved) {
                 // 더 이상 내려갈 수 없으면 새 블록 생성
                 gameModel.updateModels(0);
                 gameModel.spawnNewBlock();
                 updateGameBoard();
-                if (gameModel.isGameOver())
+                if (gameModel.isGameOver()) {
                     handleGameOver();
+                }
             }
             return;
         }
 
-        if (!clearingRows.isEmpty() || !clearingCols.isEmpty() || !clearingCells.isEmpty()) {
-            beginFlash(fullRows, fullCols, java.util.Collections.emptyList(), System.nanoTime());
-            return; // 애니메이션 끝나면 실제 삭제 수행
+        if (!player.clearingRows.isEmpty() ||
+            !player.clearingCols.isEmpty() ||
+            !player.clearingCells.isEmpty()) {
+
+            beginFlash(System.nanoTime());
+            return; // 플래시 종료 후 실제 삭제
         }
 
-        // 평상시 처리
-        gameModel.updateModels(0); // 필요 시 오버로드(행/열 분리)로 교체 권장
-        gameModel.spawnNewBlock();
         updateGameBoard();
-        if (gameModel.isGameOver())
+        gameModel.spawnNewBlock();
+        if (gameModel.isGameOver()) {
             handleGameOver();
+        }
     }
 
-    // 행/열/임의셀을 한 번에 받는 시작 진입점
-    private void beginFlash(List<Integer> rows, List<Integer> cols, List<Point> cells, long now) {
-        isFlashing = true;
+    // 플래시 애니메이션 시작
+    private void beginFlash(long now) {
+        player.isFlashing = true;
 
-        if (rows != null)
-            clearingRows.addAll(rows);
-        if (cols != null)
-            clearingCols.addAll(cols);
-        if (cells != null)
-            clearingCells.addAll(cells);
+        player.flashMask = player.renderer.buildFlashMask(
+                player.clearingRows,
+                player.clearingCols,
+                player.clearingCells);
 
-        clearingRows.sort(java.util.Comparator.reverseOrder());
-        clearingCols.sort(java.util.Comparator.reverseOrder());
-
-        // 마스크 초기화
-        flashMask = new boolean[boardSize.r][boardSize.c];
-        markFlashRows(clearingRows, flashMask);
-        markFlashCols(clearingCols, flashMask);
-        markFlashCells(clearingCells, flashMask);
-
-        flashOn = false; // 첫 토글에서 on
-        flashToggleCount = 0;
-        nextFlashAt = now; // 즉시 시작
+        player.flashOn = false;
+        player.flashToggleCount = 0;
+        player.nextFlashAt = now;
     }
 
+    // 플래시 애니메이션 틱
     private void tickFlash(long now) {
-        if (now < nextFlashAt)
+        if (player == null || !player.isFlashing || player.flashMask == null)
+            return;
+        if (now < player.nextFlashAt)
             return;
 
-        flashOn = !flashOn;
-        flashToggleCount++;
-        nextFlashAt = now + FLASH_INTERVAL_NANOS;
+        player.flashOn = !player.flashOn;
+        player.flashToggleCount++;
+        player.nextFlashAt = now + FLASH_INTERVAL_NANOS;
 
-        if (flashToggleCount >= FLASH_TOGGLES) {
-            isFlashing = false;
-            flashOn = false;
-            processClears(); // 실제 삭제
-            flashMask = null;
+        if (player.flashToggleCount >= FLASH_TOGGLES) {
+            player.isFlashing = false;
+            player.flashOn = false;
+            player.flashMask = null;
+            processClears();
         }
     }
 
     private void processClears() {
-        for (int r : clearingRows)
-            boardModel.clearRow(r);
-        int linesCleared = clearingRows.size();
+        int linesCleared = deleteCompletedRows();
+        int colsCleared  = deleteCompletedCols();
+        deleteCompletedCells();
 
-        for (int c : clearingCols)
-            boardModel.clearColumn(c);
-        int colsCleared = clearingCols.size();
-
-        for (Point p : clearingCells) {
-            if (p.r >= 0 && p.r < boardSize.r && p.c >= 0 && p.c < boardSize.c) {
-                boardModel.getBoard()[p.r][p.c] = 0;
-            }
-        }
-
-        clearingRows.clear();
-        clearingCols.clear();
-        clearingCells.clear();
-
+        // 점수 및 새 블록 생성
         gameModel.updateModels(linesCleared + colsCleared);
         gameModel.spawnNewBlock();
-        if (gameModel.isGameOver())
+        if (gameModel.isGameOver()) {
             handleGameOver();
-    }
-
-    // UI 처리만 담당 (게임 오버 판단은 Model에서)
-    private void handleGameOver() {
-        if (gameLoop != null) {
-            gameLoop.stop();
         }
-        showGameOver();
-
     }
 
-    private void updateGameBoard() {
-        if (gc == null)
-            return;
+    // 행 실제 삭제 처리
+    private int deleteCompletedRows() {
+        for (int r : player.clearingRows) {
+            player.boardModel.clearRow(r);
+        }
 
-        int[][] board = boardModel.getBoard();
-        int rows = boardSize.r;
-        int cols = boardSize.c;
+        int count = player.clearingRows.size();
+        player.clearingRows.clear();
 
-        // 전체 Canvas 초기화 (검은색 배경)
-        gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, cols * cellSize, rows * cellSize);
+        return count;
+    }
 
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                boolean flashingThisCell = isFlashing && flashMask != null && flashMask[r][c] && flashOn;
-                int cellValue = board[r][c];
+    // 열 실제 삭제 처리
+    private int deleteCompletedCols(){
+        for (int c : player.clearingCols) {
+            player.boardModel.clearColumn(c);
+        }
 
-                if (cellValue == 0 && !flashingThisCell)
-                    continue;
+        int count = player.clearingCols.size();
+        player.clearingCols.clear();
 
-                Color fill = flashingThisCell ? Color.WHITE : getCellColor(cellValue);
-                gc.setFill(fill);
-                gc.fillRect(c * cellSize, r * cellSize, cellSize - 2, cellSize - 2);
+        return count;
+    }
 
-                gc.setStroke(Color.WHITE);
-                gc.setLineWidth(1);
-                gc.strokeRect(c * cellSize, r * cellSize, cellSize - 2, cellSize - 2);
+    // 셀 실제 삭제 처리
+    private void deleteCompletedCells(){
+        int boardWidth  = player.boardModel.getSize().r;
+        int boardHeight = player.boardModel.getSize().c;
 
-                // 셀 내 문자 그리기
-                String cellText = getCellText(cellValue);
-                if (!cellText.isEmpty()) {
-                    gc.setFill(Color.BLACK); // 텍스트 색상
-                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
-
-                    // 텍스트 중앙 정렬
-                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
-                    text.setFont(gc.getFont());
-                    double textWidth = text.getBoundsInLocal().getWidth();
-                    double textHeight = text.getBoundsInLocal().getHeight();
-
-                    double textX = c * cellSize + (cellSize - textWidth) / 2;
-                    double textY = r * cellSize + (cellSize + textHeight) / 2 - 2;
-
-                    gc.fillText(cellText, textX, textY);
-                }
-
+        for (Point p : player.clearingCells) {
+            if (p.r >= 0 && p.r < boardWidth && p.c >= 0 && p.c < boardHeight) {
+                player.boardModel.getBoard()[p.r][p.c] = 0;
             }
         }
+
+        player.clearingCells.clear();
     }
 
-    // 셀 값에 따른 색상 반환
-    private Color getCellColor(int cellValue) {
-        switch (cellValue) {
-            case 1: return GameColor.BLUE.getColor();    // IBlock
-            case 2: return GameColor.ORANGE.getColor();  // JBlock
-            case 3: return GameColor.YELLOW.getColor();  // LBlock
-            case 4: return GameColor.GREEN.getColor();   // OBlock
-            case 5: return GameColor.RED.getColor();     // SBlock
-            case 6: return GameColor.PURPLE.getColor();  // TBlock
-            case 7: return GameColor.CYAN.getColor();    // ZBlock
-            default: return Color.WHITE;
-        }
+    // ===== 렌더링 =====
+
+    private void updateGameBoard() {
+        int[][] board = player.boardModel.getBoard();
+        player.renderer.renderBoard(board, player.flashMask, player.isFlashing, player.flashOn);
     }
 
-    // 셀 값에 따른 문자 반환
-    private String getCellText(int cellValue) {
-        switch (cellValue) {
-            case 9:
-                return "L";
-            case 10:
-                return "W";
-            case 11:
-                return "V";
-            case 12:
-                return "B";
-            case 13:
-                return "C";
-            default:
-                return "";
-        }
+    private void updateNextBlockPreview() {
+        Block nextBlock = player.nextBlockModel.peekNext();
+        player.renderer.renderNextBlock(nextBlock);
     }
 
     private void updateScoreDisplay() {
-        scoreLabel.setText(scoreModel.toString());
+        scoreLabel.setText(player.scoreModel.toString());
     }
 
     private void updateLevelDisplay() {
@@ -599,96 +508,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
         linesLabel.setText(String.valueOf(gameModel.getTotalLinesCleared()));
     }
 
-    private void updateNextBlockPreview() {
-        if (nextBlockGc == null) return;
-
-        double canvasWidth = nextBlockCanvas.getWidth();
-        double canvasHeight = nextBlockCanvas.getHeight();
-
-        // Canvas 초기화 (투명 배경)
-        nextBlockGc.clearRect(0, 0, canvasWidth, canvasHeight);
-
-        // 다음 블록 가져오기
-        Block nextBlock = nextBlockModel.peekNext();
-        if (nextBlock == null) return;
-
-        Color blockColor = nextBlock.getColor();
-
-        // 블록 크기 계산
-        int blockWidth = nextBlock.getSize().c;
-        int blockHeight = nextBlock.getSize().r;
-
-        // 실제 블록의 바운딩 박스 계산 (빈 셀 제외)
-        int minR = blockHeight, maxR = -1, minC = blockWidth, maxC = -1;
-        for (int r = 0; r < blockHeight; r++) {
-            for (int c = 0; c < blockWidth; c++) {
-                if (nextBlock.getCell(r, c) != 0) {
-                    if (r < minR) minR = r;
-                    if (r > maxR) maxR = r;
-                    if (c < minC) minC = c;
-                    if (c > maxC) maxC = c;
-                }
-            }
-        }
-
-        // 실제 블록의 크기
-        int actualWidth = (maxC - minC + 1);
-        int actualHeight = (maxR - minR + 1);
-
-        // 중앙 정렬을 위한 오프셋 계산
-        double offsetX = (canvasWidth - actualWidth * PREVIEW_CELL_SIZE) / 2.0 - minC * PREVIEW_CELL_SIZE;
-        double offsetY = (canvasHeight - actualHeight * PREVIEW_CELL_SIZE) / 2.0 - minR * PREVIEW_CELL_SIZE;
-
-        // 블록 그리기
-        for (int r = 0; r < blockHeight; r++) {
-            for (int c = 0; c < blockWidth; c++) {
-                int cellValue = nextBlock.getCell(r, c);
-                if (cellValue != 0) {
-                    // 아이템 셀인 경우 흰색, 일반 블록인 경우 블록 색상
-                    String cellText = getCellText(cellValue);
-                    Color fillColor = cellText.isEmpty() ? blockColor : Color.WHITE;
-                    
-                    nextBlockGc.setFill(fillColor);
-                    nextBlockGc.fillRect(
-                            offsetX + c * PREVIEW_CELL_SIZE,
-                            offsetY + r * PREVIEW_CELL_SIZE,
-                            PREVIEW_CELL_SIZE - 2,
-                        PREVIEW_CELL_SIZE - 2
-                    );
-
-                    // 테두리 효과
-                    nextBlockGc.setStroke(Color.WHITE);
-                    nextBlockGc.setLineWidth(1);
-                    nextBlockGc.strokeRect(
-                            offsetX + c * PREVIEW_CELL_SIZE,
-                            offsetY + r * PREVIEW_CELL_SIZE,
-                            PREVIEW_CELL_SIZE - 2,
-                            PREVIEW_CELL_SIZE - 2);
-                }
-
-                // 아이템 블록인 경우 텍스트 표시
-                String cellText = getCellText(nextBlock.getCell(r, c));
-                if (!cellText.isEmpty()) {
-                    nextBlockGc.setFill(Color.BLACK); // 텍스트 색상
-                    nextBlockGc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, PREVIEW_CELL_SIZE * 0.6));
-
-                    // 텍스트 중앙 정렬
-                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
-                    text.setFont(nextBlockGc.getFont());
-                    double textWidth = text.getBoundsInLocal().getWidth();
-                    double textHeight = text.getBoundsInLocal().getHeight();
-
-                    double textX = offsetX + c * PREVIEW_CELL_SIZE + (PREVIEW_CELL_SIZE - textWidth) / 2;
-                    double textY = offsetY + r * PREVIEW_CELL_SIZE + (PREVIEW_CELL_SIZE + textHeight) / 2 - 2;
-
-                    nextBlockGc.fillText(cellText, textX, textY);
-                }
-            }
-        }
-    }
+    // ===== 일시정지 / 재시작 / 메뉴 이동 =====
 
     private void togglePause() {
-        if (gameModel.isGameOver()) return;
+        if (gameModel.isGameOver())
+            return;
 
         gameModel.setPaused(!gameModel.isPaused());
 
@@ -725,86 +549,66 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     private void goToMenuFromPause() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
+        resetGameController();
         if (router != null) {
             router.showStartMenu();
         }
     }
 
     private void restartGame() {
-        // model.reset();
-        gameModel.reset();
-
-        // UI 초기화
-        gameOverOverlay.setVisible(false);
-        gameOverOverlay.setManaged(false);
-        pauseOverlay.setVisible(false);
-        pauseOverlay.setManaged(false);
-
-        // 디스플레이 업데이트
-        updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
-        updateGameBoard();
-
-        // 게임 루프 재시작
-        if (gameLoop != null) {
-            lastUpdate = 0;
-            lastDropTime = 0;
-            gameLoop.start();
-        }
+        resetGameController();
+        if(gameLoop != null)
+             gameLoop.start();
+        else
+            startGameLoop();
 
         root.requestFocus();
     }
 
     private void goToMenu() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
+        resetGameController();
         if (router != null) {
             router.showStartMenu();
         }
     }
 
-    private void markFlashRows(List<Integer> rows, boolean[][] mask) {
-        if (rows == null)
-            return;
-        for (int r : rows) {
-            if (r < 0 || r >= boardSize.r)
-                continue;
-            java.util.Arrays.fill(mask[r], true);
+
+    private void resetGameController() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+
+        gameModel.reset();
+        
+        lastDropTime = 0;
+        lastDropTime = 0;
+
+        if (player != null) {
+            player.isFlashing = false;
+            player.flashOn = false;
+            player.flashToggleCount = 0;
+            player.flashMask = null;
+            
+            player.clearingRows.clear();
+            player.clearingCols.clear();
+            player.clearingCells.clear();
+
+            player.renderer.boardReset();
         }
     }
 
-    private void markFlashCols(List<Integer> cols, boolean[][] mask) {
-        if (cols == null)
-            return;
-        for (int c : cols) {
-            if (c < 0 || c >= boardSize.c)
-                continue;
-            for (int r = 0; r < boardSize.r; r++) {
-                mask[r][c] = true;
-            }
+    void handleGameOver() {
+        if (gameLoop != null) {
+            gameLoop.stop();
         }
-    }
-
-    private void markFlashCells(List<Point> cells, boolean[][] mask) {
-        if (cells == null)
-            return;
-        for (Point p : cells) {
-            if (p.r >= 0 && p.r < boardSize.r && p.c >= 0 && p.c < boardSize.c) {
-                mask[p.r][p.c] = true;
-            }
-        }
+        showGameOver();
     }
 
     private void showGameOver() {
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
 
-        router.showScoreBoard(true, gameModel.isItemMode(), scoreModel.getScore());
+        router.showScoreBoard(true, gameModel.isItemMode(), player.scoreModel.getScore());
     }
 
     @Override
