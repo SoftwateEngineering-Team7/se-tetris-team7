@@ -16,7 +16,7 @@ public class ItemTest {
         Item item = ItemController.getRandomItem();
 
         assertNotNull(item);
-        System.out.println("Randomly selected item ID\n" + item.GetItemBlock(block));
+        System.out.println("Randomly selected item ID\n" + item.getItemBlock(block));
     }
 
     @Test
@@ -24,7 +24,7 @@ public class ItemTest {
         Block block = new ZBlock();
         Item item = new LItem();
 
-        Block itemBlock = item.GetItemBlock(block);
+        Block itemBlock = item.getItemBlock(block);
 
         System.out.println("Item Block\n" + itemBlock);
 
@@ -40,7 +40,7 @@ public class ItemTest {
         Block block = new TBlock();
         Item item = new LItem();
 
-        Block itemBlock = item.GetItemBlock(block);
+        Block itemBlock = item.getItemBlock(block);
         Point itemPos = item.getPosition();
 
         int itemValue = itemBlock.getCell(itemPos.r, itemPos.c);
