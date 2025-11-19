@@ -16,14 +16,15 @@ public class AttackModel {
     }
 
     /**
-     * 큐에 공격을 추가합니다. 만약 큐의 크기가 최대치를 초과하면 가장 오래된 공격을 제거합니다.
+     * 큐에 공격을 추가합니다. 만약 큐의 크기가 최대치를 초과하면 추가하지 않습니다.
      * @param attack 공격을 나타내는 정수 배열
      */
     public void push(int[] attack) {
         if (attacks.size() >= MAX_ATTACKS) {
-            attacks.remove(0);
+            return;
         }
-        attacks.add(attack);
+
+        attacks.add(MAX_ATTACKS, attack);
     }
 
     /**
