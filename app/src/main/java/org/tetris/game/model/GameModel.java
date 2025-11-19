@@ -4,6 +4,7 @@ import org.tetris.shared.BaseModel;
 import org.util.Difficulty;
 import org.tetris.game.controller.ItemController;
 import org.tetris.game.model.blocks.*;
+import org.tetris.game.model.items.ItemActivation;
 
 public class GameModel extends BaseModel {
 
@@ -95,8 +96,8 @@ public class GameModel extends BaseModel {
             isGameOver = true; // Model이 게임 오버 상태 관리
         }
 
-        if (!isItemMode) return; // ITEM_MODE
-        if (itemController.canSpawnItem()) {
+        // 아이템 모드이고 아이템 생성 가능하면 다음 블록에 아이템 적용
+        if (isItemMode && itemController.canSpawnItem()) {
             Block targetBlock = nextBlockModel.peekNext();
             targetBlock = itemController.spawnItem(targetBlock);
             nextBlockModel.swapNext(targetBlock);
@@ -124,18 +125,21 @@ public class GameModel extends BaseModel {
 
             updateLevel();
 
-            if (!isItemMode) return; // ITEM_MODE
+            if (!isItemMode)
+                return; // ITEM_MODE
             itemController.onLineCleared(linesCleared);
         }
 
         return;
     }
 
-    public boolean tryActivateItem() {
-        if (!isItemMode) return false;
-        if (!board.activeBlock.isItemBlock()) return false;
+    public boolean tryActivateItem(ItemActivation context) {
+        if (!isItemMode)
+            return false;
+        if (!board.activeBlock.isItemBlock())
+            return false;
 
-        itemController.activateItem(board);
+        itemController.activateItem(board, context);
         return true;
     }
 
@@ -159,9 +163,9 @@ public class GameModel extends BaseModel {
     public int getDropInterval() {
         float difficultyMul = Difficulty.getSpeedMultiplier();
         int dropInterval = MAX_DROP_INTERVAL - Math.round((level - 1) * 5 * difficultyMul);
-        
+
         scoreModel.setGravityMultiplier(dropInterval);
-        
+
         return Math.max(MIN_DROP_INTERVAL, dropInterval);
     }
 }

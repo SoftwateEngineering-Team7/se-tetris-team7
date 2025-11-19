@@ -14,9 +14,9 @@ public abstract class Item {
         this.itemID = id;
     }
 
-    public abstract Block GetItemBlock(Block block);
+    public abstract Block getItemBlock(Block block);
 
-    public abstract void Activate(Board board);
+    public abstract void activate(Board board, ItemActivation context);
 
     /**
      * 아이템 블럭 내 아이템 좌표 반환 메서드

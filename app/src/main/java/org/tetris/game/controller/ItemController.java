@@ -40,16 +40,16 @@ public class ItemController {
     public Block spawnItem(Block block) {
         lineClearedCount %= ITEM_LINE_THRESHOLD;
 
-        Block itemBlock = currentItem.GetItemBlock(block);
-        itemBlock.setIsItemBlock(true);
-
         resetCurrentItem();
+
+        Block itemBlock = currentItem.getItemBlock(block);
+        itemBlock.setIsItemBlock(true);
 
         return itemBlock;
     }
 
-    public void activateItem(Board board) {
-        currentItem.Activate(board);
+    public void activateItem(Board board, ItemActivation context) {
+        currentItem.activate(board, context);
     }
 
     //region Static Functions

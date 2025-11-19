@@ -9,6 +9,7 @@ import org.tetris.game.model.Board;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.ScoreModel;
 import org.tetris.game.model.blocks.Block;
+import org.tetris.game.model.items.ItemActivation;
 import org.tetris.game.model.NextBlockModel;
 
 import org.tetris.shared.BaseController;
@@ -34,7 +35,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-public class GameController extends BaseController<GameModel> implements RouterAware {
+public class GameController extends BaseController<GameModel> implements RouterAware, ItemActivation{
 
     @FXML
     private BorderPane root;
@@ -107,9 +108,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private boolean[][] flashMask;
 
     // 삭제 대상(애니메이션 종료 시 실제로 지울 것들)
-    public static List<Integer> clearingRows = new java.util.ArrayList<>();
-    public static List<Integer> clearingCols = new java.util.ArrayList<>();
-    public static List<Point> clearingCells = new java.util.ArrayList<>();
+    private static List<Integer> clearingRows = new java.util.ArrayList<>();
+    private static List<Integer> clearingCols = new java.util.ArrayList<>();
+    private static List<Point> clearingCells = new java.util.ArrayList<>();
 
     private static final int FLASH_TIMES = 2;
     private static final int FLASH_TOGGLES = FLASH_TIMES * 2; // on/off 합계
@@ -126,6 +127,29 @@ public class GameController extends BaseController<GameModel> implements RouterA
     @Override
     public void setRouter(Router router) {
         this.router = router;
+    }
+
+    @Override
+    public void addClearingRow(int row) {
+        if(!clearingRows.contains(row)) {
+            clearingRows.add(row);
+        }
+    }
+
+    @Override
+    public void addClearingCol(int col) {
+        if(!clearingCols.contains(col)) {
+            clearingCols.add(col);
+        }
+    }
+
+    @Override
+    public void addClearingCells(List<Point> cells) {
+        for (Point cell : cells) {
+            if (!clearingCells.contains(cell)) {
+                clearingCells.add(cell);
+            }
+        }
     }
 
     @FXML
@@ -265,26 +289,26 @@ public class GameController extends BaseController<GameModel> implements RouterA
         KeyCode code = e.getCode();
 
         // switch문으로는 static 메서드 호출이 불가능하므로 if-else로 처리
-        if(code == KeyLayout.getLeftKey()) {
+        if (code == KeyLayout.getLeftKey()) {
             boardModel.moveLeft();
             updateGameBoard();
-        } else if(code == KeyLayout.getRightKey()) {
+        } else if (code == KeyLayout.getRightKey()) {
             boardModel.moveRight();
             updateGameBoard();
-        } else if(code == KeyLayout.getUpKey()) {
+        } else if (code == KeyLayout.getUpKey()) {
             boardModel.rotate();
             updateGameBoard();
-        } else if(code == KeyLayout.getDownKey()) {
+        } else if (code == KeyLayout.getDownKey()) {
             boolean moved = boardModel.moveDown();
             if (moved) {
                 scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
             }
             updateGameBoard();
-        } else if(code == KeyCode.SPACE) {
+        } else if (code == KeyCode.SPACE) {
             handleHardDrop();
-        } else if(code == KeyCode.P) {
+        } else if (code == KeyCode.P) {
             togglePause();
-        } else{
+        } else {
             // 기타 키는 무시
         }
 
@@ -296,14 +320,14 @@ public class GameController extends BaseController<GameModel> implements RouterA
         scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
         lockCurrentBlock();
     }
-    
+
     /**
      * 게임 모드 설정
-     * @param itemMode 아이템 모드 여부
+     * 
+     * @param itemMode   아이템 모드 여부
      * @param difficulty 난이도
      */
-    public void setUpGameMode(boolean itemMode)
-    {
+    public void setUpGameMode(boolean itemMode) {
         gameModel.setItemMode(itemMode);
         gameModel.setDifficulty();
     }
@@ -378,10 +402,18 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         clearingRows.addAll(fullRows);
 
-        gameModel.tryActivateItem();
+        gameModel.tryActivateItem(this);
 
         if (boardModel.getIsForceDown()) {
-            boardModel.moveDownForce();
+            boolean moved = boardModel.moveDownForce();
+            if (!moved) {
+                // 더 이상 내려갈 수 없으면 새 블록 생성
+                gameModel.updateModels(0);
+                gameModel.spawnNewBlock();
+                updateGameBoard();
+                if (gameModel.isGameOver())
+                    handleGameOver();
+            }
             return;
         }
 
@@ -393,9 +425,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
         // 평상시 처리
         gameModel.updateModels(0); // 필요 시 오버로드(행/열 분리)로 교체 권장
         gameModel.spawnNewBlock();
+        updateGameBoard();
         if (gameModel.isGameOver())
             handleGameOver();
-        updateGameBoard();
     }
 
     // 행/열/임의셀을 한 번에 받는 시작 진입점
@@ -470,7 +502,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
             gameLoop.stop();
         }
         showGameOver();
-        
+
     }
 
     private void updateGameBoard() {
@@ -518,27 +550,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
                     gc.fillText(cellText, textX, textY);
                 }
-                
-            }
-        }
-    }
 
-    public static void addClearingRow(int row) {
-        if (!clearingRows.contains(row)) {
-            clearingRows.add(row);
-        }
-    }
-
-    public static void addClearingCol(int col) {
-        if (!clearingCols.contains(col)) {
-            clearingCols.add(col);
-        }
-    }
-
-    public static void addClearingCells(List<Point> cells) {
-        for (Point cell : cells) {
-            if (!clearingCells.contains(cell)) {
-                clearingCells.add(cell);
             }
         }
     }
@@ -606,15 +618,37 @@ public class GameController extends BaseController<GameModel> implements RouterA
         int blockWidth = nextBlock.getSize().c;
         int blockHeight = nextBlock.getSize().r;
 
+        // 실제 블록의 바운딩 박스 계산 (빈 셀 제외)
+        int minR = blockHeight, maxR = -1, minC = blockWidth, maxC = -1;
+        for (int r = 0; r < blockHeight; r++) {
+            for (int c = 0; c < blockWidth; c++) {
+                if (nextBlock.getCell(r, c) != 0) {
+                    if (r < minR) minR = r;
+                    if (r > maxR) maxR = r;
+                    if (c < minC) minC = c;
+                    if (c > maxC) maxC = c;
+                }
+            }
+        }
+
+        // 실제 블록의 크기
+        int actualWidth = (maxC - minC + 1);
+        int actualHeight = (maxR - minR + 1);
+
         // 중앙 정렬을 위한 오프셋 계산
-        double offsetX = (canvasWidth - blockWidth * PREVIEW_CELL_SIZE) / 2.0;
-        double offsetY = (canvasHeight - blockHeight * PREVIEW_CELL_SIZE) / 2.0;
+        double offsetX = (canvasWidth - actualWidth * PREVIEW_CELL_SIZE) / 2.0 - minC * PREVIEW_CELL_SIZE;
+        double offsetY = (canvasHeight - actualHeight * PREVIEW_CELL_SIZE) / 2.0 - minR * PREVIEW_CELL_SIZE;
 
         // 블록 그리기
         for (int r = 0; r < blockHeight; r++) {
             for (int c = 0; c < blockWidth; c++) {
-                if (nextBlock.getCell(r, c) != 0) {
-                    nextBlockGc.setFill(blockColor);
+                int cellValue = nextBlock.getCell(r, c);
+                if (cellValue != 0) {
+                    // 아이템 셀인 경우 흰색, 일반 블록인 경우 블록 색상
+                    String cellText = getCellText(cellValue);
+                    Color fillColor = cellText.isEmpty() ? blockColor : Color.WHITE;
+                    
+                    nextBlockGc.setFill(fillColor);
                     nextBlockGc.fillRect(
                             offsetX + c * PREVIEW_CELL_SIZE,
                             offsetY + r * PREVIEW_CELL_SIZE,
@@ -629,8 +663,25 @@ public class GameController extends BaseController<GameModel> implements RouterA
                             offsetX + c * PREVIEW_CELL_SIZE,
                             offsetY + r * PREVIEW_CELL_SIZE,
                             PREVIEW_CELL_SIZE - 2,
-                            PREVIEW_CELL_SIZE - 2
-                    );
+                            PREVIEW_CELL_SIZE - 2);
+                }
+
+                // 아이템 블록인 경우 텍스트 표시
+                String cellText = getCellText(nextBlock.getCell(r, c));
+                if (!cellText.isEmpty()) {
+                    nextBlockGc.setFill(Color.BLACK); // 텍스트 색상
+                    nextBlockGc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, PREVIEW_CELL_SIZE * 0.6));
+
+                    // 텍스트 중앙 정렬
+                    javafx.scene.text.Text text = new javafx.scene.text.Text(cellText);
+                    text.setFont(nextBlockGc.getFont());
+                    double textWidth = text.getBoundsInLocal().getWidth();
+                    double textHeight = text.getBoundsInLocal().getHeight();
+
+                    double textX = offsetX + c * PREVIEW_CELL_SIZE + (PREVIEW_CELL_SIZE - textWidth) / 2;
+                    double textY = offsetY + r * PREVIEW_CELL_SIZE + (PREVIEW_CELL_SIZE + textHeight) / 2 - 2;
+
+                    nextBlockGc.fillText(cellText, textX, textY);
                 }
 
                 String cellText = getCellText(nextBlock.getCell(r, c));
@@ -769,7 +820,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void showGameOver() {
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
-        
+
         router.showScoreBoard(true, gameModel.isItemMode(), scoreModel.getScore());
     }
 

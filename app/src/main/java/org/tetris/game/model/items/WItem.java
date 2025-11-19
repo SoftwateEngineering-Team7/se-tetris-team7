@@ -16,7 +16,7 @@ public class WItem extends Item {
     }
 
     @Override
-    public Block GetItemBlock(Block block) {
+    public Block getItemBlock(Block block) {
         int[][] shape = W_SHAPE;
         Point pivot = new Point(1, 1);
         itemBlock = block.reShape(shape, pivot);
@@ -25,7 +25,7 @@ public class WItem extends Item {
     }
 
     @Override
-    public void Activate(Board board) {
+    public void activate(Board board, ItemActivation context) {
         board.setIsForceDown(true);
         itemBlock.setCanMove(false);
         itemBlock.setCanRotate(false);
