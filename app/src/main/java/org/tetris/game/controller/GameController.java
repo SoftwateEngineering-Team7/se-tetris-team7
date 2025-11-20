@@ -467,11 +467,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     // 셀 실제 삭제 처리
     private void deleteCompletedCells(){
-        int boardWidth  = player.boardModel.getSize().r;
-        int boardHeight = player.boardModel.getSize().c;
+        int boardHeight = player.boardModel.getSize().r;
+        int boardWidth  = player.boardModel.getSize().c;
 
         for (Point p : player.clearingCells) {
-            if (p.r >= 0 && p.r < boardWidth && p.c >= 0 && p.c < boardHeight) {
+            if (p.r >= 0 && p.r < boardHeight && p.c >= 0 && p.c < boardWidth) {
                 player.boardModel.getBoard()[p.r][p.c] = 0;
             }
         }
