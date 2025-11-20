@@ -20,6 +20,8 @@ public abstract class Block {
 
     private boolean isItemBlock = false;
 
+    private boolean forceDown = false;
+
     public Block(int[][] shape, Point pivot, GameColor color) {
         this.shape = shape;
         this.pivot = pivot;
@@ -70,6 +72,15 @@ public abstract class Block {
 
     public void setCanMove(boolean canMove) {
         this.canMove = canMove;
+    }
+
+    public boolean isForceDown() {
+        return forceDown;
+    }
+
+    public void setForceDown(boolean forceDown) {
+        this.forceDown = forceDown;
+        setCanMove(!forceDown);
     }
 
     public void setIsItemBlock(boolean isItemBlock) {
