@@ -119,7 +119,7 @@ public class ClientThread {
                     // TODO: 연결 끊김 콜백 구현
                 }
             } finally {
-                connected = false;
+                disconnect();
             }
         }
     }
