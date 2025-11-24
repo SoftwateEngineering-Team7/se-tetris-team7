@@ -6,6 +6,6 @@ import org.tetris.shared.MvcFactory;
 
 public class StartMenuFactory extends MvcFactory<StartMenuModel, StartMenuController> {
     public StartMenuFactory() {
-        super( () -> new StartMenuModel(6), model -> new StartMenuController(model), "view/startmenu.fxml");
+        super(StartMenuModel::new, StartMenuController::new, "view/startmenu.fxml");
     }
 }

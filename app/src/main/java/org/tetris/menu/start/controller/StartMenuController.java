@@ -8,6 +8,7 @@ import org.tetris.shared.RouterAware;
 import org.util.KeyLayout;
 
 import java.util.ArrayList;
+import java.util.List;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -27,19 +28,28 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private static final String STYLE_MENU_BUTTON = "menu-button";
     
     // 메뉴 버튼 텍스트 상수
-    private static final String TEXT_NORMAL_MODE = "일반 모드\n게임 시작";
-    private static final String TEXT_ITEM_MODE = "아이템 모드\n게임 시작";
-    private static final String TEXT_NORMALSCOREBOARD = "스코어보드\n보기";
-    private static final String TEXT_ITEM_SCOREBOARD = "아이템 스코어보드\n보기";
+    private static final String TEXT_SINGLE_GAME = "싱글 게임";
+    private static final String TEXT_MULTI_GAME = "멀티 게임";
+    private static final String TEXT_SCOREBOARD = "스코어보드";
     private static final String TEXT_SETTINGS = "설정";
     private static final String TEXT_EXIT = "종료";
+    private static final String TEXT_BACK = "뒤로";
+    private static final String TEXT_NORMAL_MODE = "일반 모드\n게임 시작";
+    private static final String TEXT_ITEM_MODE = "아이템 모드\n게임 시작";
+    private static final String TEXT_NORMALSCOREBOARD = "일반 스코어보드";
+    private static final String TEXT_ITEM_SCOREBOARD = "아이템 스코어보드";
+    private static final String TEXT_LOCAL_MULTI = "로컬";
+    private static final String TEXT_P2P_MULTI = "P2P";
     
     // 메시지 텍스트 상수
     private static final String TEXT_WRONG_INPUT_Arrows = "잘못된 입력입니다.\n방향키와 Enter를 사용하세요.";
     private static final String TEXT_WRONG_INPUT_WASD = "잘못된 입력입니다.\nWASD키와 Enter를 사용하세요.";
+    private static final String TEXT_COMING_SOON = "준비 중입니다.";
 
     private static final String STYLE_TITLE = "-fx-font-size: ";
     private static final String PX_STRING = "px;";
+
+    private record MenuEntry(String label, Runnable action) {}
     
     public StartMenuController(StartMenuModel model) {
         super(model);
@@ -62,13 +72,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     protected void initialize() {
         super.initialize();
 
-        createMenuButtons();
-
-        // 첫 번째 버튼 하이라이트
-        if (!buttons.isEmpty()) {
-            buttons.get(model.getSelectedIndex()).getStyleClass().add(STYLE_HIGHLIGHTED);
-        }
-
+        showMainMenu();
         bindInput();
 
         // 반응형 크기 적용
@@ -78,32 +82,65 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     @Override
     public void setRouter(Router router) {
         this.router = router;
-
-        // 버튼 액션 핸들러 등록 (라우터 등록 후 등록 가능)
-        buttons.get(0).setOnAction(e -> onGameStart());
-        buttons.get(1).setOnAction(e -> onItemGameStart());
-        buttons.get(2).setOnAction(e -> onSettings());
-        buttons.get(3).setOnAction(e -> onShowNormalScoreboard());
-        buttons.get(4).setOnAction(e -> onShowItemScoreboard());
-        buttons.get(5).setOnAction(e -> onExit());
     }
 
-    private void createMenuButtons() {
-        Button normalStartButton = createMenuButton(TEXT_NORMAL_MODE);
-        Button itemStarButton = createMenuButton(TEXT_ITEM_MODE);
-        Button settingButton = createMenuButton(TEXT_SETTINGS);
-        Button normalScoreBoardButton = createMenuButton(TEXT_NORMALSCOREBOARD);
-        Button itemScoreBoardButton = createMenuButton(TEXT_ITEM_SCOREBOARD);
-        Button exitButton = createMenuButton(TEXT_EXIT);
+    private void showMainMenu() {
+        buildMenu(List.of(
+                new MenuEntry(TEXT_SINGLE_GAME, this::showSingleModeMenu),
+                new MenuEntry(TEXT_MULTI_GAME, this::showMultiGameMenu),
+                new MenuEntry(TEXT_SETTINGS, this::onSettings),
+                new MenuEntry(TEXT_SCOREBOARD, this::showScoreboardMenu),
+                new MenuEntry(TEXT_EXIT, this::onExit)
+        ));
+    }
 
-        buttons.add(normalStartButton);
-        buttons.add(itemStarButton);
-        buttons.add(settingButton);
-        buttons.add(normalScoreBoardButton);
-        buttons.add(itemScoreBoardButton);
-        buttons.add(exitButton);
+    private void showSingleModeMenu() {
+        buildMenu(List.of(
+                new MenuEntry(TEXT_NORMAL_MODE, this::onGameStart),
+                new MenuEntry(TEXT_ITEM_MODE, this::onItemGameStart),
+                new MenuEntry(TEXT_BACK, this::showMainMenu)
+        ));
+    }
+
+    private void showScoreboardMenu() {
+        buildMenu(List.of(
+                new MenuEntry(TEXT_NORMALSCOREBOARD, this::onShowNormalScoreboard),
+                new MenuEntry(TEXT_ITEM_SCOREBOARD, this::onShowItemScoreboard),
+                new MenuEntry(TEXT_BACK, this::showMainMenu)
+        ));
+    }
+
+    private void showMultiGameMenu() {
+        buildMenu(List.of(
+                new MenuEntry(TEXT_LOCAL_MULTI, this::onLocalMultiplayer),
+                new MenuEntry(TEXT_P2P_MULTI, this::onP2PMultiplayer),
+                new MenuEntry(TEXT_BACK, this::showMainMenu)
+        ));
+    }
+
+    private void buildMenu(List<MenuEntry> entries) {
+        buttons.clear();
+        menuBox.getChildren().clear();
+
+        for (int i = 0; i < entries.size(); i++) {
+            MenuEntry entry = entries.get(i);
+            Button button = createMenuButton(entry.label());
+            button.setOnAction(e -> entry.action().run());
+            final int idx = i;
+            button.setOnMouseEntered(ev -> setHighlightedIndex(idx));
+            buttons.add(button);
+        }
 
         menuBox.getChildren().addAll(buttons);
+        model.updateButtonCount(buttons.size());
+        model.resetSelection();
+
+        if (!buttons.isEmpty()) {
+            buttons.get(0).getStyleClass().add(STYLE_HIGHLIGHTED);
+        }
+
+        root.requestFocus();
+        updateSizes();
     }
 
     private Button createMenuButton(String text) {
@@ -123,12 +160,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
             });
         } else {
             setupKeyboardInput(root.getScene());
-        }
-
-        // 마우스 오버 시 해당 버튼으로 하이라이트 이동
-        for (int i = 0; i < buttons.size(); i++) {
-            final int idx = i;
-            buttons.get(i).setOnMouseEntered(ev -> setHighlightedIndex(idx));
         }
     }
 
@@ -163,9 +194,13 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     }
 
     private void showWrongInputLabel() {
-        wrongInputLabel.setVisible(true);
-        
         setupWrongInputLabelText();
+        showTemporaryMessage(wrongInputLabel.getText());
+    }
+
+    private void showTemporaryMessage(String message) {
+        wrongInputLabel.setText(message);
+        wrongInputLabel.setVisible(true);
 
         if (hideMessageTimeline != null)
             hideMessageTimeline.stop();
@@ -197,12 +232,18 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     // 하이라이트/모델 동기화의 단일 진입점
     private void updateHighlight(int newIndex) {
+        if (buttons.isEmpty()) {
+            model.resetSelection();
+            return;
+        }
         int prev = model.getSelectedIndex();
         if (prev == newIndex)
             return;
 
         // 이전 하이라이트 제거(안전하게 중복 제거)
-        buttons.get(prev).getStyleClass().remove(STYLE_HIGHLIGHTED);
+        if (prev < buttons.size()) {
+            buttons.get(prev).getStyleClass().remove(STYLE_HIGHLIGHTED);
+        }
 
         // 모델 인덱스 즉시 갱신
         model.setSelectedIndex(newIndex);
@@ -212,6 +253,9 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     }
 
     private void fire() {
+        if (buttons.isEmpty()) {
+            return;
+        }
         buttons.get(model.getSelectedIndex()).fire();
     }
 
@@ -244,6 +288,16 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     @FXML
     public void onShowItemScoreboard() {
         router.showScoreBoard(false, true, 0);
+    }
+
+    @FXML
+    public void onLocalMultiplayer() {
+        showTemporaryMessage(TEXT_COMING_SOON);
+    }
+
+    @FXML
+    public void onP2PMultiplayer() {
+        showTemporaryMessage(TEXT_COMING_SOON);
     }
 
     /*
