@@ -1,7 +1,9 @@
 package org.tetris.network.menu.controller;
 
+import org.tetris.Router;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
+import org.tetris.shared.RouterAware;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -11,11 +13,9 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 
-public class NetworkMenuController extends BaseController<NetworkMenu> {
+public class NetworkMenuController extends BaseController<NetworkMenu> implements RouterAware{
 
-    public NetworkMenuController(NetworkMenu networkMenu) {
-        super(networkMenu);
-    }
+    private Router router;
 
     @FXML private ToggleGroup connectionTypeGroup;
     @FXML private RadioButton hostRadio;
@@ -28,11 +28,53 @@ public class NetworkMenuController extends BaseController<NetworkMenu> {
     @FXML private Button backButton;
     @FXML private Button clearLogButton;
 
+    public NetworkMenuController(NetworkMenu networkMenu) {
+        super(networkMenu);
+    }
+
+    @Override
+    public void setRouter(Router router) {
+        this.router = router;
+    }
+
     @Override
     public void initialize() {
         // ComboBox 초기화
         gameModeCombo.getItems().addAll("일반 모드", "아이템 모드", "타임어택 모드");
         gameModeCombo.setValue("일반 모드");
+        
+        // ComboBox 스타일 강제 적용 (흰색 텍스트)
+        gameModeCombo.setStyle("-fx-background-color: #0f3460; -fx-text-fill: white; -fx-border-color: #533483; -fx-border-radius: 5; -fx-background-radius: 5;");
+        
+        // ComboBox 버튼 셀과 리스트 셀의 텍스트 색상을 흰색으로 설정
+        gameModeCombo.setCellFactory(listView -> {
+            return new javafx.scene.control.ListCell<String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(item);
+                        setStyle("-fx-text-fill: white; -fx-background-color: #0f3460;");
+                    }
+                }
+            };
+        });
+        
+        // 선택된 항목을 보여주는 버튼 셀도 흰색으로 설정
+        gameModeCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item);
+                    setStyle("-fx-text-fill: white;");
+                }
+            }
+        });
 
         // 초기값 설정
         hostRadio.setSelected(true);
@@ -81,14 +123,14 @@ public class NetworkMenuController extends BaseController<NetworkMenu> {
             model.setIpAddress(ip);
             model.setPort(port);
 
-            boolean isHost = hostRadio.isSelected();
+            boolean isHost = model.getIsHost();
             if (isHost) {
                 addLog("서버 생성 중... IP: " + ip + ", Port: " + port);
                 addLog("게임 모드: " + gameMode);
-                // TODO: 서버 시작 로직 구현
+                model.create();
             } else {
                 addLog("서버에 연결 중... IP: " + ip + ", Port: " + port);
-                // TODO: 클라이언트 연결 로직 구현
+                model.join();
             }
 
         } catch (NumberFormatException e) {
@@ -101,7 +143,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu> {
     @FXML
     private void onBackPressed() {
         addLog("메인 메뉴로 돌아갑니다");
-        // TODO: 라우터를 통해 메인 메뉴로 이동
+        router.showStartMenu();
     }
 
     @FXML
