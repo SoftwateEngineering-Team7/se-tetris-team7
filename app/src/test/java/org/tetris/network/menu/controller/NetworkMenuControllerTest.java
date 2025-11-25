@@ -1,5 +1,6 @@
 package org.tetris.network.menu.controller;
 
+import static org.junit.Assert.*;
 import static org.testfx.api.FxAssert.verifyThat;
 import static org.testfx.matcher.base.NodeMatchers.*;
 
@@ -8,17 +9,25 @@ import org.junit.Test;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.matcher.control.TextInputControlMatchers;
 import org.tetris.network.menu.NetworkMenuFactory;
+import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.MvcBundle;
+
+import com.google.common.graph.Network;
 
 import javafx.stage.Stage;
 
 public class NetworkMenuControllerTest extends ApplicationTest{
     private NetworkMenuFactory nmFactory = new NetworkMenuFactory();
+    private NetworkMenuController controller;
+    private NetworkMenu model;
 
     @Override
     public void start(Stage stage) {
         MvcBundle<?, ?, ?> bundle = nmFactory.create();
-        
+    
+        controller = (NetworkMenuController) bundle.controller();
+        model = (NetworkMenu) bundle.model();
+
         stage.setScene(bundle.view().getScene());
         stage.setTitle("NetworkMenu Test");
         stage.show();
@@ -77,12 +86,17 @@ public class NetworkMenuControllerTest extends ApplicationTest{
 
     @Test
     public void testCreateButtonClick() {
+
         clickOn("#ipField").write("localhost");
-        clickOn("#portField").write("54321");
         clickOn("#createButton");
         sleep(1000);
         // 로그 영역에 메시지가 추가되었는지 확인
-        verifyThat("#logArea", isVisible());
+        verifyThat("#logArea", isVisible());       
+
+        sleep(1000);
+
+        assertEquals("localhost", model.getIpAddress());
+        assertEquals(54321, model.getPort());
     }
 
     @Test
