@@ -12,8 +12,6 @@ import org.tetris.network.menu.NetworkMenuFactory;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.MvcBundle;
 
-import com.google.common.graph.Network;
-
 import javafx.stage.Stage;
 
 public class NetworkMenuControllerTest extends ApplicationTest{
