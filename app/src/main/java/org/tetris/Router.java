@@ -12,8 +12,6 @@ import org.tetris.scoreboard.model.ScoreBoard;
 import org.tetris.shared.*;
 import org.util.ScreenPreset;
 
-import com.google.common.graph.Network;
-
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -56,7 +54,7 @@ public final class Router {
     }
 
     public void showGamePlaceholder(boolean itemMode) {
-        var controller = show(networkMenuFactory);
+        var controller = show(gameFactory);
         if (controller instanceof GameController gameController) {
             gameController.setUpGameMode(itemMode);
             gameController.initialize();
