@@ -3,8 +3,8 @@ package org.tetris;
 import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.start.StartMenuFactory;
-import org.tetris.scoreboard.ScoreBoardFactory;<<<<<<<HEAD
-import org.tetris.network.menu.NetworkMenuFactory;=======>>>>>>>e2fc227(feat:dual game)
+import org.tetris.scoreboard.ScoreBoardFactory;
+import org.tetris.network.menu.NetworkMenuFactory;
 import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.controller.DualGameController;
