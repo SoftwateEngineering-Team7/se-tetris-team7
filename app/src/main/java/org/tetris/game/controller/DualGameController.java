@@ -13,7 +13,8 @@ import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.util.Point;
 
-import javafx.animation.AnimationTimer;
+import org.tetris.network.game.LocalMultiGameEngine;
+import org.tetris.game.view.GameViewCallback;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -88,16 +89,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     private Router router;
 
-    private AnimationTimer gameLoop;
-    private long lastUpdate = 0L;
-    private long lastDropTime1 = 0L;
-    private long lastDropTime2 = 0L;
-    private static final long FRAME_TIME = 16_666_667L; // ~60 FPS (나노초)
+    private LocalMultiGameEngine gameEngine;
+    private GameKeyHandler keyHandler1;
+    private GameKeyHandler keyHandler2;
 
-    // 플래시 애니메이션 파라미터
-    private static final int FLASH_TIMES = 2;
-    private static final int FLASH_TOGGLES = FLASH_TIMES * 2;
-    private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
     private static final int MIN_CELL_SIZE = 16;
     private static final double PREVIEW_RATIO = 0.8;
 
@@ -118,22 +113,14 @@ public class DualGameController extends BaseController<DualGameModel> implements
     public void initialize() {
         super.initialize();
 
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
+        setupEventHandlers();
 
-        // Model 초기화
-        gameModel1.reset();
-        gameModel2.reset();
-
+        // 엔진 시작은 initialize 후 runLater에서 처리됨
         Platform.runLater(() -> {
             setupPlayerSlots();
             setupUI();
             root.requestFocus();
         });
-
-        setupEventHandlers();
-        startGameLoop();
     }
 
     // Dual 모드에서도 아이템 모드 / 난이도 설정
@@ -149,10 +136,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     // PlayerSlot + BoardRender 생성
     private void setupPlayerSlots() {
-        if (root.getScene() == null || root.getScene().getWindow() == null) {
-            return;
-        }
-
+        // Remove null check to allow initialization in tests
         Point boardSize = gameModel1.getBoardModel().getSize(); // 두 플레이어 동일 가정
 
         int cellSize1 = calculateCellSize(gameBoard1, boardSize);
@@ -188,6 +172,75 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         renderer1.setupSinglePlayerLayout();
         renderer2.setupSinglePlayerLayout();
+
+        // 엔진 초기화
+        gameEngine = new LocalMultiGameEngine(player1, player2, dualGameModel, new GameViewCallback() {
+            @Override
+            public void updateGameBoard() {
+                DualGameController.this.updateGameBoard(player1);
+                DualGameController.this.updateGameBoard(player2);
+            }
+
+            @Override
+            public void updateScoreDisplay() {
+                DualGameController.this.updateScoreDisplay();
+            }
+
+            @Override
+            public void updateLevelDisplay() {
+                DualGameController.this.updateLevelDisplay();
+            }
+
+            @Override
+            public void updateLinesDisplay() {
+                DualGameController.this.updateLinesDisplay();
+            }
+
+            @Override
+            public void updateNextBlockPreview() {
+                DualGameController.this.updateNextBlockPreview();
+            }
+
+            @Override
+            public void showGameOver() {
+                checkGameOverState();
+            }
+
+            @Override
+            public void updatePauseUI(boolean isPaused) {
+                if (isPaused)
+                    showPauseOverlay();
+                else
+                    hidePauseOverlay();
+            }
+
+            @Override
+            public void addClearingRow(int row) {
+            } // Handled by engine internal logic usually
+
+            @Override
+            public void addClearingCol(int col) {
+            }
+
+            @Override
+            public void addClearingCells(List<Point> cells) {
+            }
+        });
+
+        // Key Handlers
+        keyHandler1 = new GameKeyHandler(gameEngine, org.util.KeyLayout.WASD);
+
+        keyHandler2 = new GameKeyHandler(gameEngine, org.util.KeyLayout.ARROWS);
+        // Configure P2 Commands
+        keyHandler2.setMoveLeftCommand(game -> ((LocalMultiGameEngine) game).moveLeftP2());
+        keyHandler2.setMoveRightCommand(game -> ((LocalMultiGameEngine) game).moveRightP2());
+        keyHandler2.setRotateCommand(game -> ((LocalMultiGameEngine) game).rotateP2());
+        keyHandler2.setSoftDropCommand(game -> ((LocalMultiGameEngine) game).softDropP2());
+        keyHandler2.setHardDropCommand(game -> ((LocalMultiGameEngine) game).hardDropP2());
+        // Pause is shared, so P key on either works (default behavior of
+        // GameKeyHandler)
+
+        gameEngine.startGame(0);
     }
 
     private int calculateCellSize(Pane boardPane, Point boardSize) {
@@ -256,312 +309,30 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     // === 키 입력 처리 ===
     private void handleKeyPress(KeyEvent e) {
-        KeyCode code = e.getCode();
-
-        // 전체 공통: P키로 Pause 토글
-        if (code == KeyCode.P) {
-            togglePause();
-            e.consume();
-            return;
-        }
-
-        if (gameModel1.isPaused() || gameModel2.isPaused()) {
-            e.consume();
-            return;
-        }
-
-        if (player1 == null || player2 == null) {
-            e.consume();
-            return;
-        }
-
-        // Player 1 (WASD / F)
-        if (code == KeyCode.A) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                player1.boardModel.moveLeft();
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.D) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                player1.boardModel.moveRight();
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.W) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                player1.boardModel.rotate();
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.S) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                boolean moved = player1.boardModel.moveDown();
-                if (moved) {
-                    player1.scoreModel.softDrop(1);
-                }
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.F) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                handleHardDrop(player1, gameModel1);
-            }
-        }
-
-        // Player 2 (화살표 / Slash)
-        else if (code == KeyCode.LEFT) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                player2.boardModel.moveLeft();
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.RIGHT) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                player2.boardModel.moveRight();
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.UP) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                player2.boardModel.rotate();
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.DOWN) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                boolean moved = player2.boardModel.moveDown();
-                if (moved) {
-                    player2.scoreModel.softDrop(1);
-                }
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.SLASH) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                handleHardDrop(player2, gameModel2);
-            }
-        }
-
-        updateScoreDisplay();
-        updateNextBlockPreview();
-        e.consume();
-    }
-
-    private void handleHardDrop(PlayerSlot slot, GameModel gm) {
-        int dropDistance = slot.boardModel.hardDrop();
-        slot.scoreModel.add(dropDistance * 2);
-        lastDropTimeForPlayer(slot, System.nanoTime());
-        lockCurrentBlock(slot, gm);
-    }
-
-    // === 게임 루프 ===
-    private void startGameLoop() {
-        gameLoop = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                if (lastUpdate == 0L) {
-                    lastUpdate = now;
-                    lastDropTime1 = now;
-                    lastDropTime2 = now;
-                    return;
-                }
-
-                long elapsed = now - lastUpdate;
-                if (elapsed >= FRAME_TIME) {
-                    update(now);
-                    lastUpdate = now;
-                }
-            }
-        };
-        gameLoop.start();
-    }
-
-    private void update(long now) {
-        if (gameModel1.isPaused() || gameModel2.isPaused()) {
-            return;
-        }
-
-        if (player1 == null || player2 == null) {
-            return;
-        }
-
-        handlePlayerUpdate(now, player1, gameModel1, true);
-        handlePlayerUpdate(now, player2, gameModel2, false);
-
-        updateGameBoard(player1);
-        updateGameBoard(player2);
-        updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
-        updateNextBlockPreview();
-
-        checkGameOverState();
-    }
-
-    private void handlePlayerUpdate(long now, PlayerSlot slot, GameModel gm, boolean isPlayerOne) {
-        if (gm.isGameOver()) {
-            return;
-        }
-
-        if (slot.isFlashing) {
-            tickFlash(slot, now);
-            return;
-        }
-
-        int dropIntervalFrames = gm.getDropInterval();
-        long dropIntervalNanos = dropIntervalFrames * FRAME_TIME;
-
-        long timeSinceLastDrop = now - (isPlayerOne ? lastDropTime1 : lastDropTime2);
-        if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = slot.boardModel.autoDown();
-            if (moved) {
-                slot.scoreModel.blockDropped();
-            } else {
-                lockCurrentBlock(slot, gm);
-            }
-            lastDropTimeForPlayer(slot, now);
-        }
-    }
-
-    private void checkGameOverState() {
-        boolean p1Over = gameModel1.isGameOver();
-        boolean p2Over = gameModel2.isGameOver();
-
-        if (!p1Over && !p2Over)
+        if (gameEngine == null || keyHandler1 == null || keyHandler2 == null)
             return;
 
-        if (gameLoop != null) {
-            gameLoop.stop();
+        // Delegate to handlers
+        // We need to check which keys are pressed or just pass to both?
+        // GameKeyHandler checks specific keys. If key matches, it executes and
+        // consumes.
+        // If we pass to handler1, and it consumes, handler2 won't see it?
+        // KeyEvent is passed by reference?
+        // If handler1 consumes it, e.isConsumed() will be true?
+        // GameKeyHandler.handleKeyPress calls e.consume().
+
+        // So we should try handler1, then handler2.
+        // But wait, if handler1 checks WASD and P.
+        // handler2 checks ARROWS and P.
+        // If P is pressed, handler1 consumes it. handler2 won't see it. That's fine
+        // (shared pause).
+        // If A is pressed, handler1 consumes.
+        // If Left is pressed, handler1 ignores (returns). handler2 sees it.
+
+        keyHandler1.handleKeyPress(e);
+        if (!e.isConsumed()) {
+            keyHandler2.handleKeyPress(e);
         }
-
-        showGameOverlay();
-
-        String result;
-        if (p1Over && p2Over) {
-            result = "DRAW";
-        } else if (p1Over) {
-            result = "PLAYER 2 WINS";
-        } else {
-            result = "PLAYER 1 WINS";
-        }
-        if (winnerLabel != null) {
-            winnerLabel.setText(result);
-        }
-
-        // 점수판은 둘 중 더 큰 점수 기준으로 보여주도록 처리
-        if (router != null) {
-            int bestScore = Math.max(player1.scoreModel.getScore(), player2.scoreModel.getScore());
-            router.showScoreBoard(true, gameModel1.isItemMode(), bestScore);
-        }
-    }
-
-    // ===== 블록 고정 / 라인 클리어 / 플래시 =====
-    private void lockCurrentBlock(PlayerSlot slot, GameModel gm) {
-        List<Integer> fullRows = slot.boardModel.findFullRows();
-        slot.clearingRows.addAll(fullRows);
-
-        // 아이템 활성화 (플레이어 기준)
-        activeItemTarget = slot;
-        gm.tryActivateItem(this);
-        activeItemTarget = null;
-
-        if (slot.boardModel.getIsForceDown()) {
-            boolean moved = slot.boardModel.moveDown(true);
-            if (!moved) {
-                slot.boardModel.removeCurrentBlock();
-                gm.updateModels(0);
-                gm.spawnNewBlock();
-                updateGameBoard(slot);
-                checkGameOverState();
-            }
-            return;
-        }
-
-        if (!slot.clearingRows.isEmpty() ||
-            !slot.clearingCols.isEmpty() ||
-            !slot.clearingCells.isEmpty()) {
-
-            beginFlash(slot, System.nanoTime());
-            return;
-        }
-
-        updateGameBoard(slot);
-        gm.spawnNewBlock();
-        checkGameOverState();
-    }
-
-    private void beginFlash(PlayerSlot slot, long now) {
-        slot.isFlashing = true;
-
-        slot.flashMask = slot.renderer.buildFlashMask(
-                slot.clearingRows,
-                slot.clearingCols,
-                slot.clearingCells);
-
-        slot.flashOn = false;
-        slot.flashToggleCount = 0;
-        slot.nextFlashAt = now;
-    }
-
-    private void tickFlash(PlayerSlot slot, long now) {
-        if (slot == null || !slot.isFlashing || slot.flashMask == null) {
-            return;
-        }
-
-        if (now < slot.nextFlashAt) {
-            return;
-        }
-
-        slot.flashOn = !slot.flashOn;
-        slot.flashToggleCount++;
-        slot.nextFlashAt = now + FLASH_INTERVAL_NANOS;
-
-        if (slot.flashToggleCount >= FLASH_TOGGLES) {
-            slot.isFlashing = false;
-            slot.flashOn = false;
-            slot.flashMask = null;
-            processClears(slot);
-        }
-    }
-
-    private void processClears(PlayerSlot slot) {
-        GameModel gm = (slot == player1) ? gameModel1 : gameModel2;
-
-        int linesCleared = deleteCompletedRows(slot);
-        int colsCleared = deleteCompletedCols(slot);
-        deleteCompletedCells(slot);
-
-        gm.updateModels(linesCleared + colsCleared);
-        gm.spawnNewBlock();
-        checkGameOverState();
-    }
-
-    private int deleteCompletedRows(PlayerSlot slot) {
-        for (int r : slot.clearingRows) {
-            slot.boardModel.clearRow(r);
-        }
-
-        int count = slot.clearingRows.size();
-        slot.clearingRows.clear();
-
-        return count;
-    }
-
-    private int deleteCompletedCols(PlayerSlot slot){
-        for (int c : slot.clearingCols) {
-            slot.boardModel.clearColumn(c);
-        }
-
-        int count = slot.clearingCols.size();
-        slot.clearingCols.clear();
-
-        return count;
-    }
-
-    private void deleteCompletedCells(PlayerSlot slot){
-        int boardHeight = slot.boardModel.getSize().r;
-        int boardWidth  = slot.boardModel.getSize().c;
-
-        for (Point p : slot.clearingCells) {
-            if (p.r >= 0 && p.r < boardHeight && p.c >= 0 && p.c < boardWidth) {
-                slot.boardModel.getBoard()[p.r][p.c] = 0;
-            }
-        }
-
-        slot.clearingCells.clear();
     }
 
     // === UI 업데이트 ===
@@ -573,8 +344,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void updateScoreDisplay() {
-        scoreLabel1.setText(player1.scoreModel.toString());
-        scoreLabel2.setText(player2.scoreModel.toString());
+        if (player1 != null)
+            scoreLabel1.setText(player1.scoreModel.toString());
+        if (player2 != null)
+            scoreLabel2.setText(player2.scoreModel.toString());
     }
 
     private void updateLevelDisplay() {
@@ -607,8 +380,12 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         if (paused) {
             showPauseOverlay();
+            if (gameEngine != null)
+                gameEngine.togglePause();
         } else {
             hidePauseOverlay();
+            if (gameEngine != null)
+                gameEngine.togglePause();
         }
     }
 
@@ -617,14 +394,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
         gameModel2.setPaused(false);
         hidePauseOverlay();
 
-        if (gameLoop != null) {
-            lastUpdate = 0L;
-            lastDropTime1 = 0L;
-            lastDropTime2 = 0L;
-            gameLoop.start();
-        } else {
-            startGameLoop();
-        }
+        if (gameEngine != null)
+            gameEngine.togglePause();
         root.requestFocus();
     }
 
@@ -639,14 +410,16 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     private void restartGame() {
         resetGameController();
-        setupUI();
 
-        if (gameLoop != null)
-             gameLoop.start();
-        else
-            startGameLoop();
+        // Model 초기화
+        gameModel1.reset();
+        gameModel2.reset();
 
-        root.requestFocus();
+        Platform.runLater(() -> {
+            setupPlayerSlots();
+            setupUI();
+            root.requestFocus();
+        });
     }
 
     private void goToMenu() {
@@ -660,20 +433,14 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     private void resetGameController() {
         resetGameLoop();
-        gameModel1.reset();
-        gameModel2.reset();
+        // gameModel reset is done in restartGame or initialize
         resetPlayerSlot(player1);
         resetPlayerSlot(player2);
     }
 
     private void resetGameLoop() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
-
-        lastUpdate = 0L;
-        lastDropTime1 = 0L;
-        lastDropTime2 = 0L;
+        if (gameEngine != null)
+            gameEngine.stopGame();
     }
 
     private void resetPlayerSlot(PlayerSlot slot) {
@@ -691,14 +458,6 @@ public class DualGameController extends BaseController<DualGameModel> implements
         slot.clearingCells.clear();
 
         slot.renderer.boardReset();
-    }
-
-    private void lastDropTimeForPlayer(PlayerSlot slot, long now) {
-        if (slot == player1) {
-            lastDropTime1 = now;
-        } else if (slot == player2) {
-            lastDropTime2 = now;
-        }
     }
 
     private void showGameOverlay() {
@@ -722,42 +481,124 @@ public class DualGameController extends BaseController<DualGameModel> implements
         root.requestFocus();
     }
 
-    @Override
-    public void cleanup() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-            gameLoop = null;
+    private void checkGameOverState() {
+        boolean p1Over = gameModel1.isGameOver();
+        boolean p2Over = gameModel2.isGameOver();
+
+        if (!p1Over && !p2Over)
+            return;
+
+        resetGameLoop();
+        showGameOverlay();
+
+        String result;
+        if (p1Over && p2Over) {
+            result = "DRAW";
+        } else if (p1Over) {
+            result = "PLAYER 2 WINS";
+        } else {
+            result = "PLAYER 1 WINS";
+        }
+        if (winnerLabel != null) {
+            winnerLabel.setText(result);
+        }
+
+        // 점수판은 둘 중 더 큰 점수 기준으로 보여주도록 처리
+        if (router != null) {
+            int bestScore = Math.max(player1.scoreModel.getScore(), player2.scoreModel.getScore());
+            router.showScoreBoard(true, gameModel1.isItemMode(), bestScore);
         }
     }
 
     @Override
-    public void addClearingRow(int row) {
-        if (activeItemTarget == null)
-            return;
+    public void cleanup() {
+        if (gameEngine != null)
+            gameEngine.stopGame();
+    }
 
-        if (!activeItemTarget.clearingRows.contains(row)) {
-            activeItemTarget.clearingRows.add(row);
-        }
+    // === ItemActivation Implementation (Delegated to engines via adapters usually,
+    // but kept for interface compliance) ===
+    @Override
+    public void addClearingRow(int row) {
+        // This might be called if something uses DualGameController as ItemActivation
+        // directly.
+        // But engines use adapters.
+        // We can leave it empty or try to delegate if we know the target.
     }
 
     @Override
     public void addClearingCol(int col) {
-        if (activeItemTarget == null)
-            return;
-
-        if (!activeItemTarget.clearingCols.contains(col)) {
-            activeItemTarget.clearingCols.add(col);
-        }
     }
 
     @Override
     public void addClearingCells(List<Point> cells) {
-        if (activeItemTarget == null || cells == null)
-            return;
+    }
 
-        for (Point cell : cells) {
-            if (!activeItemTarget.clearingCells.contains(cell)) {
-                activeItemTarget.clearingCells.add(cell);
+    // === Inner Adapter Class ===
+    private class DualGameViewAdapter implements GameViewCallback {
+        private final PlayerSlot slot;
+        private final int playerIndex; // 1 or 2
+
+        public DualGameViewAdapter(PlayerSlot slot, int playerIndex) {
+            this.slot = slot;
+            this.playerIndex = playerIndex;
+        }
+
+        @Override
+        public void updateGameBoard() {
+            DualGameController.this.updateGameBoard(slot);
+        }
+
+        @Override
+        public void updateScoreDisplay() {
+            DualGameController.this.updateScoreDisplay();
+        }
+
+        @Override
+        public void updateLevelDisplay() {
+            DualGameController.this.updateLevelDisplay();
+        }
+
+        @Override
+        public void updateLinesDisplay() {
+            DualGameController.this.updateLinesDisplay();
+        }
+
+        @Override
+        public void updateNextBlockPreview() {
+            slot.renderer.renderNextBlock(slot.nextBlockModel.peekNext());
+        }
+
+        @Override
+        public void showGameOver() {
+            checkGameOverState();
+        }
+
+        @Override
+        public void updatePauseUI(boolean isPaused) {
+            if (isPaused)
+                showPauseOverlay();
+            else
+                hidePauseOverlay();
+        }
+
+        @Override
+        public void addClearingRow(int row) {
+            if (!slot.clearingRows.contains(row))
+                slot.clearingRows.add(row);
+        }
+
+        @Override
+        public void addClearingCol(int col) {
+            if (!slot.clearingCols.contains(col))
+                slot.clearingCols.add(col);
+        }
+
+        @Override
+        public void addClearingCells(List<Point> cells) {
+            for (Point cell : cells) {
+                if (!slot.clearingCells.contains(cell))
+                    slot.clearingCells.add(cell);
             }
         }
     }

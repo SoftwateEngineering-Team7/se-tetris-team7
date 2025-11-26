@@ -62,7 +62,6 @@ public final class Router {
         var controller = show(gameFactory);
         if (controller instanceof GameController gameController) {
             gameController.setUpGameMode(itemMode);
-            gameController.initialize();
         }
     }
 
@@ -70,7 +69,6 @@ public final class Router {
         var controller = show(dualGameFactory);
         if (controller instanceof DualGameController gameController) {
             gameController.setUpGameMode(mode);
-            gameController.initialize();
         }
     }
 

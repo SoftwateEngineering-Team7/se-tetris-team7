@@ -7,9 +7,12 @@ import org.tetris.shared.BaseModel;
  * 두 명의 플레이어 각각의 독립적인 {@link GameModel} 인스턴스를 관리합니다.
  * 각 플레이어의 게임 상태를 별도로 추적하며, 멀티플레이 로직 구현에 활용됩니다.
  */
-public class DualGameModel extends BaseModel {
+import org.tetris.shared.Pausable;
+
+public class DualGameModel extends BaseModel implements Pausable {
     private GameModel player1GameModel;
     private GameModel player2GameModel;
+    private boolean isPaused;
 
     public DualGameModel() {
         this.player1GameModel = new GameModel();
@@ -22,5 +25,18 @@ public class DualGameModel extends BaseModel {
 
     public GameModel getPlayer2GameModel() {
         return player2GameModel;
+    }
+
+    public boolean isPaused() {
+        return isPaused;
+    }
+
+    public void setPaused(boolean paused) {
+        this.isPaused = paused;
+    }
+
+    public void reset() {
+        player1GameModel.reset();
+        player2GameModel.reset();
     }
 }

@@ -6,7 +6,9 @@ import org.tetris.game.controller.ItemController;
 import org.tetris.game.model.blocks.*;
 import org.tetris.game.model.items.ItemActivation;
 
-public class GameModel extends BaseModel {
+import org.tetris.shared.Pausable;
+
+public class GameModel extends BaseModel implements Pausable {
 
     public final static int MAX_DROP_INTERVAL = 60; // 최대 낙하 간격 (레벨 1)
     public final static int MIN_DROP_INTERVAL = 10; // 드롭 간격 감소량

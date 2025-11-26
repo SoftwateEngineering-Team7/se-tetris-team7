@@ -7,7 +7,7 @@ public class KeyLayout {
     public static final String KEY_WASD = "WASD";
 
     private static String currentLayout = KEY_ARROWS; // 기본값
-    
+
     private final String name;
     private final KeyCode leftKey;
     private final KeyCode rightKey;
@@ -20,6 +20,22 @@ public class KeyLayout {
         this.rightKey = right;
         this.downKey = down;
         this.upKey = up;
+    }
+
+    public KeyCode getLeft() {
+        return leftKey;
+    }
+
+    public KeyCode getRight() {
+        return rightKey;
+    }
+
+    public KeyCode getDown() {
+        return downKey;
+    }
+
+    public KeyCode getUp() {
+        return upKey;
     }
 
     /**
@@ -43,6 +59,7 @@ public class KeyLayout {
 
     /**
      * 레이아웃 설정
+     * 
      * @param layout 레이아웃 이름 ("ARROWS" 또는 "WASD")
      */
     public static void setCurrentLayout(String layout) {
@@ -64,7 +81,8 @@ public class KeyLayout {
 
     // region 레이아웃 정의
 
-    public static final KeyLayout ARROWS = new KeyLayout(KEY_ARROWS, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.DOWN, KeyCode.UP);
+    public static final KeyLayout ARROWS = new KeyLayout(KEY_ARROWS, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.DOWN,
+            KeyCode.UP);
     public static final KeyLayout WASD = new KeyLayout(KEY_WASD, KeyCode.A, KeyCode.D, KeyCode.S, KeyCode.W);
 
     // endregion
