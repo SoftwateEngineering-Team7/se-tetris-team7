@@ -172,10 +172,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         model.setIsReady(!model.getIsReady());
         if (model.getIsReady()) {
             addLog("준비 완료");
-            readyButton.setText("Cancel");
+            readyButton.setText("CANCEL");
         } else {
             addLog("준비 취소");
-            readyButton.setText("Ready");
+            readyButton.setText("READY");
         }
     }
 

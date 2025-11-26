@@ -93,6 +93,10 @@ public class NetworkMenu extends BaseModel{
 
     public void create()
     {
+        if (client != null) {
+            client.disconnect();
+        }
+
         try {
             startServer();
         } catch (IOException e) {
@@ -138,6 +142,11 @@ public class NetworkMenu extends BaseModel{
 
     public void clear()
     {
+        if (client != null) {
+            client.disconnect();
+            client = null;
+        }
+
         this.isHost = true;
         this.ipAddress = "";
         this.port = DEFAULT_PORT;
