@@ -1,324 +1,175 @@
 package org.tetris.network;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.tetris.network.comand.GameCommand;
 import org.tetris.network.comand.MoveLeftCommand;
 import org.tetris.network.comand.UpdateStateCommand;
-import org.tetris.network.game.GameEngine;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * 네트워크 모듈의 전체 통합 테스트.
  * 서버 시작, 클라이언트 연결, 메시지 브로드캐스트 등을 테스트합니다.
  */
-public class NetworkIntegrationTest {
-    private static final int TIMEOUT_SECONDS = 10;
-    
-    private List<ClientThread> clients;
-    private List<GameEngine> gameEngines;
-
-    @Before
-    public void setUp() {
-        clients = new ArrayList<>();
-        gameEngines = new ArrayList<>();
-        // GameServer 인스턴스 리셋
-        GameServer.getInstance().reset();
-    }
-
-    @After
-    public void tearDown() {
-        // 모든 클라이언트 연결 해제
-        for (ClientThread client : clients) {
-            if (client != null) {
-                client.disconnect();
-            }
-        }
-        clients.clear();
-        gameEngines.clear();
-        
-        // 서버 종료
-        stopServer();
-    }
-
-    /**
-     * 테스트용 서버를 시작합니다.
-     */
-    private void startServer() throws IOException {
-        GameServer.getInstance().start();
-        
-        // 서버가 시작될 시간을 줌
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * 서버를 종료합니다.
-     */
-    private void stopServer() {
-        GameServer.getInstance().stop();
-    }
+public class NetworkIntegrationTest extends BaseNetworkTest {
 
     @Test
     public void testServerStartAndStop() throws IOException {
-        // ... (testServerStartAndStop implementation remains unchanged) ...
-        // 서버 시작
         startServer();
-        
-        // 서버가 실행 중인지 확인 (예외가 발생하지 않으면 성공)
-        assertTrue("서버가 시작되어야 합니다", true);
-        
-        // 서버 종료
+        assertTrue("서버가 시작되어야 합니다", true); // 예외 없으면 성공
+
         stopServer();
-        
-        // 잠시 대기
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
-        // 서버가 종료되었는지 확인 (예외가 발생하지 않으면 성공)
+        // 예외 없으면 성공
     }
 
     @Test
     public void testSingleClientConnection() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 클라이언트 생성 및 연결
-        GameEngine engine = new GameEngine();
-        ClientThread client = new ClientThread(engine);
-        
-        clients.add(client);
-        gameEngines.add(engine);
-        
-        // 연결
+
+        ClientThread client = createClientWithP2PEngine();
         client.connect("localhost", GameServer.PORT);
-        
-        // 연결 성공 확인 (예외가 발생하지 않으면 성공)
-        
-        // 잠시 대기
+
         Thread.sleep(100);
+        // 예외 없으면 성공
     }
 
     @Test
     public void testMultipleClientConnections() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 여러 클라이언트 생성 및 연결
-        int clientCount = 2; // GameServer only accepts 2 clients
+
+        int clientCount = 2;
         CountDownLatch latch = new CountDownLatch(clientCount);
-        
+
         for (int i = 0; i < clientCount; i++) {
-            GameEngine engine = new GameEngine();
-            ClientThread client = new ClientThread(engine);
-            
-            gameEngines.add(engine);
-            clients.add(client);
-            
-            // 연결
+            ClientThread client = createClientWithP2PEngine();
             client.connect("localhost", GameServer.PORT);
             latch.countDown();
         }
-        
-        // 모든 클라이언트가 연결될 때까지 대기
-        assertTrue("모든 클라이언트가 연결되어야 합니다", 
-                   latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        
-        // 잠시 대기
+
+        assertTrue("모든 클라이언트가 연결되어야 합니다",
+                latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
         Thread.sleep(100);
     }
 
     @Test
     public void testClientSendCommand() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 클라이언트 생성 및 연결
-        GameEngine engine = new GameEngine();
-        ClientThread client = new ClientThread(engine);
-        
-        clients.add(client);
-        gameEngines.add(engine);
-        
+
+        ClientThread client = createClientWithP2PEngine();
         client.connect("localhost", GameServer.PORT);
-        
-        // 잠시 대기 (연결 완료)
         Thread.sleep(100);
-        
-        // 명령 전송
+
         GameCommand command = new MoveLeftCommand();
         client.sendCommand(command);
-        
-        // 명령이 전송되었는지 확인 (예외가 발생하지 않으면 성공)
-        
-        // 서버가 명령을 처리할 시간을 줌
+
         Thread.sleep(100);
+        // 예외 없으면 성공
     }
 
     @Test
     public void testClientDisconnectAndReconnect() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 클라이언트 생성 및 연결
-        GameEngine engine = new GameEngine();
-        ClientThread client = new ClientThread(engine);
-        
+
+        ClientThread client = createClientWithP2PEngine();
         client.connect("localhost", GameServer.PORT);
         Thread.sleep(100);
-        
+
         // 연결 해제
         client.disconnect();
         Thread.sleep(100);
-        
-        // 재연결
-        ClientThread newClient = new ClientThread(engine);
-        clients.add(newClient);
-        gameEngines.add(engine);
-        
+
+        // 재연결 (새 클라이언트 객체 사용)
+        ClientThread newClient = createClientWithP2PEngine();
         newClient.connect("localhost", GameServer.PORT);
         Thread.sleep(100);
-        
+
         // 재연결 성공 확인 (예외가 발생하지 않으면 성공)
     }
 
     @Test
     public void testBroadcastBetweenClients() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 두 개의 클라이언트 생성
-        GameEngine engine1 = new GameEngine();
-        GameEngine engine2 = new GameEngine();
-        
-        ClientThread client1 = new ClientThread(engine1);
-        ClientThread client2 = new ClientThread(engine2);
-        
-        clients.add(client1);
-        clients.add(client2);
-        gameEngines.add(engine1);
-        gameEngines.add(engine2);
-        
-        // 두 클라이언트 모두 연결
+
+        ClientThread client1 = createClientWithP2PEngine();
+        ClientThread client2 = createClientWithP2PEngine();
+
         client1.connect("localhost", GameServer.PORT);
         client2.connect("localhost", GameServer.PORT);
-        
         Thread.sleep(200);
-        
+
         // 클라이언트1에서 명령 전송
         UpdateStateCommand command = new UpdateStateCommand("Test State from Client 1");
         client1.sendCommand(command);
-        
-        // 브로드캐스트가 처리될 시간을 줌
+
         Thread.sleep(500);
-        
+
         // 브로드캐스트가 성공적으로 이루어졌는지 확인 (예외가 발생하지 않으면 성공)
     }
 
     @Test
     public void testServerHandlesClientDisconnection() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 클라이언트 생성 및 연결
-        GameEngine engine = new GameEngine();
-        ClientThread client = new ClientThread(engine);
-        
+
+        ClientThread client = createClientWithP2PEngine();
         client.connect("localhost", GameServer.PORT);
         Thread.sleep(100);
-        
-        // 클라이언트 연결 해제
+
         client.disconnect();
         Thread.sleep(100);
-        
-        // 서버가 여전히 실행 중인지 확인 (예외가 발생하지 않으면 성공)
+        // 서버 계속 실행 중이어야 함
     }
 
     @Test
     public void testConcurrentClientConnections() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 동시에 여러 클라이언트 연결
+
         int clientCount = 5;
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(clientCount);
         AtomicInteger successCount = new AtomicInteger(0);
-        
+
         for (int i = 0; i < clientCount; i++) {
-            final int clientId = i;
             new Thread(() -> {
                 try {
-                    startLatch.await(); // 모든 스레드가 준비될 때까지 대기
-                    
-                    GameEngine engine = new GameEngine();
-                    ClientThread client = new ClientThread(engine);
-                    
-                    synchronized (clients) {
-                        clients.add(client);
-                        gameEngines.add(engine);
-                    }
-                    
+                    startLatch.await();
+                    // 동시성 테스트에서는 헬퍼 대신 직접 생성하여 리스트 동기화 문제 회피
+                    // 하지만 BaseNetworkTest의 리스트는 @Before에서 초기화되므로
+                    // 여기서는 단순히 연결 성공 여부만 카운트
+                    ClientThread client = createClientWithP2PEngine();
                     client.connect("localhost", GameServer.PORT);
                     successCount.incrementAndGet();
-                    
                 } catch (Exception e) {
-                    // Expected failure for clients > 2
-                    // System.err.println("[TEST] Client " + clientId + " failed: " + e.getMessage());
+                    // Expected failure for > 2 clients
                 } finally {
                     doneLatch.countDown();
                 }
             }).start();
         }
-        
-        // 모든 스레드 시작
+
         startLatch.countDown();
-        
-        // 모든 클라이언트가 연결 시도를 완료할 때까지 대기
         assertTrue("모든 클라이언트가 연결 시도를 완료해야 합니다",
-                   doneLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        
-        // 최대 2명의 클라이언트만 연결되어야 함
-        assertEquals("최대 2명의 클라이언트만 연결되어야 합니다", 
-                   2, successCount.get());
-        
-        Thread.sleep(100);
+                doneLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+        assertEquals("최대 2명의 클라이언트만 연결되어야 합니다",
+                2, successCount.get());
     }
 
     @Test
     public void testServerShutdownDisconnectsClients() throws IOException, InterruptedException {
-        // 서버 시작
         startServer();
-        
-        // 클라이언트 생성 및 연결
-        GameEngine engine = new GameEngine();
-        ClientThread client = new ClientThread(engine);
-        
-        clients.add(client);
-        gameEngines.add(engine);
-        
+
+        ClientThread client = createClientWithP2PEngine();
         client.connect("localhost", GameServer.PORT);
         Thread.sleep(100);
-        
-        // 서버 종료
+
         stopServer();
         Thread.sleep(100);
-        
-        // 서버 종료 시 클라이언트가 안전하게 처리되어야 합니다 (예외가 발생하지 않으면 성공)
+        // 클라이언트 측에서 연결 끊김 감지 (로그 확인)
     }
 }

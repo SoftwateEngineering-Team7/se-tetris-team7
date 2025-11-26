@@ -1,0 +1,85 @@
+package org.tetris.network;
+
+import org.junit.After;
+import org.junit.Before;
+import org.tetris.game.model.DualGameModel;
+import org.tetris.network.game.model.P2PGameModel;
+
+import org.tetris.network.game.GameEngine;
+import org.tetris.network.game.LocalMultiGameEngine;
+import org.tetris.network.game.P2PGameEngine;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 네트워크 테스트를 위한 기본 클래스입니다.
+ * 서버 시작/종료 및 클라이언트/엔진 생성 헬퍼 메서드를 제공하여 코드 중복을 줄입니다.
+ */
+public abstract class BaseNetworkTest {
+    protected static final int TIMEOUT_SECONDS = 10;
+    protected List<ClientThread> clients;
+    protected List<GameEngine<?, ?>> gameEngines;
+
+    @Before
+    public void setUp() throws IOException {
+        clients = new ArrayList<>();
+        gameEngines = new ArrayList<>();
+        GameServer.getInstance().reset();
+    }
+
+    @After
+    public void tearDown() {
+        for (ClientThread client : clients) {
+            if (client != null) {
+                client.disconnect();
+            }
+        }
+        clients.clear();
+        gameEngines.clear();
+        stopServer();
+    }
+
+    protected void startServer() throws IOException {
+        GameServer.getInstance().start();
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    protected void stopServer() {
+        GameServer.getInstance().stop();
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    protected ClientThread createClientWithLocalMultiEngine() {
+        LocalMultiGameEngine engine = new LocalMultiGameEngine(null, null, new DualGameModel(), null);
+        ClientThread client = new ClientThread(engine);
+        clients.add(client);
+        gameEngines.add(engine);
+        return client;
+    }
+
+    protected ClientThread createClientWithP2PEngine() {
+        // P2PGameEngine requires PlayerSlots, but for network testing we might mock
+        // them or pass null if allowed
+        // P2PGameEngine(PlayerSlot localPlayer, PlayerSlot remotePlayer, P2PGameModel
+        // gameModel, P2PGameController controller)
+        P2PGameEngine engine = new P2PGameEngine(null, null, new P2PGameModel(), null);
+        engine.setClientThread(null); // Will be set when client is created? No, circular dependency.
+
+        ClientThread client = new ClientThread(engine);
+        engine.setClientThread(client);
+
+        clients.add(client);
+        gameEngines.add(engine);
+        return client;
+    }
+}
