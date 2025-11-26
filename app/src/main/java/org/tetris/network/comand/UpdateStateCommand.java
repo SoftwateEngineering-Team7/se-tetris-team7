@@ -15,7 +15,7 @@ public class UpdateStateCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
+    public void execute(GameEngine<?, ?> game) {
         game.updateState(state);
     }
 

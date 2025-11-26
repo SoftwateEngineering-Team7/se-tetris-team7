@@ -12,7 +12,7 @@ public class GameResultCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
+    public void execute(GameEngine<?, ?> game) {
         game.onGameResult(isWinner, score);
     }
 }

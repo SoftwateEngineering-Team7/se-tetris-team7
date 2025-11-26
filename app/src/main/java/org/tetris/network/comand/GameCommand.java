@@ -12,7 +12,8 @@ import org.tetris.network.game.GameEngine;
 public interface GameCommand extends Serializable {
     /**
      * 클라이언트 측에서 수신된 커맨드를 실행합니다.
+     * 
      * @param game 실행 대상이 되는 게임 엔진 인스턴스
      */
-    void execute(GameEngine game);
+    void execute(GameEngine<?, ?> game);
 }

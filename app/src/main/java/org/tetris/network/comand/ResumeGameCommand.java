@@ -2,9 +2,9 @@ package org.tetris.network.comand;
 
 import org.tetris.network.game.GameEngine;
 
-public class MoveRightCommand implements GameCommand {
-    @Override
+public class ResumeGameCommand implements GameCommand {
+
     public void execute(GameEngine<?, ?> game) {
-        game.moveRight();
+        // game.resumeGame(); // GameEngine에 메서드 추가 필요
     }
 }
