@@ -122,7 +122,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         setupEventHandlers();
         startGameLoop();
-        
+
         dualGameModel.getPlayer1GameModel().spawnNewBlock();
         dualGameModel.getPlayer2GameModel().spawnNewBlock();
     }
@@ -130,12 +130,14 @@ public class DualGameController extends BaseController<DualGameModel> implements
     // Dual 모드에서도 아이템 모드 / 난이도 설정
     public void setUpGameMode(GameMode mode) {
         boolean itemMode = (mode == GameMode.ITEM);
+        boolean timeMode = (mode == GameMode.TIME_ATTACK);
 
         dualGameModel.getPlayer1GameModel().setItemMode(itemMode);
         dualGameModel.getPlayer2GameModel().setItemMode(itemMode);
 
         dualGameModel.getPlayer1GameModel().setDifficulty();
         dualGameModel.getPlayer2GameModel().setDifficulty();
+        dualGameModel.getTimeAttack().setTimeAttackMode(timeMode);
     }
 
     // PlayerSlot 생성 로직 통합
@@ -303,12 +305,16 @@ public class DualGameController extends BaseController<DualGameModel> implements
         lockCurrentBlock(player);
     }
 
+    private int playTime = 0;
+
     // === 게임 루프 ===
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
+            long startTime = System.nanoTime();
+
             @Override
             public void handle(long now) {
-                if(player1 == null || player2 == null)
+                if (player1 == null || player2 == null)
                     return;
 
                 if (lastUpdate == 0L) {
@@ -321,6 +327,9 @@ public class DualGameController extends BaseController<DualGameModel> implements
                 long elapsed = now - lastUpdate;
                 if (elapsed >= FRAME_TIME) {
                     update(now);
+
+                    playTime = (int) ((now - startTime) / 1_000_000_000L); // 초 단위
+
                     lastUpdate = now;
                 }
             }
@@ -438,7 +447,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     private void beginFlash(PlayerSlot player, long now) {
         player.isFlashing = true;
-        player.flashMask = player.renderer.buildFlashMask(player.clearingRows, player.clearingCols, player.clearingCells);
+        player.flashMask = player.renderer.buildFlashMask(player.clearingRows, player.clearingCols,
+                player.clearingCells);
         player.flashOn = false;
         player.flashToggleCount = 0;
         player.nextFlashAt = now;
@@ -620,7 +630,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void resetGameController() {
         if (gameLoop != null)
             gameLoop.stop();
-        
+
         lastUpdate = 0L;
 
         if (player1 != null)
