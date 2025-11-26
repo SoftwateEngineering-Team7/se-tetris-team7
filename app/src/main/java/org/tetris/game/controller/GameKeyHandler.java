@@ -3,9 +3,8 @@ package org.tetris.game.controller;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
-import org.tetris.network.game.GameEngine;
-import org.tetris.network.comand.*;
-
+import org.tetris.game.comand.*;
+import org.tetris.game.engine.GameEngine;
 import org.util.KeyLayout;
 
 public class GameKeyHandler {
@@ -63,8 +62,7 @@ public class GameKeyHandler {
     public void handleKeyPress(KeyEvent e) {
         KeyCode code = e.getCode();
 
-        // 전체 공통: P키로 Pause 토글 (Default) - Can be customized if needed, but P is
-        // standard
+        // 전체 공통: P키로 Pause 토글 (Default) - Can be customized if needed, but P is standard
         if (code == KeyCode.P) {
             pauseCommand.execute(gameEngine);
             e.consume();
@@ -96,11 +94,10 @@ public class GameKeyHandler {
             e.consume();
             return;
         }
-        if (code == KeyCode.SPACE) { // HardDrop default to SPACE, maybe add to KeyLayout?
+        if (code == keyLayout.getHardDrop()) {
             hardDropCommand.execute(gameEngine);
             e.consume();
             return;
         }
-        // Support Slash for P2 HardDrop if needed, or add hardDropKey to KeyLayout
     }
 }

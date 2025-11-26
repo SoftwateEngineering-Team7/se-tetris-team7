@@ -13,13 +13,15 @@ public class KeyLayout {
     private final KeyCode rightKey;
     private final KeyCode downKey;
     private final KeyCode upKey;
+    private final KeyCode hardDropKey;
 
-    private KeyLayout(String name, KeyCode left, KeyCode right, KeyCode down, KeyCode up) {
+    private KeyLayout(String name, KeyCode left, KeyCode right, KeyCode down, KeyCode up, KeyCode hardDrop) {
         this.name = name;
         this.leftKey = left;
         this.rightKey = right;
         this.downKey = down;
         this.upKey = up;
+        this.hardDropKey = hardDrop;
     }
 
     public KeyCode getLeft() {
@@ -36,6 +38,10 @@ public class KeyLayout {
 
     public KeyCode getUp() {
         return upKey;
+    }
+
+    public KeyCode getHardDrop() {
+        return hardDropKey;
     }
 
     /**
@@ -55,6 +61,10 @@ public class KeyLayout {
 
     public static KeyCode getUpKey() {
         return currentLayout.equals(KEY_ARROWS) ? ARROWS.upKey : WASD.upKey;
+    }
+
+    public static KeyCode getHardDropKey() {
+        return currentLayout.equals(KEY_ARROWS) ? ARROWS.hardDropKey : WASD.hardDropKey;
     }
 
     /**
@@ -82,8 +92,9 @@ public class KeyLayout {
     // region 레이아웃 정의
 
     public static final KeyLayout ARROWS = new KeyLayout(KEY_ARROWS, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.DOWN,
-            KeyCode.UP);
-    public static final KeyLayout WASD = new KeyLayout(KEY_WASD, KeyCode.A, KeyCode.D, KeyCode.S, KeyCode.W);
+            KeyCode.UP, KeyCode.SLASH);
+    public static final KeyLayout WASD = new KeyLayout(KEY_WASD, KeyCode.A, KeyCode.D, KeyCode.S, KeyCode.W,
+            KeyCode.SPACE);
 
     // endregion
 }
