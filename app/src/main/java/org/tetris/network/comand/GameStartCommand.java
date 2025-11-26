@@ -10,7 +10,7 @@ public class GameStartCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
+    public void execute(GameEngine<?, ?> game) {
         game.startGame(seed);
     }
 }

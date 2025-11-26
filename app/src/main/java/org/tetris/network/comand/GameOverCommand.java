@@ -10,13 +10,12 @@ public class GameOverCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
-        // 서버에서 수신 시: 상대방이 게임 오버됨 -> 나는 승리
-        // 클라이언트에서 수신 시: 상대방이 게임 오버됨 -> 나는 패배
-        // 여기서는 단순히 로그만 남기거나, GameEngine에 처리를 위임.
+    public void execute(GameEngine<?, ?> game) {
         System.out.println("[COMMAND] Opponent Game Over. Score: " + score);
+        // 상대방이 게임 오버되었으므로, 나는 승리함
+        game.onGameResult(true, score);
     }
-    
+
     public int getScore() {
         return score;
     }

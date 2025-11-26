@@ -4,7 +4,7 @@ import org.tetris.network.game.GameEngine;
 
 public class RotateCommand implements GameCommand {
     @Override
-    public void execute(GameEngine game) {
+    public void execute(GameEngine<?, ?> game) {
         game.rotate();
     }
 }
