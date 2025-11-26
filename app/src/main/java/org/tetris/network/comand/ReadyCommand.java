@@ -11,7 +11,7 @@ public class ReadyCommand implements GameCommand{
 
     @Override
     public void execute(GameEngine game) {
-        game.setOtherReady(isReady);
+        game.onReadyCommand(isReady);
     }
 
     public boolean getIsReady(){
