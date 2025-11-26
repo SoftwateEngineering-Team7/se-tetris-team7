@@ -147,9 +147,7 @@ public class Board extends BaseModel {
     }
 
     public boolean autoDown() {
-        boolean moved = moveDown(activeBlock.isForceDown());
-
-        return moved;
+        return moveDown(activeBlock.isForceDown());
     }
 
     // 오른쪽 한칸 이동 함수
@@ -175,7 +173,7 @@ public class Board extends BaseModel {
             dropDistance++;
         }
 
-        placeBlock(curPos, activeBlock);
+        // placeBlock(curPos, activeBlock); // 중복 호출 제거됨
         return dropDistance;
     }
 
