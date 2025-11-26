@@ -275,22 +275,55 @@ public class Board extends BaseModel {
         }
     }
 
-    /**
-     * 보드를 한 칸 위로 밀고, 새로운 행을 맨 아래에 추가합니다.
-     * @param newRow 추가할 새로운 행
-     * @return 게임 오버 여부 (위로 밀었을 때 블록이 보드 밖으로 나가면 true 반환)
-     */
-    public boolean pushUp(int[] newRow)
-    {
+    public boolean pushUp(int[] newRow) {
+        // 1. 맨 윗줄 검사 (이미 블럭을 지웠으므로 순수 장애물만 검사됨)
+        if (!isRowEmpty(0)) {
+            // 공간 부족 시, 지웠던 블럭을 다시 그려주고 게임오버 처리할 수도 있지만,
+            // 어차피 게임오버이므로 false 리턴
+            return false;
+        }
+
+        // 2. 전체 보드 shift
         for (int r = 0; r < height - 1; r++) {
-            if (!isRowEmpty(r)) 
-                return false; // 게임 오버
-            
             System.arraycopy(board[r + 1], 0, board[r], 0, width);
         }
 
+        // 3. 새 줄 추가
         System.arraycopy(newRow, 0, board[height - 1], 0, width);
+
         return true;
+    }
+    /**
+     * 특정 행(rowIndex)의 데이터를 가져와 공격용 라인을 생성합니다.
+     * 1. 블록이 채워져 있던 칸은 모두 회색(8)으로 변환합니다. [cite: 54]
+     * 2. 현재 활성 블럭(activeBlock)이 있던 위치는 빈칸(0)으로 구멍을 뚫습니다. [cite: 23]
+     */
+    public int[] getRowForAttack(int rowIndex) {
+        int[] originalRow = board[rowIndex];
+        int[] attackRow = new int[width];
+
+        // 1. 해당 줄의 데이터를 복사하되, 블럭이 있는 곳은 회색(8)으로 변환
+        for (int c = 0; c < width; c++) {
+            if (originalRow[c] != 0) {
+                attackRow[c] = 8; // 8 = Garbage Block Color (Gray)
+            } else {
+                attackRow[c] = 0; // 원래 빈 칸은 그대로 빈 칸
+            }
+        }
+
+        // 2. 현재 활성 블럭(이번에 줄을 지운 블럭)이 위치한 곳은 0으로 구멍 뚫기
+        if (activeBlock != null) {
+            for (Point p : activeBlock.getBlockPoints()) {
+                // 블럭의 로컬 좌표를 보드 전체 좌표로 변환
+                Point globalP = curPos.add(activeBlock.toPivot(p));
+
+                // 해당 블럭 조각이 지금 처리 중인 행(rowIndex)에 있다면 구멍(0) 처리
+                if (globalP.r == rowIndex && isInBound(globalP)) {
+                    attackRow[globalP.c] = 0;
+                }
+            }
+        }
+        return attackRow;
     }
 
     /**

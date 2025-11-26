@@ -381,6 +381,8 @@ public class GameViewRenderer {
                 return GameColor.PURPLE.getColor(); // TBlock
             case 7:
                 return GameColor.CYAN.getColor(); // ZBlock
+            case 8:
+                return Color.GRAY;
             default:
                 return Color.WHITE;
         }
