@@ -24,7 +24,7 @@ public class AttackModel {
             return;
         }
 
-        attacks.add(MAX_ATTACKS, attack);
+        attacks.add(attack);
     }
 
     /**
@@ -51,5 +51,9 @@ public class AttackModel {
             sb.append(" \n");
         }
         return sb.toString();
+    }
+
+    public void reset(){
+        attacks.clear();
     }
 }
