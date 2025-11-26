@@ -8,7 +8,9 @@ import org.tetris.network.GameServer;
 import org.tetris.network.game.GameEngine;
 import org.tetris.shared.BaseModel;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleLongProperty;
 
 public class NetworkMenu extends BaseModel{
@@ -23,6 +25,7 @@ public class NetworkMenu extends BaseModel{
     private GameEngine engine;
     private ClientThread client;
     private LongProperty ping = new SimpleLongProperty();
+    private BooleanProperty otherIsReady = new SimpleBooleanProperty();
 
     public NetworkMenu(){
         clear();
@@ -62,7 +65,6 @@ public class NetworkMenu extends BaseModel{
 
     public void setIsReady(boolean isReady){
         this.isReady = isReady;
-        engine.setThisReady(isReady);
 
         if (client != null) {
             client.sendCommand(new ReadyCommand(isReady));
@@ -171,6 +173,20 @@ public class NetworkMenu extends BaseModel{
     }
 
     public void setPing(long ping) {
-        this.ping.set(ping);
+        javafx.application.Platform.runLater(() -> {
+            this.ping.set(ping);
+        });
+    }
+
+    public BooleanProperty otherIsReadyProperty() {
+        return otherIsReady;
+    }
+
+    public boolean getOtherIsReady() {
+        return otherIsReady.get();
+    }
+
+    public void setOtherIsReady(boolean isReady) {
+        this.otherIsReady.set(isReady);
     }
 }

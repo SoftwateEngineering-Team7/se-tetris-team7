@@ -44,7 +44,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         model.pingProperty().addListener((observable, oldValue, newValue) -> {
         addLog("Ping: " + newValue + "ms");
         });
-        
+
+        model.otherIsReadyProperty().addListener((observable, oldValue, newValue) -> {
+            addLog("다른 플레이어가 " + (newValue ? "준비" : "준비 취소") + "했습니다.");
+        });
+
         // ComboBox 초기화
         gameModeCombo.getItems().addAll("일반 모드", "아이템 모드", "타임어택 모드");
         gameModeCombo.setValue("일반 모드");
@@ -160,6 +164,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
     private void onBackPressed() {
         addLog("메인 메뉴로 돌아갑니다");
         if (router != null) {
+            model.clear();
             router.showStartMenu();
         } else {
             addLog("오류: Router가 초기화되지 않았습니다. 메인 메뉴로 이동할 수 없습니다.");
@@ -204,22 +209,5 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
      */
     public String getSelectedGameMode() {
         return gameModeCombo.getValue();
-    }
-
-    /**
-     * 연결 상태를 업데이트합니다.
-     * @param connected 연결 상태
-     * @param message 상태 메시지
-     */
-    public void updateConnectionStatus(boolean connected, String message) {
-        if (connected) {
-            addLog("✓ 연결 성공: " + message);
-            createButton.setText("DISCONNECT");
-            createButton.setStyle("-fx-background-color: #e94560; -fx-text-fill: white; -fx-background-radius: 5;");
-        } else {
-            addLog("✗ 연결 실패: " + message);
-            createButton.setText("CREATE");
-            createButton.setStyle("-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;");
-        }
     }
 }
