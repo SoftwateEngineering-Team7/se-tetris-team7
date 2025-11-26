@@ -6,8 +6,8 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import org.tetris.network.comand.GameCommand;
-import org.tetris.network.game.GameEngine;
+import org.tetris.game.comand.GameCommand;
+import org.tetris.game.engine.GameEngine;
 
 /**
  * 클라이언트가 서버와 통신하기 위한 핸들러 클래스.
@@ -115,13 +115,13 @@ public class ClientThread {
             try {
                 // 첫 ping은 즉시 전송
                 if (connected) {
-                    sendCommand(new org.tetris.network.comand.PingCommand());
+                    sendCommand(new org.tetris.game.comand.PingCommand());
                 }
                 
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     Thread.sleep(PING_INTERVAL);
                     if (connected) {
-                        sendCommand(new org.tetris.network.comand.PingCommand());
+                        sendCommand(new org.tetris.game.comand.PingCommand());
                     }
                 }
             } catch (InterruptedException e) {

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.tetris.network.comand.GameCommand;
+import org.tetris.game.comand.GameCommand;
 
 /**
  * 게임 서버의 메인 클래스 (싱글톤 패턴).
@@ -108,7 +108,7 @@ public class GameServer {
     private void startGame() {
         System.out.println("[SERVER] Both players connected. Starting game...");
         
-        GameCommand readyCommand = new org.tetris.network.comand.ReadyCommand(false);
+        GameCommand readyCommand = new org.tetris.game.comand.ReadyCommand(false);
         
         broadcast(readyCommand);
     }

@@ -5,7 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import org.tetris.network.comand.*;
+import org.tetris.game.comand.*;
 
 /**
  * 서버 측에서 개별 클라이언트와의 통신을 담당하는 Runnable 클래스.

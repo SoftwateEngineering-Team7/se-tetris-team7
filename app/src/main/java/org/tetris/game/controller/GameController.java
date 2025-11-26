@@ -3,7 +3,8 @@ package org.tetris.game.controller;
 import java.util.List;
 
 import org.tetris.Router;
-
+import org.tetris.game.comand.*;
+import org.tetris.game.engine.SingleGameEngine;
 import org.tetris.game.model.Board;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.ScoreModel;
@@ -12,8 +13,6 @@ import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.NextBlockModel;
 import org.tetris.game.model.PlayerSlot;
 import org.tetris.game.view.GameViewRenderer;
-import org.tetris.network.comand.*;
-import org.tetris.network.game.SingleGameEngine;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.tetris.game.view.GameViewCallback;

@@ -1,8 +1,8 @@
 package org.tetris.network;
 
 import org.junit.Test;
-import org.tetris.network.comand.GameCommand;
-import org.tetris.network.comand.MoveLeftCommand;
+import org.tetris.game.comand.GameCommand;
+import org.tetris.game.comand.MoveLeftCommand;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

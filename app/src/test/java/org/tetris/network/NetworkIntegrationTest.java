@@ -1,9 +1,9 @@
 package org.tetris.network;
 
 import org.junit.Test;
-import org.tetris.network.comand.GameCommand;
-import org.tetris.network.comand.MoveLeftCommand;
-import org.tetris.network.comand.UpdateStateCommand;
+import org.tetris.game.comand.GameCommand;
+import org.tetris.game.comand.MoveLeftCommand;
+import org.tetris.game.comand.UpdateStateCommand;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;

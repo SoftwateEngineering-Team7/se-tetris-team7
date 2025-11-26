@@ -2,12 +2,11 @@ package org.tetris.network;
 
 import org.junit.After;
 import org.junit.Before;
+import org.tetris.game.engine.GameEngine;
+import org.tetris.game.engine.LocalMultiGameEngine;
+import org.tetris.game.engine.P2PGameEngine;
 import org.tetris.game.model.DualGameModel;
-import org.tetris.network.game.model.P2PGameModel;
-
-import org.tetris.network.game.GameEngine;
-import org.tetris.network.game.LocalMultiGameEngine;
-import org.tetris.network.game.P2PGameEngine;
+import org.tetris.game.model.P2PGameModel;
 
 import java.io.IOException;
 import java.util.ArrayList;

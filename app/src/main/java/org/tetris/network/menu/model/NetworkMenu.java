@@ -2,10 +2,11 @@ package org.tetris.network.menu.model;
 
 import java.io.IOException;
 
+import org.tetris.game.comand.*;
+import org.tetris.game.engine.GameEngine;
+import org.tetris.game.engine.P2PGameEngine;
 import org.tetris.network.ClientThread;
-import org.tetris.network.comand.*;
 import org.tetris.network.GameServer;
-import org.tetris.network.game.GameEngine;
 import org.tetris.shared.BaseModel;
 
 import javafx.beans.property.BooleanProperty;
@@ -109,7 +110,7 @@ public class NetworkMenu extends BaseModel{
             throw new RuntimeException("서버 시작에 실패했습니다", e);
         }
         
-        engine = new GameEngine();
+        engine = new P2PGameEngine();
         engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
@@ -135,7 +136,7 @@ public class NetworkMenu extends BaseModel{
 
     public void join()
     {
-        engine = new GameEngine();
+        engine = new P2PGameEngine();
         engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
@@ -159,7 +160,7 @@ public class NetworkMenu extends BaseModel{
         this.ipAddress = "";
         this.port = DEFAULT_PORT;
         this.isReady = false;
-        this.engine = new GameEngine();
+        this.engine = new P2PGameEngine();
         engine.setNetworkMenu(this);
         this.ping.set(0);
     }
