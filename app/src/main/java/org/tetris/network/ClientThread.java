@@ -29,6 +29,7 @@ public class ClientThread {
     private final GameEngine gameEngine;
     private volatile boolean connected = false;
     private Thread receiverThread;
+    private Thread pingThread;
 
     public ClientThread(GameEngine gameEngine) {
         this.gameEngine = gameEngine;
@@ -53,6 +54,11 @@ public class ClientThread {
         // 서버로부터 커맨드를 수신하는 별도의 스레드를 시작합니다.
         receiverThread = new Thread(new CommandReceiver());
         receiverThread.start();
+        
+        // Ping을 주기적으로 전송하는 스레드를 시작합니다.
+        pingThread = new Thread(new PingSender());
+        pingThread.start();
+        
         System.out.println("[CLIENT-FACADE] Connected to server at " + host + ":" + port);
         
         // TODO: 연결 성공 콜백 구현 - UI에 알림 전달
@@ -87,6 +93,7 @@ public class ClientThread {
     public void disconnect() {
         connected = false;
         if (receiverThread != null) receiverThread.interrupt();
+        if (pingThread != null) pingThread.interrupt();
         
         try {
             if (oos != null) oos.close();
@@ -95,6 +102,31 @@ public class ClientThread {
             System.out.println("[CLIENT-FACADE] Disconnected from server.");
         } catch (IOException e) {
             System.err.println("[CLIENT-FACADE] Error during disconnection: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 주기적으로 Ping을 전송하는 내부 Runnable 클래스.
+     */
+    private class PingSender implements Runnable {
+        private static final long PING_INTERVAL = 2000; // Ping 전송 간격
+
+        public void run() {
+            try {
+                // 첫 ping은 즉시 전송
+                if (connected) {
+                    sendCommand(new org.tetris.network.comand.PingCommand());
+                }
+                
+                while (connected && !Thread.currentThread().isInterrupted()) {
+                    Thread.sleep(PING_INTERVAL);
+                    if (connected) {
+                        sendCommand(new org.tetris.network.comand.PingCommand());
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

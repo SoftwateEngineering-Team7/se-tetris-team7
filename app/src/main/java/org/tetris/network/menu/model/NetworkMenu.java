@@ -8,6 +8,11 @@ import org.tetris.network.GameServer;
 import org.tetris.network.game.GameEngine;
 import org.tetris.shared.BaseModel;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleLongProperty;
+
 public class NetworkMenu extends BaseModel{
     private static final int DEFAULT_PORT = 54321;
     private static final int SERVER_STARTUP_DELAY_MS = 100;
@@ -19,6 +24,8 @@ public class NetworkMenu extends BaseModel{
 
     private GameEngine engine;
     private ClientThread client;
+    private LongProperty ping = new SimpleLongProperty();
+    private BooleanProperty otherIsReady = new SimpleBooleanProperty();
 
     public NetworkMenu(){
         clear();
@@ -58,7 +65,6 @@ public class NetworkMenu extends BaseModel{
 
     public void setIsReady(boolean isReady){
         this.isReady = isReady;
-        engine.setThisReady(isReady);
 
         if (client != null) {
             client.sendCommand(new ReadyCommand(isReady));
@@ -104,6 +110,7 @@ public class NetworkMenu extends BaseModel{
         }
         
         engine = new GameEngine();
+        engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
         try {
@@ -129,6 +136,7 @@ public class NetworkMenu extends BaseModel{
     public void join()
     {
         engine = new GameEngine();
+        engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
         try {
@@ -152,5 +160,33 @@ public class NetworkMenu extends BaseModel{
         this.port = DEFAULT_PORT;
         this.isReady = false;
         this.engine = new GameEngine();
-    }    
+        engine.setNetworkMenu(this);
+        this.ping.set(0);
+    }
+
+    public LongProperty pingProperty() {
+        return ping;
+    }
+
+    public long getPing() {
+        return ping.get();
+    }
+
+    public void setPing(long ping) {
+        javafx.application.Platform.runLater(() -> {
+            this.ping.set(ping);
+        });
+    }
+
+    public BooleanProperty otherIsReadyProperty() {
+        return otherIsReady;
+    }
+
+    public boolean getOtherIsReady() {
+        return otherIsReady.get();
+    }
+
+    public void setOtherIsReady(boolean isReady) {
+        this.otherIsReady.set(isReady);
+    }
 }

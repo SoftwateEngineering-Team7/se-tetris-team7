@@ -2,6 +2,7 @@ package org.tetris.network.game;
 
 import org.tetris.network.GameServer;
 import org.tetris.network.comand.*;
+import org.tetris.network.menu.model.NetworkMenu;
 
 /**
  * 가상의 게임 엔진 (커맨드 실행 대상)
@@ -13,17 +14,25 @@ import org.tetris.network.comand.*;
  */
 public class GameEngine {
     private String currentState = "Initial State";
-    private boolean isReady = false;
+    private NetworkMenu networkMenu;
+
+    public GameEngine() {
+    }
+
+    public synchronized void setNetworkMenu(NetworkMenu networkMenu) {
+        this.networkMenu = networkMenu;
+    }
+
     // TODO: 옵저버 리스트 구현 (UI 업데이트 리스너 등록)
     // private List<GameStateObserver> observers = new ArrayList<>();
 
-    public void setThisReady(boolean ready) {
-        this.isReady = ready;
-        System.out.println("[CLIENT-ENGINE] This Player is " + (ready ? "ready." : "not ready."));
-    }
+    public void onReadyCommand(boolean others) {
+        if (networkMenu == null) {
+            throw new IllegalStateException("NetworkMenu is not set in GameEngine.");
+        }
 
-    public void setOtherReady(boolean others) {
-        if (others && this.isReady) {
+        networkMenu.setOtherIsReady(others);
+        if (others && networkMenu.isReady()) {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
 
             long seed = System.currentTimeMillis();
@@ -98,5 +107,12 @@ public class GameEngine {
 
     public String getCurrentState() {
         return currentState;
+    }
+
+    public synchronized void updatePing(long ping) {
+        System.out.println("[CLIENT-ENGINE] Ping: " + ping + "ms");
+        if (networkMenu != null) {
+            networkMenu.setPing(ping);
+        }
     }
 }
