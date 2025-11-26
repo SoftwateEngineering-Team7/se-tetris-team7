@@ -1,5 +1,8 @@
 package org.tetris.network.game;
 
+import org.tetris.network.GameServer;
+import org.tetris.network.comand.*;
+
 /**
  * 가상의 게임 엔진 (커맨드 실행 대상)
  * 실제 게임의 로직을 처리하는 역할을 가정합니다.
@@ -10,10 +13,28 @@ package org.tetris.network.game;
  */
 public class GameEngine {
     private String currentState = "Initial State";
-
+    private boolean isReady = false;
     // TODO: 옵저버 리스트 구현 (UI 업데이트 리스너 등록)
     // private List<GameStateObserver> observers = new ArrayList<>();
-    
+
+    public void setThisReady(boolean ready) {
+        this.isReady = ready;
+        System.out.println("[CLIENT-ENGINE] This Player is " + (ready ? "ready." : "not ready."));
+    }
+
+    public void setOtherReady(boolean others) {
+        if (others && this.isReady) {
+            System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
+
+            long seed = System.currentTimeMillis();
+            GameCommand startCommand = new GameStartCommand(seed);
+            GameServer.getInstance().broadcast(startCommand);
+        } else {
+            System.out.println("[CLIENT-ENGINE] Other Player is not ready.");
+        }
+    }
+
+
     public void startGame(long seed) {
         System.out.println("[CLIENT-ENGINE] Game Started with seed: " + seed);
         // TODO: 게임 모델 초기화 및 시드 설정
