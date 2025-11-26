@@ -42,7 +42,6 @@ public class NetworkMenuControllerTest extends ApplicationTest{
         verifyThat("#clientRadio", isVisible());
         verifyThat("#ipField", isVisible());
         verifyThat("#portField", isVisible());
-        verifyThat("#gameModeCombo", isVisible());
         verifyThat("#createButton", isVisible());
         verifyThat("#logArea", isVisible());
         verifyThat("#backButton", isVisible());

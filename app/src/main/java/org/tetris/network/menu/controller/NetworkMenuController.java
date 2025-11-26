@@ -27,6 +27,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
     @FXML private TextArea logArea;
     @FXML private Button backButton;
     @FXML private Button clearLogButton;
+    @FXML private Button readyButton;
 
     public NetworkMenuController(NetworkMenu networkMenu) {
         super(networkMenu);
@@ -99,8 +100,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
                 addLog("Client 모드로 설정됨");
             }
         });
-
         connectionTypeGroup.selectToggle(clientRadio);
+        readyButton.setDisable(true);
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
     }
@@ -110,21 +111,15 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         try {
             String ip = ipField.getText().trim();
             String portText = portField.getText().trim();
-            String gameMode = gameModeCombo.getValue();
-
-            if (ip.isEmpty()) {
-                addLog("오류: IP 주소를 입력해주세요");
-                return;
-            }
-
-            if (portText.isEmpty()) {
-                addLog("오류: 포트를 입력해주세요");
-                return;
-            }
-
             int port = Integer.parseInt(portText);
-            if (port < 1 || port > 65535) {
-                addLog("오류: 포트는 1-65535 범위여야 합니다");
+            
+            String gameMode = gameModeCombo.getValue();
+            
+            try {
+                model.isValidIP(ip);
+                model.isValidPort(port);
+            } catch (Exception e) {
+                addLog("오류: " + e.getMessage());
                 return;
             }
 
@@ -137,13 +132,17 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
                 addLog("서버 생성 중... IP: " + ip + ", Port: " + port);
                 addLog("게임 모드: " + gameMode);
                 model.create();
+                this.ipField.setText(model.getIpAddress());
+                addLog("서버가 시작되었습니다. 클라이언트 접속을 기다리는 중...");
             } else {
                 addLog("서버에 연결 중... IP: " + ip + ", Port: " + port);
                 model.join();
+                addLog("서버에 성공적으로 연결되었습니다.");
             }
 
             hostRadio.setDisable(true);
             clientRadio.setDisable(true);
+            readyButton.setDisable(false);
 
         } catch (NumberFormatException e) {
             addLog("오류: 포트는 숫자여야 합니다");
@@ -166,6 +165,18 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
     private void onClearLogPressed() {
         logArea.clear();
         addLog("로그가 초기화되었습니다");
+    }
+
+    @FXML
+    private void onReadyPressed() {
+        model.setIsReady(!model.isReady());
+        if (model.isReady()) {
+            addLog("준비 완료");
+            readyButton.setText("CANCEL");
+        } else {
+            addLog("준비 취소");
+            readyButton.setText("READY");
+        }
     }
 
     /**
