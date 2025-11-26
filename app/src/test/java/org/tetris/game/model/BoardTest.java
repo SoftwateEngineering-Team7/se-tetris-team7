@@ -363,27 +363,106 @@ public class BoardTest {
     }
 
     @Test
-    public void testPushUp() {
+    public void testPushUp_Success() {
+        // 5x5 보드 생성
         Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
 
-        // 초기 상태 설정
-        for (int r = 0; r < 5; r++) {
-            for (int c = 0; c < 5; c++) {
-                board.getBoard()[r][c] = r + 1;
-            }
+        // 1. 초기 상태 설정: 맨 아랫줄(4행)에 데이터 존재
+        // [0, 0, 0, 0, 0]
+        // ...
+        // [1, 1, 1, 1, 1]
+        for (int c = 0; c < 5; c++) {
+            boardData[4][c] = 1;
         }
 
-        board.pushUp(new int[] {0, 0, 0, 0, 0});
+        // 2. 새로운 줄 데이터 준비 (공격받은 줄: 9로 가득 참)
+        int[] newRow = { 9, 9, 9, 9, 9 };
 
-        String expected = 
-                "2 2 2 2 2 \n" +
-                "3 3 3 3 3 \n" +
-                "4 4 4 4 4 \n" +
-                "5 5 5 5 5 \n" +
-                "0 0 0 0 0 \n";
-        
-        System.out.println(board);
-        
-        assertEquals(expected, board.toString());
+        // 3. pushUp 실행
+        boolean result = board.pushUp(newRow);
+
+        // 4. 검증
+        assertTrue("맨 윗줄이 비어있다면 true를 반환해야 합니다.", result);
+
+        // 기존 4행의 데이터가 3행으로 올라갔는지 확인
+        assertEquals("기존 데이터가 위로 한 칸 이동해야 합니다.", 1, boardData[3][0]);
+
+        // 4행(바닥)에 새로운 줄이 들어왔는지 확인
+        assertEquals("맨 아래에 새로운 줄이 추가되어야 합니다.", 9, boardData[4][0]);
+    }
+
+    @Test
+    public void testPushUp_GameOver_WhenTopRowNotEmpty() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+
+        // 1. 맨 윗줄(0번 행)에 블럭 배치 (장애물)
+        boardData[0][2] = 1;
+
+        // 2. pushUp 실행
+        boolean result = board.pushUp(new int[] { 9, 9, 9, 9, 9 });
+
+        // 3. 검증
+        assertFalse("맨 윗줄에 블럭이 있으면 밀어올릴 공간이 없어 false(게임오버)여야 합니다.", result);
+    }
+
+    @Test
+    public void testGetRowForAttack_BasicConversion() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+
+        // 1. 테스트할 행(3번 행) 설정: [1, 0, 2, 0, 3]
+        // activeBlock이 없는 상황 가정
+        boardData[3][0] = 1;
+        boardData[3][1] = 0;
+        boardData[3][2] = 2;
+        boardData[3][3] = 0;
+        boardData[3][4] = 3;
+
+        // 2. 메서드 호출
+        int[] attackRow = board.getRowForAttack(3);
+
+        // 3. 검증: 블럭이 있던 곳(0이 아닌 곳)은 8(회색), 빈 곳은 0
+        // 예상 결과: [8, 0, 8, 0, 8]
+        assertArrayEquals(new int[] { 8, 0, 8, 0, 8 }, attackRow);
+    }
+
+    @Test
+    public void testGetRowForAttack_WithActiveBlockHole() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+
+        // 1. ActiveBlock 설정 (IBlock)
+        Block block = new IBlock();
+        board.setActiveBlock(block);
+
+        // [수정됨] 블럭이 3번 행까지 오도록 3번 내립니다.
+        // 초기(0) -> 1 -> 2 -> 3
+        board.moveDown();
+        board.moveDown();
+        board.moveDown(); // <--- 한 번 더 이동!
+
+        // 2. 3번 행을 '꽉 채운 상태'로 설정
+        for (int c = 0; c < 5; c++) {
+            boardData[3][c] = 1;
+        }
+
+        // 3. 메서드 호출 (3번 행 기준으로 공격 줄 생성)
+        int[] attackRow = board.getRowForAttack(3);
+
+        // 4. 검증
+        boolean hasHole = false;
+        boolean hasGrayBlock = false;
+
+        for (int val : attackRow) {
+            if (val == 0)
+                hasHole = true;
+            if (val == 8)
+                hasGrayBlock = true;
+        }
+
+        assertTrue("ActiveBlock이 겹치는 위치에는 구멍(0)이 뚫려야 합니다.", hasHole);
+        assertTrue("ActiveBlock이 없는 나머지 부분은 회색(8)으로 변환되어야 합니다.", hasGrayBlock);
     }
 }

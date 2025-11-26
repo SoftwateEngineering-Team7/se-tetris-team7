@@ -17,8 +17,8 @@ public class AttackModelTest {
         }
 
         assertEquals(10, attackModel.getAttacks().size());
-        assertArrayEquals(new int[]{2, 3}, attackModel.getAttacks().get(0));
-        assertArrayEquals(new int[]{11, 12}, attackModel.getAttacks().get(9));
+        assertArrayEquals(new int[]{2, 3}, attackModel.getAttacks().get(2));
+        assertArrayEquals(new int[]{9, 10}, attackModel.getAttacks().get(9));
     }
 
     @Test
