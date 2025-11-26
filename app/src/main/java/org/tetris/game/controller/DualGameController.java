@@ -23,6 +23,11 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 
+/**
+ * 로컬 멀티플레이(1 vs 1) 게임을 관리하는 컨트롤러입니다.
+ * 각 플레이어의 키 입력, 블록 낙하, 게임 루프, 승패 판정 등
+ * 멀티플레이 관련 로직을 담당합니다.
+ */
 public class DualGameController extends BaseController<DualGameModel> implements RouterAware, ItemActivation {
 
     // === FXML 바인딩 ===
@@ -108,6 +113,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     @FXML
+    @Override
     public void initialize() {
         super.initialize();
 
