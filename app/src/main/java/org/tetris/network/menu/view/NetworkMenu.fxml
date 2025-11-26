@@ -205,6 +205,20 @@
                         </DropShadow>
                      </effect>
                   </Button>
+                  <Button fx:id="readyButton" text="READY" prefWidth="100" prefHeight="35.0"
+                      onAction="#onReadyPressed"
+                      style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
+                     <font>
+                        <Font name="Arial Bold" size="14.0" />
+                     </font>
+                     <effect>
+                        <DropShadow height="8.0" radius="3.5" width="8.0">
+                           <color>
+                              <Color opacity="0.5" />
+                           </color>
+                        </DropShadow>
+                     </effect>
+                  </Button>
                </children>
             </HBox>
          </children>
