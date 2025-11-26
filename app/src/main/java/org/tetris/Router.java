@@ -4,6 +4,7 @@ import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
+import org.tetris.network.menu.NetworkMenuFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.controller.GameController;
 import org.tetris.scoreboard.controller.ScoreBoardController;
@@ -23,6 +24,7 @@ public final class Router {
     private final MvcFactory<?, ?> settingsFactory;
     private final MvcFactory<?, ?> gameFactory;
     private final MvcFactory<ScoreBoard, ScoreBoardController> scoreBoardFactory;
+    private final MvcFactory<?, ?> networkMenuFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -34,6 +36,7 @@ public final class Router {
         this.settingsFactory = new SettingMenuFactory(setting);
         this.gameFactory = new GameFactory();
         this.scoreBoardFactory = new ScoreBoardFactory();
+        this.networkMenuFactory = new NetworkMenuFactory();
 
         setStageSize();
         stage.setTitle("Tetris");
