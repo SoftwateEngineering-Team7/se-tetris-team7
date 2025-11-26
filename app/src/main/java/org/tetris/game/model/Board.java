@@ -58,6 +58,10 @@ public class Board extends BaseModel {
         }
     }
 
+    public void removeCurrentBlock() {
+        removeBlock(curPos, activeBlock);
+    }
+
     // 블럭이 해당 위치에 배치 가능한지 확인
     public boolean isValidPos(Point pos, Block block, boolean force) {
         for (Point bp : block.getBlockPoints()) {
@@ -110,51 +114,40 @@ public class Board extends BaseModel {
         return curPos;
     }
 
+    public boolean getIsForceDown() {
+        return activeBlock.isForceDown();
+    }
+
     // -------------------- 이동 관련 함수들 --------------------
     // (이동할 좌표 p'을 생성하고 기존 블럭은 제거, p'에 배치가 가능하다면 curPos에 p'을 할당, 마지막으로 curPos에 블럭 배치
     // 후 이동 여부 반환)
 
     private boolean tryMove(Point newPos, boolean force) {
         removeBlock(curPos, activeBlock);
-        
+
         if (isValidPos(newPos, activeBlock, force)) {
             curPos = newPos;
             placeBlock(curPos, activeBlock);
             return true;
         }
-        
+
         placeBlock(curPos, activeBlock);
         return false;
     }
 
     // 아래로 한칸 이동 함수
     public boolean moveDown() {
-        if (!activeBlock.getCanMove())
-            return false;
-        
+
         return tryMove(curPos.down(), false);
     }
 
-    private boolean isForceDown;
+    public boolean moveDown(boolean force) {
 
-    public boolean getIsForceDown() {
-        return isForceDown;
+        return tryMove(curPos.down(), force);
     }
 
-    public void setIsForceDown(boolean isForceDown) {
-        this.isForceDown = isForceDown;
-    }
-
-    public boolean moveDownForce() {
-        if (!isForceDown)
-            return false;
-
-        isForceDown = false;
-        boolean moved = tryMove(curPos.down(), true);
-        
-        if (moved) isForceDown = true;
-
-        return moved;
+    public boolean autoDown() {
+        return moveDown(activeBlock.isForceDown());
     }
 
     // 오른쪽 한칸 이동 함수
@@ -174,18 +167,13 @@ public class Board extends BaseModel {
     }
 
     public int hardDrop() {
-        if (!activeBlock.getCanMove())
-            return 0;
-
-        removeBlock(curPos, activeBlock);
 
         int dropDistance = 0;
-        while (isValidPos(curPos.down(), activeBlock)) {
-            curPos = curPos.down();
+        while (tryMove(curPos.down(), getIsForceDown())) {
             dropDistance++;
         }
-        
-        placeBlock(curPos, activeBlock);
+
+        // placeBlock(curPos, activeBlock); // 중복 호출 제거됨
         return dropDistance;
     }
 

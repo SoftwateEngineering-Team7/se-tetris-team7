@@ -104,17 +104,6 @@ public class GameModel extends BaseModel {
         }
     }
 
-    public boolean autoDown() {
-        boolean moved;
-        if (board.getIsForceDown()) {
-            moved = board.moveDownForce();
-        } else {
-            moved = board.moveDown();
-        }
-
-        return moved;
-    }
-
     public void updateModels(int linesCleared) {
 
         if (linesCleared > 0) {

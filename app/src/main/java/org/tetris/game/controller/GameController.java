@@ -174,7 +174,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         int cellSize = (int) Math.round(
                 Math.min((stageWidth - 450) / 13.0, stageHeight / 23.0));
 
-        int previewCellSize = (int)Math.round(cellSize * 0.8);
+        int previewCellSize = (int) Math.round(cellSize * 0.8);
 
         // GameModel에서 모델 꺼내서 PlayerSlot 구성
         Board boardModel = gameModel.getBoardModel();
@@ -184,7 +184,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         Point boardSize = boardModel.getSize();
 
         // 이 플레이어 전용 BoardRender 생성
-        GameViewRenderer renderer = new GameViewRenderer(gameBoard, nextBlockPane, boardSize, cellSize, previewCellSize);
+        GameViewRenderer renderer = new GameViewRenderer(gameBoard, nextBlockPane, boardSize, cellSize,
+                previewCellSize);
 
         this.player = new PlayerSlot(boardModel, nextBlockModel, scoreModel, renderer);
         renderer.setupSinglePlayerLayout();
@@ -336,7 +337,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         long timeSinceLastDrop = now - lastDropTime;
         if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = gameModel.autoDown();
+            boolean moved = player.boardModel.autoDown();
 
             if (player != null) {
                 if (moved) {
@@ -366,8 +367,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameModel.tryActivateItem(this);
 
         if (player.boardModel.getIsForceDown()) {
-            boolean moved = player.boardModel.moveDownForce();
+            boolean moved = player.boardModel.moveDown(true);
             if (!moved) {
+                player.boardModel.removeCurrentBlock();
                 // 더 이상 내려갈 수 없으면 새 블록 생성
                 gameModel.updateModels(0);
                 gameModel.spawnNewBlock();
@@ -380,8 +382,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         }
 
         if (!player.clearingRows.isEmpty() ||
-            !player.clearingCols.isEmpty() ||
-            !player.clearingCells.isEmpty()) {
+                !player.clearingCols.isEmpty() ||
+                !player.clearingCells.isEmpty()) {
 
             beginFlash(System.nanoTime());
             return; // 플래시 종료 후 실제 삭제
@@ -430,7 +432,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private void processClears() {
         int linesCleared = deleteCompletedRows();
-        int colsCleared  = deleteCompletedCols();
+        int colsCleared = deleteCompletedCols();
         deleteCompletedCells();
 
         // 점수 및 새 블록 생성
@@ -454,7 +456,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     // 열 실제 삭제 처리
-    private int deleteCompletedCols(){
+    private int deleteCompletedCols() {
         for (int c : player.clearingCols) {
             player.boardModel.clearColumn(c);
         }
@@ -466,9 +468,9 @@ public class GameController extends BaseController<GameModel> implements RouterA
     }
 
     // 셀 실제 삭제 처리
-    private void deleteCompletedCells(){
+    private void deleteCompletedCells() {
         int boardHeight = player.boardModel.getSize().r;
-        int boardWidth  = player.boardModel.getSize().c;
+        int boardWidth = player.boardModel.getSize().c;
 
         for (Point p : player.clearingCells) {
             if (p.r >= 0 && p.r < boardHeight && p.c >= 0 && p.c < boardWidth) {
@@ -567,8 +569,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         resetGameController();
         setupUI();
 
-        if(gameLoop != null)
-             gameLoop.start();
+        if (gameLoop != null)
+            gameLoop.start();
         else
             startGameLoop();
 
@@ -578,7 +580,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void goToMenu() {
         resetGameController();
         hideGameOverlay();
-        
+
         if (router != null) {
             router.showStartMenu();
         }

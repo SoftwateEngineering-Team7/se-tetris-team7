@@ -26,9 +26,7 @@ public class WItem extends Item {
 
     @Override
     public void activate(Board board, ItemActivation context) {
-        board.setIsForceDown(true);
-        itemBlock.setCanMove(false);
-        itemBlock.setCanRotate(false);
+        itemBlock.setForceDown(true);
     }
 
 }
