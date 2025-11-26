@@ -1,7 +1,7 @@
 package org.tetris.menu.start.controller;
 
 import org.tetris.Router;
-
+import org.tetris.game.model.GameMode;
 import org.tetris.menu.start.model.StartMenuModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -26,7 +26,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     // CSS 스타일 클래스 상수
     private static final String STYLE_HIGHLIGHTED = "highlighted";
     private static final String STYLE_MENU_BUTTON = "menu-button";
-    
+
     // 메뉴 버튼 텍스트 상수
     private static final String TEXT_SINGLE_GAME = "싱글 게임";
     private static final String TEXT_MULTI_GAME = "멀티 게임";
@@ -36,11 +36,12 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private static final String TEXT_BACK = "뒤로";
     private static final String TEXT_NORMAL_MODE = "일반 모드\n게임 시작";
     private static final String TEXT_ITEM_MODE = "아이템 모드\n게임 시작";
+    private static final String TEXT_TIME_ATTACK_MODE = "타임어택 모드\n게임 시작";
     private static final String TEXT_NORMALSCOREBOARD = "일반 스코어보드";
     private static final String TEXT_ITEM_SCOREBOARD = "아이템 스코어보드";
     private static final String TEXT_LOCAL_MULTI = "로컬";
     private static final String TEXT_P2P_MULTI = "P2P";
-    
+
     // 메시지 텍스트 상수
     private static final String TEXT_WRONG_INPUT_Arrows = "잘못된 입력입니다.\n방향키와 Enter를 사용하세요.";
     private static final String TEXT_WRONG_INPUT_WASD = "잘못된 입력입니다.\nWASD키와 Enter를 사용하세요.";
@@ -49,8 +50,9 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private static final String STYLE_TITLE = "-fx-font-size: ";
     private static final String PX_STRING = "px;";
 
-    private record MenuEntry(String label, Runnable action) {}
-    
+    private record MenuEntry(String label, Runnable action) {
+    }
+
     public StartMenuController(StartMenuModel model) {
         super(model);
     }
@@ -90,32 +92,36 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
                 new MenuEntry(TEXT_MULTI_GAME, this::showMultiGameMenu),
                 new MenuEntry(TEXT_SETTINGS, this::onSettings),
                 new MenuEntry(TEXT_SCOREBOARD, this::showScoreboardMenu),
-                new MenuEntry(TEXT_EXIT, this::onExit)
-        ));
+                new MenuEntry(TEXT_EXIT, this::onExit)));
     }
 
     private void showSingleModeMenu() {
         buildMenu(List.of(
                 new MenuEntry(TEXT_NORMAL_MODE, this::onGameStart),
                 new MenuEntry(TEXT_ITEM_MODE, this::onItemGameStart),
-                new MenuEntry(TEXT_BACK, this::showMainMenu)
-        ));
+                new MenuEntry(TEXT_BACK, this::showMainMenu)));
     }
 
     private void showScoreboardMenu() {
         buildMenu(List.of(
                 new MenuEntry(TEXT_NORMALSCOREBOARD, this::onShowNormalScoreboard),
                 new MenuEntry(TEXT_ITEM_SCOREBOARD, this::onShowItemScoreboard),
-                new MenuEntry(TEXT_BACK, this::showMainMenu)
-        ));
+                new MenuEntry(TEXT_BACK, this::showMainMenu)));
     }
 
     private void showMultiGameMenu() {
         buildMenu(List.of(
-                new MenuEntry(TEXT_LOCAL_MULTI, this::onLocalMultiplayer),
+                new MenuEntry(TEXT_LOCAL_MULTI, this::showLocalMultiGameMenu),
                 new MenuEntry(TEXT_P2P_MULTI, this::onP2PMultiplayer),
-                new MenuEntry(TEXT_BACK, this::showMainMenu)
-        ));
+                new MenuEntry(TEXT_BACK, this::showMainMenu)));
+    }
+
+    private void showLocalMultiGameMenu() {
+        buildMenu(List.of(
+                new MenuEntry(TEXT_NORMAL_MODE, this::onLocalNormalGameStart),
+                new MenuEntry(TEXT_ITEM_MODE, this::onLocalItemGameStart),
+                new MenuEntry(TEXT_TIME_ATTACK_MODE, this::onLocalTimeAttackGameStart),
+                new MenuEntry(TEXT_BACK, this::showMultiGameMenu)));
     }
 
     private void buildMenu(List<MenuEntry> entries) {
@@ -175,7 +181,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     private void handleKey(KeyEvent e) {
         KeyCode code = e.getCode();
-        if (code == KeyLayout.getDownKey() || e.getCode() == KeyLayout.getRightKey() )
+        if (code == KeyLayout.getDownKey() || e.getCode() == KeyLayout.getRightKey())
             setHighlightedButton(+1);
         else if (code == KeyLayout.getUpKey() || e.getCode() == KeyLayout.getLeftKey())
             setHighlightedButton(-1);
@@ -186,7 +192,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     }
 
     private void setupWrongInputLabelText() {
-        if(KeyLayout.getCurrentLayout().equals(KeyLayout.KEY_ARROWS)) {
+        if (KeyLayout.getCurrentLayout().equals(KeyLayout.KEY_ARROWS)) {
             wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
         } else {
             wrongInputLabel.setText(TEXT_WRONG_INPUT_WASD);
@@ -291,8 +297,18 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     }
 
     @FXML
-    public void onLocalMultiplayer() {
-        showTemporaryMessage(TEXT_COMING_SOON);
+    public void onLocalNormalGameStart() {
+        router.showDualGamePlaceholder(GameMode.NORMAL);
+    }
+
+    @FXML
+    public void onLocalItemGameStart() {
+        router.showDualGamePlaceholder(GameMode.ITEM);
+    }
+
+    @FXML
+    public void onLocalTimeAttackGameStart() {
+        router.showDualGamePlaceholder(GameMode.TIME_ATTACK);
     }
 
     @FXML

@@ -1,5 +1,7 @@
 package org.tetris.game.controller;
 
+import java.util.function.Supplier;
+
 import org.tetris.game.model.Board;
 import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.items.*;
@@ -52,13 +54,13 @@ public class ItemController {
         currentItem.activate(board, context);
     }
 
-    //region Static Functions
-    private final static Item[] itemPool = {
-            new LItem(),
-            new BItem(),
-            new CItem(),
-            new HItem(),
-            new WItem(),
+    // region Static Functions
+    private final static Supplier<Item>[] itemPool = new Supplier[] {
+            LItem::new,
+            BItem::new,
+            CItem::new,
+            HItem::new,
+            WItem::new,
     };
 
     /**
@@ -69,7 +71,7 @@ public class ItemController {
     public static Item getRandomItem() {
         int poolSize = itemPool.length;
         int randomIndex = (int) (Math.random() * poolSize);
-        return itemPool[randomIndex];
+        return itemPool[randomIndex].get();
     }
     //endregion
 }
