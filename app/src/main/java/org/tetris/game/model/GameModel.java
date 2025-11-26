@@ -141,11 +141,12 @@ public class GameModel extends BaseModel {
     public void reset() {
         board.reset();
         scoreModel.reset();
+        setDifficulty();
+
         totalLinesCleared = 0;
         level = 1;
         isGameOver = false;
         isPaused = false;
-        spawnNewBlock();
     }
 
     // 레벨에 따른 낙하 속도 계산
