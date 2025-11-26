@@ -403,7 +403,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         long timeSinceLastDrop = now - (isPlayerOne ? lastDropTime1 : lastDropTime2);
         if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = gm.autoDown();
+            boolean moved = slot.boardModel.autoDown();
             if (moved) {
                 slot.scoreModel.blockDropped();
             } else {
@@ -456,8 +456,9 @@ public class DualGameController extends BaseController<DualGameModel> implements
         activeItemTarget = null;
 
         if (slot.boardModel.getIsForceDown()) {
-            boolean moved = slot.boardModel.moveDownForce();
+            boolean moved = slot.boardModel.moveDown(true);
             if (!moved) {
+                slot.boardModel.removeCurrentBlock();
                 gm.updateModels(0);
                 gm.spawnNewBlock();
                 updateGameBoard(slot);
