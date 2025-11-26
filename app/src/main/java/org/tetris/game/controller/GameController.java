@@ -159,6 +159,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         setupEventHandlers();
         startGameLoop();
+
+        gameModel.spawnNewBlock();
     }
 
     // PlayerSlot + BoardRender 생성 (PlayerSlot이 렌더러를 가짐)
@@ -187,7 +189,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         GameViewRenderer renderer = new GameViewRenderer(gameBoard, nextBlockPane, boardSize, cellSize,
                 previewCellSize);
 
-        this.player = new PlayerSlot(boardModel, nextBlockModel, scoreModel, renderer);
+        this.player = new PlayerSlot(gameModel, boardModel, nextBlockModel, scoreModel, null, renderer);
         renderer.setupSinglePlayerLayout();
     }
 
@@ -574,6 +576,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         else
             startGameLoop();
 
+        gameModel.spawnNewBlock();
         root.requestFocus();
     }
 
@@ -603,16 +606,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     private void resetPlayerSlot() {
         if (player != null) {
-            player.isFlashing = false;
-            player.flashOn = false;
-            player.flashToggleCount = 0;
-            player.flashMask = null;
-
-            player.clearingRows.clear();
-            player.clearingCols.clear();
-            player.clearingCells.clear();
-
-            player.renderer.boardReset();
+            player.reset();
         }
     }
 

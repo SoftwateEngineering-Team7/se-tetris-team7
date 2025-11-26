@@ -6,8 +6,8 @@ import org.tetris.Router;
 import org.tetris.game.model.DualGameModel;
 import org.tetris.game.model.GameMode;
 import org.tetris.game.model.GameModel;
-import org.tetris.game.model.items.ItemActivation;
 import org.tetris.game.model.PlayerSlot;
+import org.tetris.game.model.items.ItemActivation;
 import org.tetris.game.view.GameViewRenderer;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -24,11 +24,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 
-/**
- * 로컬 멀티플레이(1 vs 1) 게임을 관리하는 컨트롤러입니다.
- * 각 플레이어의 키 입력, 블록 낙하, 게임 루프, 승패 판정 등
- * 멀티플레이 관련 로직을 담당합니다.
- */
 public class DualGameController extends BaseController<DualGameModel> implements RouterAware, ItemActivation {
 
     // === FXML 바인딩 ===
@@ -75,23 +70,19 @@ public class DualGameController extends BaseController<DualGameModel> implements
     @FXML
     private Button pauseMenuButton;
     @FXML
-    private Label winnerLabel; // dual 전용 - 누가 이겼는지 표시
+    private Label winnerLabel;
 
-    // === 모델 / 기타 필드 ===
-    private DualGameModel dualGameModel;
-    private GameModel gameModel1;
-    private GameModel gameModel2;
+    // === 모델 및 슬롯 ===
+    private final DualGameModel dualGameModel;
 
     private PlayerSlot player1;
     private PlayerSlot player2;
-    private PlayerSlot activeItemTarget; // ItemActivation 대상 플레이어
+    private PlayerSlot activeItemTarget;
 
     private Router router;
-
     private AnimationTimer gameLoop;
+
     private long lastUpdate = 0L;
-    private long lastDropTime1 = 0L;
-    private long lastDropTime2 = 0L;
     private static final long FRAME_TIME = 16_666_667L; // ~60 FPS (나노초)
 
     // 플래시 애니메이션 파라미터
@@ -104,8 +95,6 @@ public class DualGameController extends BaseController<DualGameModel> implements
     public DualGameController(DualGameModel model) {
         super(model);
         this.dualGameModel = model;
-        this.gameModel1 = model.getPlayer1GameModel();
-        this.gameModel2 = model.getPlayer2GameModel();
     }
 
     @Override
@@ -114,7 +103,6 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     @FXML
-    @Override
     public void initialize() {
         super.initialize();
 
@@ -123,8 +111,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
         }
 
         // Model 초기화
-        gameModel1.reset();
-        gameModel2.reset();
+        dualGameModel.getPlayer1GameModel().reset();
+        dualGameModel.getPlayer2GameModel().reset();
 
         Platform.runLater(() -> {
             setupPlayerSlots();
@@ -134,72 +122,70 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         setupEventHandlers();
         startGameLoop();
+        
+        dualGameModel.getPlayer1GameModel().spawnNewBlock();
+        dualGameModel.getPlayer2GameModel().spawnNewBlock();
     }
 
     // Dual 모드에서도 아이템 모드 / 난이도 설정
     public void setUpGameMode(GameMode mode) {
         boolean itemMode = (mode == GameMode.ITEM);
 
-        gameModel1.setItemMode(itemMode);
-        gameModel2.setItemMode(itemMode);
+        dualGameModel.getPlayer1GameModel().setItemMode(itemMode);
+        dualGameModel.getPlayer2GameModel().setItemMode(itemMode);
 
-        gameModel1.setDifficulty();
-        gameModel2.setDifficulty();
+        dualGameModel.getPlayer1GameModel().setDifficulty();
+        dualGameModel.getPlayer2GameModel().setDifficulty();
     }
 
-    // PlayerSlot + BoardRender 생성
+    // PlayerSlot 생성 로직 통합
     private void setupPlayerSlots() {
         if (root.getScene() == null || root.getScene().getWindow() == null) {
             return;
         }
 
-        Point boardSize = gameModel1.getBoardModel().getSize(); // 두 플레이어 동일 가정
+        Point boardSize = dualGameModel.getPlayer1GameModel().getBoardModel().getSize();
 
-        int cellSize1 = calculateCellSize(gameBoard1, boardSize);
-        int cellSize2 = calculateCellSize(gameBoard2, boardSize);
+        player1 = createPlayerSlot(
+                dualGameModel.getPlayer1GameModel(),
+                dualGameModel.getPlayer1AttackModel(),
+                gameBoard1, nextBlockPane1, boardSize);
 
-        int previewCellSize1 = Math.max(MIN_CELL_SIZE, (int) Math.round(cellSize1 * PREVIEW_RATIO));
-        int previewCellSize2 = Math.max(MIN_CELL_SIZE, (int) Math.round(cellSize2 * PREVIEW_RATIO));
+        player2 = createPlayerSlot(
+                dualGameModel.getPlayer2GameModel(),
+                dualGameModel.getPlayer2AttackModel(),
+                gameBoard2, nextBlockPane2, boardSize);
 
-        GameViewRenderer renderer1 = new GameViewRenderer(
-                gameBoard1,
-                nextBlockPane1,
-                boardSize,
-                cellSize1,
-                previewCellSize1);
+        player1.renderer.setupSinglePlayerLayout();
+        player2.renderer.setupSinglePlayerLayout();
+    }
 
-        GameViewRenderer renderer2 = new GameViewRenderer(
-                gameBoard2,
-                nextBlockPane2,
-                boardSize,
-                cellSize2,
-                previewCellSize2);
+    private PlayerSlot createPlayerSlot(GameModel gm, org.tetris.game.model.AttackModel am,
+            Pane boardPane, Pane nextPane, Point boardSize) {
 
-        player1 = new PlayerSlot(
-                gameModel1.getBoardModel(),
-                gameModel1.getNextBlockModel(),
-                gameModel1.getScoreModel(),
-                renderer1);
-        player2 = new PlayerSlot(
-                gameModel2.getBoardModel(),
-                gameModel2.getNextBlockModel(),
-                gameModel2.getScoreModel(),
-                renderer2);
+        int cellSize = calculateCellSize(boardPane, boardSize);
+        int previewSize = Math.max(MIN_CELL_SIZE, (int) Math.round(cellSize * PREVIEW_RATIO));
 
-        renderer1.setupSinglePlayerLayout();
-        renderer2.setupSinglePlayerLayout();
+        GameViewRenderer renderer = new GameViewRenderer(
+                boardPane, nextPane, boardSize, cellSize, previewSize);
+
+        return new PlayerSlot(
+                gm,
+                gm.getBoardModel(),
+                gm.getNextBlockModel(),
+                gm.getScoreModel(),
+                am,
+                renderer);
     }
 
     private int calculateCellSize(Pane boardPane, Point boardSize) {
         double paneWidth = boardPane.getWidth();
         double paneHeight = boardPane.getHeight();
 
-        if (paneWidth <= 0) {
+        if (paneWidth <= 0)
             paneWidth = boardPane.getPrefWidth();
-        }
-        if (paneHeight <= 0) {
+        if (paneHeight <= 0)
             paneHeight = boardPane.getPrefHeight();
-        }
 
         if ((paneWidth <= 0 || paneHeight <= 0) && root.getScene() != null && root.getScene().getWindow() != null) {
             paneWidth = Math.max(paneWidth, root.getScene().getWindow().getWidth() / 2.0);
@@ -209,37 +195,26 @@ public class DualGameController extends BaseController<DualGameModel> implements
         double computed = Math.min(paneWidth / boardSize.c, paneHeight / boardSize.r);
         int cellSize = (int) Math.round(computed);
 
-        if (cellSize <= 0) {
-            cellSize = MIN_CELL_SIZE * 2; // 최소 보장
-        }
-
-        return Math.max(MIN_CELL_SIZE, cellSize);
+        return Math.max(MIN_CELL_SIZE, (cellSize <= 0) ? MIN_CELL_SIZE * 2 : cellSize);
     }
 
     // === UI 초기 세팅 ===
     private void setupUI() {
         hideGameOverlay();
         hidePauseOverlay();
-
-        updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
-        updateNextBlockPreview();
+        updateUI();
     }
 
     private void setupEventHandlers() {
-        // 키보드 입력
         if (root.getScene() == null) {
             root.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) {
+                if (newScene != null)
                     setupKeyboardInput();
-                }
             });
         } else {
             setupKeyboardInput();
         }
 
-        // 버튼 이벤트
         pauseButton.setOnAction(e -> togglePause());
         restartButton.setOnAction(e -> restartGame());
         menuButton.setOnAction(e -> goToMenu());
@@ -250,101 +225,82 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void setupKeyboardInput() {
         root.setFocusTraversable(true);
         root.requestFocus();
-
         root.getScene().setOnKeyPressed(this::handleKeyPress);
     }
 
-    // === 키 입력 처리 ===
+    // === 키 입력 처리 (통합) ===
     private void handleKeyPress(KeyEvent e) {
-        KeyCode code = e.getCode();
-
-        // 전체 공통: P키로 Pause 토글
-        if (code == KeyCode.P) {
+        if (e.getCode() == KeyCode.P) {
             togglePause();
             e.consume();
             return;
         }
 
-        if (gameModel1.isPaused() || gameModel2.isPaused()) {
+        if (dualGameModel.getPlayer1GameModel().isPaused() || dualGameModel.getPlayer2GameModel().isPaused()) {
             e.consume();
             return;
         }
-
         if (player1 == null || player2 == null) {
             e.consume();
             return;
         }
 
-        // Player 1 (WASD / F)
-        if (code == KeyCode.A) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                player1.boardModel.moveLeft();
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.D) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                player1.boardModel.moveRight();
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.W) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                player1.boardModel.rotate();
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.S) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                boolean moved = player1.boardModel.moveDown();
-                if (moved) {
-                    player1.scoreModel.softDrop(1);
-                }
-                updateGameBoard(player1);
-            }
-        } else if (code == KeyCode.F) {
-            if (!player1.isFlashing && !gameModel1.isGameOver()) {
-                handleHardDrop(player1, gameModel1);
-            }
-        }
+        // P1 입력 (WASD + F)
+        handlePlayerInput(e, player1, KeyCode.A, KeyCode.D, KeyCode.W, KeyCode.S, KeyCode.F);
 
-        // Player 2 (화살표 / Slash)
-        else if (code == KeyCode.LEFT) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                player2.boardModel.moveLeft();
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.RIGHT) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                player2.boardModel.moveRight();
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.UP) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                player2.boardModel.rotate();
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.DOWN) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                boolean moved = player2.boardModel.moveDown();
-                if (moved) {
-                    player2.scoreModel.softDrop(1);
-                }
-                updateGameBoard(player2);
-            }
-        } else if (code == KeyCode.SLASH) {
-            if (!player2.isFlashing && !gameModel2.isGameOver()) {
-                handleHardDrop(player2, gameModel2);
-            }
-        }
+        // P2 입력 (Arrow Keys + SLASH)
+        handlePlayerInput(e, player2, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.UP, KeyCode.DOWN, KeyCode.SPACE);
 
         updateScoreDisplay();
-        updateNextBlockPreview();
         e.consume();
     }
 
-    private void handleHardDrop(PlayerSlot slot, GameModel gm) {
-        int dropDistance = slot.boardModel.hardDrop();
-        slot.scoreModel.add(dropDistance * 2);
-        lastDropTimeForPlayer(slot, System.nanoTime());
-        lockCurrentBlock(slot, gm);
+    private void handlePlayerInput(
+            KeyEvent e, PlayerSlot player,
+            KeyCode left, KeyCode right, KeyCode rotate,
+            KeyCode down, KeyCode hardDrop) {
+
+        GameModel gm = player.gameModel;
+        if (player.isFlashing || gm.isGameOver())
+            return;
+
+        KeyCode code = e.getCode();
+        boolean updateNeeded = false;
+
+        if (code == left) {
+            player.boardModel.moveLeft();
+            updateNeeded = true;
+        } else if (code == right) {
+            player.boardModel.moveRight();
+            updateNeeded = true;
+        } else if (code == rotate) {
+            player.boardModel.rotate();
+            updateNeeded = true;
+        } else if (code == down) {
+            if (player.boardModel.moveDown()) {
+                player.scoreModel.softDrop(1);
+            }
+            updateNeeded = true;
+        } else if (code == hardDrop) {
+            handleHardDrop(player);
+            return;
+        }
+
+        if (updateNeeded) {
+            updateGameBoard(player);
+            if (player1 != null)
+                player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
+            if (player2 != null)
+                player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
+        }
+    }
+
+    private void handleHardDrop(PlayerSlot player) {
+        int dropDistance = player.boardModel.hardDrop();
+        player.scoreModel.add(dropDistance * 2);
+
+        player.lastDropTime = System.nanoTime();
+        lockCurrentBlock(player);
     }
 
     // === 게임 루프 ===
@@ -352,10 +308,13 @@ public class DualGameController extends BaseController<DualGameModel> implements
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
+                if(player1 == null || player2 == null)
+                    return;
+
                 if (lastUpdate == 0L) {
                     lastUpdate = now;
-                    lastDropTime1 = now;
-                    lastDropTime2 = now;
+                    player1.lastDropTime = now;
+                    player2.lastDropTime = now;
                     return;
                 }
 
@@ -370,281 +329,276 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void update(long now) {
-        if (gameModel1.isPaused() || gameModel2.isPaused()) {
+        GameModel gm1 = player1.gameModel;
+        GameModel gm2 = player2.gameModel;
+
+        if (gm1.isPaused() || gm2.isPaused())
             return;
-        }
-
-        if (player1 == null || player2 == null) {
+        if (player1 == null || player2 == null)
             return;
-        }
 
-        handlePlayerUpdate(now, player1, gameModel1, true);
-        handlePlayerUpdate(now, player2, gameModel2, false);
+        handlePlayerUpdate(player1, now);
+        handlePlayerUpdate(player2, now);
 
-        updateGameBoard(player1);
-        updateGameBoard(player2);
-        updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
-        updateNextBlockPreview();
-
+        updateUI();
         checkGameOverState();
     }
 
-    private void handlePlayerUpdate(long now, PlayerSlot slot, GameModel gm, boolean isPlayerOne) {
-        if (gm.isGameOver()) {
+    private void handlePlayerUpdate(PlayerSlot player, long now) {
+        GameModel gm = player.gameModel;
+        if (gm.isGameOver())
             return;
-        }
 
-        if (slot.isFlashing) {
-            tickFlash(slot, now);
+        if (player.isFlashing) {
+            tickFlash(player, now);
             return;
         }
 
         int dropIntervalFrames = gm.getDropInterval();
         long dropIntervalNanos = dropIntervalFrames * FRAME_TIME;
 
-        long timeSinceLastDrop = now - (isPlayerOne ? lastDropTime1 : lastDropTime2);
-        if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = slot.boardModel.autoDown();
+        if (now - player.lastDropTime >= dropIntervalNanos) {
+            boolean moved = player.boardModel.moveDown();
             if (moved) {
-                slot.scoreModel.blockDropped();
+                player.scoreModel.blockDropped();
             } else {
-                lockCurrentBlock(slot, gm);
+                lockCurrentBlock(player);
             }
-            lastDropTimeForPlayer(slot, now);
+            player.lastDropTime = now;
         }
     }
 
     private void checkGameOverState() {
-        boolean p1Over = gameModel1.isGameOver();
-        boolean p2Over = gameModel2.isGameOver();
+        GameModel gm1 = player1.gameModel;
+        GameModel gm2 = player2.gameModel;
+
+        boolean p1Over = gm1.isGameOver();
+        boolean p2Over = gm2.isGameOver();
 
         if (!p1Over && !p2Over)
             return;
 
-        if (gameLoop != null) {
+        if (gameLoop != null)
             gameLoop.stop();
-        }
-
         showGameOverlay();
 
         String result;
-        if (p1Over && p2Over) {
-            result = "DRAW";
-        } else if (p1Over) {
-            result = "PLAYER 2 WINS";
-        } else {
-            result = "PLAYER 1 WINS";
-        }
-        if (winnerLabel != null) {
-            winnerLabel.setText(result);
-        }
+        int p1Score = player1.scoreModel.getScore();
+        int p2Score = player2.scoreModel.getScore();
 
-        // 점수판은 둘 중 더 큰 점수 기준으로 보여주도록 처리
+        // 일반 승패 판정 (게임 오버 시)
+        if (p1Over && p2Over)
+            result = "DRAW";
+        else if (p1Over)
+            result = "PLAYER 2 WINS";
+        else
+            result = "PLAYER 1 WINS";
+
+        if (winnerLabel != null)
+            winnerLabel.setText(result);
         if (router != null) {
-            int bestScore = Math.max(player1.scoreModel.getScore(), player2.scoreModel.getScore());
-            router.showScoreBoard(true, gameModel1.isItemMode(), bestScore);
+            // boolean isItemMode 사용
+            boolean isItem = gm1.isItemMode();
+            router.showScoreBoard(true, isItem, Math.max(p1Score, p2Score));
         }
     }
 
-    // ===== 블록 고정 / 라인 클리어 / 플래시 =====
-    private void lockCurrentBlock(PlayerSlot slot, GameModel gm) {
-        List<Integer> fullRows = slot.boardModel.findFullRows();
-        slot.clearingRows.addAll(fullRows);
+    // === 블록 고정 및 로직 ===
+    private void lockCurrentBlock(PlayerSlot player) {
+        GameModel gm = player.gameModel;
+        List<Integer> fullRows = player.boardModel.findFullRows();
+        player.clearingRows.addAll(fullRows);
 
-        // 아이템 활성화 (플레이어 기준)
-        activeItemTarget = slot;
+        activeItemTarget = player;
         gm.tryActivateItem(this);
         activeItemTarget = null;
 
-        if (slot.boardModel.getIsForceDown()) {
-            boolean moved = slot.boardModel.moveDown(true);
+        if (player.boardModel.getIsForceDown()) {
+            boolean moved = player.boardModel.moveDown(true);
             if (!moved) {
-                slot.boardModel.removeCurrentBlock();
                 gm.updateModels(0);
+                player.boardModel.removeCurrentBlock();
                 gm.spawnNewBlock();
-                updateGameBoard(slot);
+                updateGameBoard(player);
                 checkGameOverState();
             }
             return;
         }
 
-        if (!slot.clearingRows.isEmpty() ||
-            !slot.clearingCols.isEmpty() ||
-            !slot.clearingCells.isEmpty()) {
-
-            beginFlash(slot, System.nanoTime());
+        if (!player.clearingRows.isEmpty() || !player.clearingCols.isEmpty() || !player.clearingCells.isEmpty()) {
+            beginFlash(player, System.nanoTime());
             return;
         }
 
-        updateGameBoard(slot);
+        processIncomingAttacks(player);
+        updateGameBoard(player);
         gm.spawnNewBlock();
         checkGameOverState();
     }
 
-    private void beginFlash(PlayerSlot slot, long now) {
-        slot.isFlashing = true;
-
-        slot.flashMask = slot.renderer.buildFlashMask(
-                slot.clearingRows,
-                slot.clearingCols,
-                slot.clearingCells);
-
-        slot.flashOn = false;
-        slot.flashToggleCount = 0;
-        slot.nextFlashAt = now;
+    private void beginFlash(PlayerSlot player, long now) {
+        player.isFlashing = true;
+        player.flashMask = player.renderer.buildFlashMask(player.clearingRows, player.clearingCols, player.clearingCells);
+        player.flashOn = false;
+        player.flashToggleCount = 0;
+        player.nextFlashAt = now;
     }
 
-    private void tickFlash(PlayerSlot slot, long now) {
-        if (slot == null || !slot.isFlashing || slot.flashMask == null) {
+    private void tickFlash(PlayerSlot player, long now) {
+        if (player == null || !player.isFlashing || player.flashMask == null)
             return;
-        }
-
-        if (now < slot.nextFlashAt) {
+        if (now < player.nextFlashAt)
             return;
-        }
 
-        slot.flashOn = !slot.flashOn;
-        slot.flashToggleCount++;
-        slot.nextFlashAt = now + FLASH_INTERVAL_NANOS;
+        player.flashOn = !player.flashOn;
+        player.flashToggleCount++;
+        player.nextFlashAt = now + FLASH_INTERVAL_NANOS;
 
-        if (slot.flashToggleCount >= FLASH_TOGGLES) {
-            slot.isFlashing = false;
-            slot.flashOn = false;
-            slot.flashMask = null;
-            processClears(slot);
+        if (player.flashToggleCount >= FLASH_TOGGLES) {
+            player.isFlashing = false;
+            player.flashOn = false;
+            player.flashMask = null;
+            processClears(player);
         }
     }
 
-    private void processClears(PlayerSlot slot) {
-        GameModel gm = (slot == player1) ? gameModel1 : gameModel2;
+    private void processClears(PlayerSlot player) {
+        GameModel gm = player.gameModel;
 
-        int linesCleared = deleteCompletedRows(slot);
-        int colsCleared = deleteCompletedCols(slot);
-        deleteCompletedCells(slot);
+        if (player.clearingRows.size() >= 1) {
+            sendAttack(player);
+        }
+        player.boardModel.activeBlock = null;
+
+        int linesCleared = deleteCompletedRows(player);
+        int colsCleared = deleteCompletedCols(player);
+        deleteCompletedCells(player);
 
         gm.updateModels(linesCleared + colsCleared);
+        processIncomingAttacks(player);
+
         gm.spawnNewBlock();
         checkGameOverState();
     }
 
-    private int deleteCompletedRows(PlayerSlot slot) {
-        for (int r : slot.clearingRows) {
-            slot.boardModel.clearRow(r);
+    // === 공격 로직 (PlayerSlot 활용) ===
+    private void sendAttack(PlayerSlot attackerSlot) {
+        // 상대방 찾기
+        PlayerSlot targetSlot = (attackerSlot == player1) ? player2 : player1;
+
+        for (int row : attackerSlot.clearingRows) {
+            int[] attackLine = attackerSlot.boardModel.getRowForAttack(row);
+            targetSlot.attackModel.push(attackLine);
         }
-
-        int count = slot.clearingRows.size();
-        slot.clearingRows.clear();
-
-        return count;
     }
 
-    private int deleteCompletedCols(PlayerSlot slot){
-        for (int c : slot.clearingCols) {
-            slot.boardModel.clearColumn(c);
-        }
+    private void processIncomingAttacks(PlayerSlot player) {
+        while (true) {
+            int[] attackLine = player.attackModel.pop();
+            if (attackLine == null)
+                break;
 
-        int count = slot.clearingCols.size();
-        slot.clearingCols.clear();
-
-        return count;
-    }
-
-    private void deleteCompletedCells(PlayerSlot slot){
-        int boardHeight = slot.boardModel.getSize().r;
-        int boardWidth  = slot.boardModel.getSize().c;
-
-        for (Point p : slot.clearingCells) {
-            if (p.r >= 0 && p.r < boardHeight && p.c >= 0 && p.c < boardWidth) {
-                slot.boardModel.getBoard()[p.r][p.c] = 0;
+            boolean success = player.boardModel.pushUp(attackLine);
+            if (!success) {
+                player.gameModel.setGameOver(true);
+                break;
             }
         }
-
-        slot.clearingCells.clear();
     }
 
-    // === UI 업데이트 ===
-    private void updateGameBoard(PlayerSlot slot) {
-        if (slot == null)
-            return;
-        int[][] board = slot.boardModel.getBoard();
-        slot.renderer.renderBoard(board, slot.flashMask, slot.isFlashing, slot.flashOn);
+    // === Helper Methods for Cleaning Lists ===
+    private int deleteCompletedRows(PlayerSlot player) {
+        for (int r : player.clearingRows)
+            player.boardModel.clearRow(r);
+        int count = player.clearingRows.size();
+        player.clearingRows.clear();
+        return count;
     }
 
-    private void updateScoreDisplay() {
-        scoreLabel1.setText(player1.scoreModel.toString());
-        scoreLabel2.setText(player2.scoreModel.toString());
+    private int deleteCompletedCols(PlayerSlot player) {
+        for (int c : player.clearingCols)
+            player.boardModel.clearColumn(c);
+        int count = player.clearingCols.size();
+        player.clearingCols.clear();
+        return count;
     }
 
-    private void updateLevelDisplay() {
-        levelLabel1.setText(String.valueOf(gameModel1.getLevel()));
-        levelLabel2.setText(String.valueOf(gameModel2.getLevel()));
+    private void deleteCompletedCells(PlayerSlot player) {
+        int h = player.boardModel.getSize().r, w = player.boardModel.getSize().c;
+        for (Point p : player.clearingCells) {
+            if (p.r >= 0 && p.r < h && p.c >= 0 && p.c < w)
+                player.boardModel.getBoard()[p.r][p.c] = 0;
+        }
+        player.clearingCells.clear();
     }
 
-    private void updateLinesDisplay() {
-        linesLabel1.setText(String.valueOf(gameModel1.getTotalLinesCleared()));
-        linesLabel2.setText(String.valueOf(gameModel2.getTotalLinesCleared()));
-    }
+    // === UI 업데이트 통합 ===
+    private void updateUI() {
+        updateGameBoard(player1);
+        updateGameBoard(player2);
+        updateScoreDisplay();
 
-    private void updateNextBlockPreview() {
         if (player1 != null) {
+            levelLabel1.setText(String.valueOf(player1.gameModel.getLevel()));
+            linesLabel1.setText(String.valueOf(player1.gameModel.getTotalLinesCleared()));
             player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
         }
         if (player2 != null) {
+            levelLabel2.setText(String.valueOf(player2.gameModel.getLevel()));
+            linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
             player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
         }
     }
 
-    // === Pause / Resume / Menu / Restart ===
-    private void togglePause() {
-        if (gameModel1.isGameOver() && gameModel2.isGameOver())
+    private void updateGameBoard(PlayerSlot player) {
+        if (player == null)
             return;
+        player.renderer.renderBoard(player.boardModel.getBoard(), player.flashMask, player.isFlashing, player.flashOn);
+    }
 
-        boolean paused = !(gameModel1.isPaused() || gameModel2.isPaused());
-        gameModel1.setPaused(paused);
-        gameModel2.setPaused(paused);
+    private void updateScoreDisplay() {
+        if (player1 != null)
+            scoreLabel1.setText(player1.scoreModel.toString());
+        if (player2 != null)
+            scoreLabel2.setText(player2.scoreModel.toString());
+    }
 
-        if (paused) {
+    // === Pause & Menu ===
+    private void togglePause() {
+        if (dualGameModel.getPlayer1GameModel().isGameOver() && dualGameModel.getPlayer2GameModel().isGameOver())
+            return;
+        boolean paused = !dualGameModel.getPlayer1GameModel().isPaused();
+        dualGameModel.getPlayer1GameModel().setPaused(paused);
+        dualGameModel.getPlayer2GameModel().setPaused(paused);
+
+        if (paused)
             showPauseOverlay();
-        } else {
+        else
             hidePauseOverlay();
-        }
     }
 
     private void resumeGame() {
-        gameModel1.setPaused(false);
-        gameModel2.setPaused(false);
+        dualGameModel.getPlayer1GameModel().setPaused(false);
+        dualGameModel.getPlayer2GameModel().setPaused(false);
         hidePauseOverlay();
-
         if (gameLoop != null) {
             lastUpdate = 0L;
-            lastDropTime1 = 0L;
-            lastDropTime2 = 0L;
             gameLoop.start();
-        } else {
+        } else
             startGameLoop();
-        }
         root.requestFocus();
-    }
-
-    private void goToMenuFromPause() {
-        resetGameController();
-        hidePauseOverlay();
-
-        if (router != null) {
-            router.showStartMenu();
-        }
     }
 
     private void restartGame() {
         resetGameController();
         setupUI();
-
         if (gameLoop != null)
-             gameLoop.start();
+            gameLoop.start();
         else
             startGameLoop();
+
+        player1.gameModel.spawnNewBlock();
+        player2.gameModel.spawnNewBlock();
 
         root.requestFocus();
     }
@@ -652,53 +606,27 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void goToMenu() {
         resetGameController();
         hideGameOverlay();
-
-        if (router != null) {
+        if (router != null)
             router.showStartMenu();
-        }
+    }
+
+    private void goToMenuFromPause() {
+        resetGameController();
+        hidePauseOverlay();
+        if (router != null)
+            router.showStartMenu();
     }
 
     private void resetGameController() {
-        resetGameLoop();
-        gameModel1.reset();
-        gameModel2.reset();
-        resetPlayerSlot(player1);
-        resetPlayerSlot(player2);
-    }
-
-    private void resetGameLoop() {
-        if (gameLoop != null) {
+        if (gameLoop != null)
             gameLoop.stop();
-        }
-
+        
         lastUpdate = 0L;
-        lastDropTime1 = 0L;
-        lastDropTime2 = 0L;
-    }
 
-    private void resetPlayerSlot(PlayerSlot slot) {
-        if (slot == null) {
-            return;
-        }
-
-        slot.isFlashing = false;
-        slot.flashOn = false;
-        slot.flashToggleCount = 0;
-        slot.flashMask = null;
-
-        slot.clearingRows.clear();
-        slot.clearingCols.clear();
-        slot.clearingCells.clear();
-
-        slot.renderer.boardReset();
-    }
-
-    private void lastDropTimeForPlayer(PlayerSlot slot, long now) {
-        if (slot == player1) {
-            lastDropTime1 = now;
-        } else if (slot == player2) {
-            lastDropTime2 = now;
-        }
+        if (player1 != null)
+            player1.reset();
+        if (player2 != null)
+            player2.reset();
     }
 
     private void showGameOverlay() {
@@ -730,35 +658,25 @@ public class DualGameController extends BaseController<DualGameModel> implements
         }
     }
 
+    // === ItemActivation Implementations ===
     @Override
     public void addClearingRow(int row) {
-        if (activeItemTarget == null)
-            return;
-
-        if (!activeItemTarget.clearingRows.contains(row)) {
+        if (activeItemTarget != null && !activeItemTarget.clearingRows.contains(row))
             activeItemTarget.clearingRows.add(row);
-        }
     }
 
     @Override
     public void addClearingCol(int col) {
-        if (activeItemTarget == null)
-            return;
-
-        if (!activeItemTarget.clearingCols.contains(col)) {
+        if (activeItemTarget != null && !activeItemTarget.clearingCols.contains(col))
             activeItemTarget.clearingCols.add(col);
-        }
     }
 
     @Override
     public void addClearingCells(List<Point> cells) {
-        if (activeItemTarget == null || cells == null)
-            return;
-
-        for (Point cell : cells) {
-            if (!activeItemTarget.clearingCells.contains(cell)) {
-                activeItemTarget.clearingCells.add(cell);
-            }
+        if (activeItemTarget != null && cells != null) {
+            for (Point p : cells)
+                if (!activeItemTarget.clearingCells.contains(p))
+                    activeItemTarget.clearingCells.add(p);
         }
     }
 }

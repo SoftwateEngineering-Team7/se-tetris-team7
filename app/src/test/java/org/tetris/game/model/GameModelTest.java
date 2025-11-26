@@ -142,7 +142,6 @@ public class GameModelTest {
         assertEquals(1, gameModel.getLevel());
         assertEquals(0, gameModel.getTotalLinesCleared());
         assertEquals(0, gameModel.getScoreModel().getScore());
-        assertNotNull(gameModel.getBoardModel().activeBlock);
 
         // 보드가 비어있어야 함 (active block 제외)
         boolean foundStaticBlock = false;

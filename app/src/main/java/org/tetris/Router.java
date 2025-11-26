@@ -106,6 +106,12 @@ public final class Router {
         stage.centerOnScreen();
     }
 
+    public void setStageSize(int width, int height) {
+        stage.setWidth(width);
+        stage.setHeight(height);
+        stage.centerOnScreen();
+    }
+
     /* --------- 화면 전환 로직 ---------- */
 
     private <M extends BaseModel, C extends BaseController<M>> C show(MvcFactory<M, C> factory) {
