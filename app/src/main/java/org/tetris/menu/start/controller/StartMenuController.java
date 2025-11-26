@@ -313,7 +313,7 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     @FXML
     public void onP2PMultiplayer() {
-        showTemporaryMessage(TEXT_COMING_SOON);
+        router.showNetworkMenu();
     }
 
     /*

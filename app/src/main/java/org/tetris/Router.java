@@ -58,6 +58,10 @@ public final class Router {
         show(settingsFactory);
     }
 
+    public void showNetworkMenu() {
+        show(networkMenuFactory);
+    }
+
     public void showGamePlaceholder(boolean itemMode) {
         var controller = show(gameFactory);
         if (controller instanceof GameController gameController) {
