@@ -8,6 +8,9 @@ import org.tetris.network.GameServer;
 import org.tetris.network.game.GameEngine;
 import org.tetris.shared.BaseModel;
 
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
+
 public class NetworkMenu extends BaseModel{
     private static final int DEFAULT_PORT = 54321;
     private static final int SERVER_STARTUP_DELAY_MS = 100;
@@ -19,6 +22,7 @@ public class NetworkMenu extends BaseModel{
 
     private GameEngine engine;
     private ClientThread client;
+    private LongProperty ping = new SimpleLongProperty();
 
     public NetworkMenu(){
         clear();
@@ -104,6 +108,7 @@ public class NetworkMenu extends BaseModel{
         }
         
         engine = new GameEngine();
+        engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
         try {
@@ -129,6 +134,7 @@ public class NetworkMenu extends BaseModel{
     public void join()
     {
         engine = new GameEngine();
+        engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
         try {
@@ -152,5 +158,19 @@ public class NetworkMenu extends BaseModel{
         this.port = DEFAULT_PORT;
         this.isReady = false;
         this.engine = new GameEngine();
-    }    
+        engine.setNetworkMenu(this);
+        this.ping.set(0);
+    }
+
+    public LongProperty pingProperty() {
+        return ping;
+    }
+
+    public long getPing() {
+        return ping.get();
+    }
+
+    public void setPing(long ping) {
+        this.ping.set(ping);
+    }
 }
