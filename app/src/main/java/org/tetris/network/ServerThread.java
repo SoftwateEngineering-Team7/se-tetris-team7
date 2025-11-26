@@ -25,6 +25,10 @@ public class ServerThread {
         this.socket = socket;
     }
 
+    public java.net.InetAddress getClientIP() {
+        return socket.getInetAddress();
+    }
+
     public void start() {
         try {
             // 스트림을 한 번만 초기화합니다.

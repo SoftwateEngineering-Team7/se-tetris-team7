@@ -46,19 +46,31 @@ public class GameServer {
         return instance;
     }
 
+    public java.net.InetAddress getHostIP() {
+        if (client1 != null) {
+            return client1.getClientIP();
+        } else {
+            return null;
+        }
+    }
+
+    public void start() throws IOException {
+        start(PORT);
+    }
+
     /**
      * 서버를 시작합니다.
      */
-    public void start() throws IOException {
+    public void start(int port) throws IOException {
         if (running) {
             System.out.println("[SERVER] Server is already running.");
             return;
         }
 
-        serverSocket = new ServerSocket(PORT);
+        serverSocket = new ServerSocket(port);
         running = true;
 
-        System.out.println("[SERVER] Game Server is running on port " + PORT);
+        System.out.println("[SERVER] Game Server is running on port " + port);
         System.out.println("[SERVER] Waiting for 2 players...");
 
         serverThread = new Thread(() -> {
@@ -95,10 +107,10 @@ public class GameServer {
 
     private void startGame() {
         System.out.println("[SERVER] Both players connected. Starting game...");
-        long seed = System.currentTimeMillis();
-        GameCommand startCommand = new org.tetris.network.comand.GameStartCommand(seed);
         
-        broadcast(startCommand);
+        GameCommand readyCommand = new org.tetris.network.comand.ReadyCommand(false);
+        
+        broadcast(readyCommand);
     }
 
     /**
