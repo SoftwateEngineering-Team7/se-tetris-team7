@@ -40,6 +40,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
 
     @Override
     public void initialize() {
+        // 모델에 컨트롤러 등록 (Ping 업데이트를 위해)
+        model.pingProperty().addListener((observable, oldValue, newValue) -> {
+        addLog("Ping: " + newValue + "ms");
+        });
+        
         // ComboBox 초기화
         gameModeCombo.getItems().addAll("일반 모드", "아이템 모드", "타임어택 모드");
         gameModeCombo.setValue("일반 모드");
