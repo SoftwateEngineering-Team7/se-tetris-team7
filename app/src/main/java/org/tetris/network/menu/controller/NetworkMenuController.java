@@ -85,13 +85,22 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         connectionTypeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (newToggle == hostRadio) {
                 model.setIsHost(true);
+                ipField.setDisable(true);
+                createButton.setText("Create");
+                gameModeCombo.setVisible(true);
+
                 addLog("Host 모드로 설정됨");
             } else if (newToggle == clientRadio) {
                 model.setIsHost(false);
+                ipField.setDisable(false);
+                createButton.setText("Join");
+                gameModeCombo.setVisible(false);
+
                 addLog("Client 모드로 설정됨");
             }
         });
 
+        connectionTypeGroup.selectToggle(clientRadio);
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
     }
@@ -132,6 +141,9 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
                 addLog("서버에 연결 중... IP: " + ip + ", Port: " + port);
                 model.join();
             }
+
+            hostRadio.setDisable(true);
+            clientRadio.setDisable(true);
 
         } catch (NumberFormatException e) {
             addLog("오류: 포트는 숫자여야 합니다");
@@ -176,14 +188,6 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
      */
     public String getSelectedGameMode() {
         return gameModeCombo.getValue();
-    }
-
-    /**
-     * Host/Client 상태를 반환합니다.
-     * @return Host이면 true, Client이면 false
-     */
-    public boolean isHost() {
-        return hostRadio.isSelected();
     }
 
     /**
