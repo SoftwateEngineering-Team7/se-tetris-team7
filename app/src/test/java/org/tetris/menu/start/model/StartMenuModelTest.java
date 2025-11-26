@@ -6,12 +6,12 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class StartMenuModelTest {
-    private static final int BUTTON_COUNT = 6;
+    private static final int BUTTON_COUNT = 5;
     private StartMenuModel model;
 
     @Before
     public void setUp() {
-        model = new StartMenuModel(BUTTON_COUNT);
+        model = new StartMenuModel();
     }
 
     @Test

@@ -35,7 +35,7 @@ import static org.junit.Assert.*;
  */
 public class StartMenuControllerTest extends ApplicationTest {
     private static final String FXML_PATH = "/org/tetris/menu/start/view/startmenu.fxml";
-    private static final int EXPECTED_BUTTON_COUNT = 6;
+    private static final int EXPECTED_BUTTON_COUNT = 5; // 싱글/멀티/설정/스코어보드/종료
     private static final String STYLE_HIGHLIGHTED = "highlighted";
 
     private Stage stage;
@@ -46,7 +46,7 @@ public class StartMenuControllerTest extends ApplicationTest {
         stage = s;
         
         // Model과 Controller 직접 생성
-        StartMenuModel model = new StartMenuModel(EXPECTED_BUTTON_COUNT);
+        StartMenuModel model = new StartMenuModel();
         controller = new StartMenuController(model);
         
         // FXML 로드
