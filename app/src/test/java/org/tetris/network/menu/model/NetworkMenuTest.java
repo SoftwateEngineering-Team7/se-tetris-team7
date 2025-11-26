@@ -131,13 +131,13 @@ public class NetworkMenuTest {
 
     @Test
     public void testSetReady() {
-        assertFalse("초기 상태는 Ready가 아니어야 합니다", networkMenu.getIsReady());
+        assertFalse("초기 상태는 Ready가 아니어야 합니다", networkMenu.isReady());
 
         networkMenu.setIsReady(true);
-        assertTrue("Ready 상태여야 합니다", networkMenu.getIsReady());
+        assertTrue("Ready 상태여야 합니다", networkMenu.isReady());
 
         networkMenu.setIsReady(false);
-        assertFalse("Ready 해제 상태여야 합니다", networkMenu.getIsReady());
+        assertFalse("Ready 해제 상태여야 합니다", networkMenu.isReady());
     }
 
     @Test
@@ -155,7 +155,7 @@ public class NetworkMenuTest {
         assertTrue("Host 모드로 초기화되어야 합니다", networkMenu.getIsHost());
         assertEquals("IP는 빈 문자열이어야 합니다", "", networkMenu.getIpAddress());
         assertEquals("기본 포트여야 합니다", 54321, networkMenu.getPort());
-        assertFalse("Ready는 false여야 합니다", networkMenu.getIsReady());
+        assertFalse("Ready는 false여야 합니다", networkMenu.isReady());
     }
 
     @Test

@@ -169,8 +169,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
 
     @FXML
     private void onReadyPressed() {
-        model.setIsReady(!model.getIsReady());
-        if (model.getIsReady()) {
+        model.setIsReady(!model.isReady());
+        if (model.isReady()) {
             addLog("준비 완료");
             readyButton.setText("CANCEL");
         } else {

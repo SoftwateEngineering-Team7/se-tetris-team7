@@ -36,7 +36,7 @@ public class NetworkMenu extends BaseModel{
         return port;
     }
 
-    public boolean getIsReady(){
+    public boolean isReady(){
         return isReady;
     }
 
