@@ -111,9 +111,13 @@ public class ClientThread {
     private class PingSender implements Runnable {
         private static final long PING_INTERVAL = 2000; // Ping 전송 간격
 
-        @Override
         public void run() {
             try {
+                // 첫 ping은 즉시 전송
+                if (connected) {
+                    sendCommand(new org.tetris.network.comand.PingCommand());
+                }
+                
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     Thread.sleep(PING_INTERVAL);
                     if (connected) {

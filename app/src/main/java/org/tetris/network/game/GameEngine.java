@@ -19,7 +19,7 @@ public class GameEngine {
     public GameEngine() {
     }
 
-    public void setNetworkMenu(NetworkMenu networkMenu) {
+    public synchronized void setNetworkMenu(NetworkMenu networkMenu) {
         this.networkMenu = networkMenu;
     }
 
@@ -109,7 +109,7 @@ public class GameEngine {
         return currentState;
     }
 
-    public void updatePing(long ping) {
+    public synchronized void updatePing(long ping) {
         System.out.println("[CLIENT-ENGINE] Ping: " + ping + "ms");
         if (networkMenu != null) {
             networkMenu.setPing(ping);
