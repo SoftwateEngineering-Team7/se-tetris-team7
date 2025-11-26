@@ -468,8 +468,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
         }
 
         if (!slot.clearingRows.isEmpty() ||
-                !slot.clearingCols.isEmpty() ||
-                !slot.clearingCells.isEmpty()) {
+            !slot.clearingCols.isEmpty() ||
+            !slot.clearingCells.isEmpty()) {
 
             beginFlash(slot, System.nanoTime());
             return;
@@ -537,7 +537,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
         return count;
     }
 
-    private int deleteCompletedCols(PlayerSlot slot) {
+    private int deleteCompletedCols(PlayerSlot slot){
         for (int c : slot.clearingCols) {
             slot.boardModel.clearColumn(c);
         }
@@ -548,9 +548,9 @@ public class DualGameController extends BaseController<DualGameModel> implements
         return count;
     }
 
-    private void deleteCompletedCells(PlayerSlot slot) {
+    private void deleteCompletedCells(PlayerSlot slot){
         int boardHeight = slot.boardModel.getSize().r;
-        int boardWidth = slot.boardModel.getSize().c;
+        int boardWidth  = slot.boardModel.getSize().c;
 
         for (Point p : slot.clearingCells) {
             if (p.r >= 0 && p.r < boardHeight && p.c >= 0 && p.c < boardWidth) {
@@ -639,7 +639,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
         setupUI();
 
         if (gameLoop != null)
-            gameLoop.start();
+             gameLoop.start();
         else
             startGameLoop();
 
