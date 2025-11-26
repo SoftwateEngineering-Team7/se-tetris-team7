@@ -24,21 +24,6 @@ public class KeyLayout {
         this.hardDropKey = hardDrop;
     }
 
-    public KeyCode getLeft() {
-        return leftKey;
-    }
-
-    public KeyCode getRight() {
-        return rightKey;
-    }
-
-    public KeyCode getDown() {
-        return downKey;
-    }
-
-    public KeyCode getUp() {
-        return upKey;
-    }
 
     public KeyCode getHardDrop() {
         return hardDropKey;
