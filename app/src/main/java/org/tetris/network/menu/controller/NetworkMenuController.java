@@ -143,7 +143,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
     @FXML
     private void onBackPressed() {
         addLog("메인 메뉴로 돌아갑니다");
-        router.showStartMenu();
+        if (router != null) {
+            router.showStartMenu();
+        } else {
+            addLog("오류: Router가 초기화되지 않았습니다. 메인 메뉴로 이동할 수 없습니다.");
+        }
     }
 
     @FXML

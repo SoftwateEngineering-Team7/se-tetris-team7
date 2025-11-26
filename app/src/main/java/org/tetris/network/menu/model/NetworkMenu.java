@@ -30,10 +30,22 @@ public class NetworkMenu extends BaseModel{
     }
 
     public void setIpAddress(String ipAddress){
+        if (ipAddress == null) {
+            throw new NullPointerException("IP 주소는 null일 수 없습니다");
+        }
+        // 기본적인 IP 주소 형식 검증 (IPv4/IPv6)
+        try {
+            java.net.InetAddress.getByName(ipAddress);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("유효하지 않은 IP 주소입니다: " + ipAddress, e);
+        }
         this.ipAddress = ipAddress;
     }
 
     public void setPort(int port){
+        if (port < 1 || port > 65535) {
+            throw new IllegalArgumentException("포트는 1-65535 범위여야 합니다");
+        }
         this.port = port;
     }
 
