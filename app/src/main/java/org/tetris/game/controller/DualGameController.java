@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.tetris.Router;
 import org.tetris.game.model.DualGameModel;
+import org.tetris.game.model.GameMode;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.items.ItemActivation;
 import org.tetris.game.model.PlayerSlot;
@@ -136,11 +137,13 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     // Dual 모드에서도 아이템 모드 / 난이도 설정
-    public void setUpGameMode(boolean itemMode) {
-        gameModel1.setItemMode(itemMode);
-        gameModel1.setDifficulty();
+    public void setUpGameMode(GameMode mode) {
+        boolean itemMode = (mode == GameMode.ITEM);
 
+        gameModel1.setItemMode(itemMode);
         gameModel2.setItemMode(itemMode);
+
+        gameModel1.setDifficulty();
         gameModel2.setDifficulty();
     }
 

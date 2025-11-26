@@ -9,6 +9,7 @@ import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.controller.DualGameController;
 import org.tetris.game.controller.GameController;
+import org.tetris.game.model.GameMode;
 import org.tetris.scoreboard.controller.ScoreBoardController;
 import org.tetris.scoreboard.model.ScoreBoard;
 import org.tetris.shared.*;
@@ -65,10 +66,10 @@ public final class Router {
         }
     }
 
-    public void showDualGamePlaceholder(boolean itemMode) {
+    public void showDualGamePlaceholder(GameMode mode) {
         var controller = show(dualGameFactory);
         if (controller instanceof DualGameController gameController) {
-            gameController.setUpGameMode(itemMode);
+            gameController.setUpGameMode(mode);
             gameController.initialize();
         }
     }
