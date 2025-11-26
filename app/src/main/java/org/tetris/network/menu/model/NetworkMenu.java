@@ -10,6 +10,7 @@ import org.tetris.shared.BaseModel;
 
 public class NetworkMenu extends BaseModel{
     private static final int DEFAULT_PORT = 54321;
+    private static final int SERVER_STARTUP_DELAY_MS = 100;
 
     private boolean isHost;
     private String ipAddress;
@@ -35,7 +36,7 @@ public class NetworkMenu extends BaseModel{
         return port;
     }
 
-    public boolean getReady(){
+    public boolean getIsReady(){
         return isReady;
     }
 
@@ -55,10 +56,10 @@ public class NetworkMenu extends BaseModel{
         }
     }
 
-    public void setReady(boolean isReady){
+    public void setIsReady(boolean isReady){
         this.isReady = isReady;
         engine.setThisReady(isReady);
-        
+
         if (client != null) {
             client.sendCommand(new ReadyCommand(isReady));
         }
@@ -115,7 +116,7 @@ public class NetworkMenu extends BaseModel{
         GameServer.getInstance().start(port);
         
         try {
-            Thread.sleep(100);
+            Thread.sleep(SERVER_STARTUP_DELAY_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

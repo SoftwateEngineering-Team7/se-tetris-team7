@@ -47,9 +47,9 @@ public class GameServer {
     }
 
     public java.net.InetAddress getHostIP() {
-        if (client1 != null) {
-            return client1.getClientIP();
-        } else {
+        try {
+            return java.net.InetAddress.getLocalHost();
+        } catch (Exception e) {
             return null;
         }
     }
