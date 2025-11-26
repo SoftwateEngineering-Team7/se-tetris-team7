@@ -6,7 +6,7 @@ public class TimeAttack {
 
     private boolean isTimeAttackMode;
 
-    private int remainingSeconds;
+    private double remainingSeconds;
 
     public TimeAttack() {
         this(180);
@@ -16,9 +16,9 @@ public class TimeAttack {
         TIME_LIMIT_SECONDS = timeLimit;
     }
 
-    public int getRemainingSeconds(int elapsedSeconds) {
+    public double getRemainingSeconds(double elapsedSeconds) {
         if (isTimeAttackMode) {
-            int remaining = TIME_LIMIT_SECONDS - elapsedSeconds;
+            double remaining = (double) TIME_LIMIT_SECONDS - elapsedSeconds;
             remainingSeconds = Math.max(remaining, 0);
             return remainingSeconds;
         }
