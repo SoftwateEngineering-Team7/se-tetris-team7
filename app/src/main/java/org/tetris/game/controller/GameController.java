@@ -8,31 +8,31 @@ import org.tetris.game.model.Board;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.ScoreModel;
 import org.tetris.game.model.blocks.Block;
-import org.tetris.game.model.items.ItemActivation;
+
 import org.tetris.game.model.NextBlockModel;
 import org.tetris.game.model.PlayerSlot;
 import org.tetris.game.view.GameViewRenderer;
-
+import org.tetris.network.comand.*;
+import org.tetris.network.game.SingleGameEngine;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
+import org.tetris.game.view.GameViewCallback;
 
 import org.util.KeyLayout;
 import org.util.Point;
 
 import javafx.fxml.FXML;
 
-import javafx.animation.AnimationTimer;
-
 import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
+
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 
-public class GameController extends BaseController<GameModel> implements RouterAware, ItemActivation {
+public class GameController extends BaseController<GameModel> implements RouterAware, GameViewCallback {
 
     // ===== FXML 바인딩 =====
 
@@ -81,16 +81,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private Router router;
 
     private PlayerSlot player; // 싱글플레이용 슬롯 1개
-
-    private AnimationTimer gameLoop;
-    private long lastUpdate = 0;
-    private long lastDropTime = 0; // 마지막 블록 낙하 시간
-    private static final long FRAME_TIME = 16_666_667; // ~60 FPS (나노초)
-
-    // 플래시 애니메이션 파라미터
-    private static final int FLASH_TIMES = 2;
-    private static final int FLASH_TOGGLES = FLASH_TIMES * 2; // on/off 합계
-    private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
+    private SingleGameEngine gameEngine;
+    private GameKeyHandler keyHandler;
 
     // ===== ItemActivation 구현 (아이템이 지울 행/열/셀 추가) =====
 
@@ -141,26 +133,37 @@ public class GameController extends BaseController<GameModel> implements RouterA
     public void initialize() {
         super.initialize();
 
-        // 이전 게임 루프 정리
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
-
         // 게임 상태 초기화
         gameModel.reset();
-        lastUpdate = 0;
-        lastDropTime = 0;
 
         // Stage 크기가 잡힌 후 PlayerSlot + UI 세팅
         Platform.runLater(() -> {
             setupPlayerSlot();
             setupUI();
+
+            // 엔진 초기화 및 시작
+            gameEngine = new SingleGameEngine(player, gameModel, this);
+            keyHandler = new GameKeyHandler(gameEngine); // Default WASD or ARROWS? Let's check KeyLayout default.
+            // Actually GameKeyHandler default is WASD. Single player usually uses Arrows or
+            // WASD.
+            // Let's use ARROWS for single player as it's more standard for casual play, or
+            // WASD if preferred.
+            // The original code checked KeyLayout.getUpKey(), which depends on
+            // KeyLayout.currentLayout.
+            // So we should pass KeyLayout.ARROWS or WASD based on
+            // KeyLayout.getCurrentLayout().
+            // But KeyLayout.getCurrentLayout() returns a String.
+            // Let's just use KeyLayout.ARROWS for now or respect KeyLayout.
+            if (KeyLayout.getCurrentLayout().equals(KeyLayout.KEY_WASD)) {
+                keyHandler = new GameKeyHandler(gameEngine, KeyLayout.WASD);
+            } else {
+                keyHandler = new GameKeyHandler(gameEngine, KeyLayout.ARROWS);
+            }
+
+            gameEngine.startGame(0);
         });
 
         setupEventHandlers();
-        startGameLoop();
-
-        gameModel.spawnNewBlock();
     }
 
     // PlayerSlot + BoardRender 생성 (PlayerSlot이 렌더러를 가짐)
@@ -217,8 +220,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
         }
 
         // 버튼 이벤트 핸들러
-        pauseButton.setOnAction(e -> togglePause());
-        restartButton.setOnAction(e -> restartGame());
+        pauseButton.setOnAction(e -> new TogglePauseCommand().execute(gameEngine));
+        restartButton.setOnAction(e -> new RestartGameCommand().execute(gameEngine));
         menuButton.setOnAction(e -> goToMenu());
         resumeButton.setOnAction(e -> resumeGame());
         pauseMenuButton.setOnAction(e -> goToMenuFromPause());
@@ -231,61 +234,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
         root.getScene().setOnKeyPressed(this::handleKeyPress);
     }
 
-    // ===== 입력 처리 =====
-
-    private void handleKeyPress(KeyEvent e) {
-        if (gameModel.isGameOver() || gameModel.isPaused()) {
-            if (e.getCode() == KeyCode.P) {
-                togglePause();
-            }
-            e.consume();
-            return;
-        }
-
-        KeyCode code = e.getCode();
-
-        if (code == KeyCode.P) {
-            e.consume();
-            togglePause();
-            return;
-        }
-
-        // 플래시 애니메이션 도중에는 입력 무시
-        if (player.isFlashing) {
-            e.consume();
-            return;
-        }
-
-        if (code == KeyLayout.getLeftKey()) {
-            player.boardModel.moveLeft();
-            updateGameBoard();
-        } else if (code == KeyLayout.getRightKey()) {
-            player.boardModel.moveRight();
-            updateGameBoard();
-        } else if (code == KeyLayout.getUpKey()) {
-            player.boardModel.rotate();
-            updateGameBoard();
-        } else if (code == KeyLayout.getDownKey()) {
-            boolean moved = player.boardModel.moveDown();
-            if (moved) {
-                player.scoreModel.softDrop(1); // 수동으로 1칸 내릴 때 점수
-            }
-            updateGameBoard();
-        } else if (code == KeyCode.SPACE) {
-            handleHardDrop();
-        }
-
-        e.consume();
-    }
-
-    private void handleHardDrop() {
-        if (player == null)
+    private void handleKeyPress(KeyEvent event) {
+        if (gameEngine == null || keyHandler == null)
             return;
 
-        int dropDistance = player.boardModel.hardDrop();
-        player.scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
-        lastDropTime = System.nanoTime(); // 하드 드롭 후 타이머 리셋
-        lockCurrentBlock();
+        keyHandler.handleKeyPress(event);
     }
 
     // ===== 게임 모드 설정 =====
@@ -300,227 +253,31 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameModel.setDifficulty();
     }
 
-    // ===== 메인 게임 루프 =====
-
-    private void startGameLoop() {
-        gameLoop = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                if (lastUpdate == 0) {
-                    lastUpdate = now;
-                    lastDropTime = now;
-                    return;
-                }
-
-                long elapsed = now - lastUpdate;
-                if (elapsed >= FRAME_TIME) {
-                    updateGameLoop(now);
-                    lastUpdate = now;
-                }
-            }
-        };
-        gameLoop.start();
-    }
-
-    private void updateGameLoop(long now) {
-        if (gameModel.isPaused() || gameModel.isGameOver()) {
-            return;
-        }
-
-        if (player != null && player.isFlashing) {
-            tickFlash(now);
-            updateGameBoard();
-            return;
-        }
-
-        // 레벨에 따른 블록 낙하 간격 (프레임 기준)
-        int dropIntervalFrames = gameModel.getDropInterval();
-        long dropIntervalNanos = dropIntervalFrames * FRAME_TIME;
-
-        long timeSinceLastDrop = now - lastDropTime;
-        if (timeSinceLastDrop >= dropIntervalNanos) {
-            boolean moved = player.boardModel.autoDown();
-
-            if (player != null) {
-                if (moved) {
-                    player.scoreModel.blockDropped();
-                } else {
-                    lockCurrentBlock();
-                }
-            }
-
-            lastDropTime = now;
-        }
-
-        updateGameBoard();
-        updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
-        updateNextBlockPreview();
-    }
-
-    // ===== 블록 고정 / 라인 클리어 / 플래시 =====
-
-    private void lockCurrentBlock() {
-        List<Integer> fullRows = player.boardModel.findFullRows();
-        player.clearingRows.addAll(fullRows);
-
-        // 아이템 활성화 (필요 시 rows/cols/cells 추가)
-        gameModel.tryActivateItem(this);
-
-        if (player.boardModel.getIsForceDown()) {
-            boolean moved = player.boardModel.moveDown(true);
-            if (!moved) {
-                player.boardModel.removeCurrentBlock();
-                // 더 이상 내려갈 수 없으면 새 블록 생성
-                gameModel.updateModels(0);
-                gameModel.spawnNewBlock();
-                updateGameBoard();
-                if (gameModel.isGameOver()) {
-                    handleGameOver();
-                }
-            }
-            return;
-        }
-
-        if (!player.clearingRows.isEmpty() ||
-                !player.clearingCols.isEmpty() ||
-                !player.clearingCells.isEmpty()) {
-
-            beginFlash(System.nanoTime());
-            return; // 플래시 종료 후 실제 삭제
-        }
-
-        updateGameBoard();
-        gameModel.spawnNewBlock();
-        if (gameModel.isGameOver()) {
-            handleGameOver();
-        }
-    }
-
-    // 플래시 애니메이션 시작
-    private void beginFlash(long now) {
-        player.isFlashing = true;
-
-        player.flashMask = player.renderer.buildFlashMask(
-                player.clearingRows,
-                player.clearingCols,
-                player.clearingCells);
-
-        player.flashOn = false;
-        player.flashToggleCount = 0;
-        player.nextFlashAt = now;
-    }
-
-    // 플래시 애니메이션 틱
-    private void tickFlash(long now) {
-        if (player == null || !player.isFlashing || player.flashMask == null)
-            return;
-
-        if (now < player.nextFlashAt)
-            return;
-
-        player.flashOn = !player.flashOn;
-        player.flashToggleCount++;
-        player.nextFlashAt = now + FLASH_INTERVAL_NANOS;
-
-        if (player.flashToggleCount >= FLASH_TOGGLES) {
-            player.isFlashing = false;
-            player.flashOn = false;
-            player.flashMask = null;
-            processClears();
-        }
-    }
-
-    private void processClears() {
-        int linesCleared = deleteCompletedRows();
-        int colsCleared = deleteCompletedCols();
-        deleteCompletedCells();
-
-        // 점수 및 새 블록 생성
-        gameModel.updateModels(linesCleared + colsCleared);
-        gameModel.spawnNewBlock();
-        if (gameModel.isGameOver()) {
-            handleGameOver();
-        }
-    }
-
-    // 행 실제 삭제 처리
-    private int deleteCompletedRows() {
-        for (int r : player.clearingRows) {
-            player.boardModel.clearRow(r);
-        }
-
-        int count = player.clearingRows.size();
-        player.clearingRows.clear();
-
-        return count;
-    }
-
-    // 열 실제 삭제 처리
-    private int deleteCompletedCols() {
-        for (int c : player.clearingCols) {
-            player.boardModel.clearColumn(c);
-        }
-
-        int count = player.clearingCols.size();
-        player.clearingCols.clear();
-
-        return count;
-    }
-
-    // 셀 실제 삭제 처리
-    private void deleteCompletedCells() {
-        int boardHeight = player.boardModel.getSize().r;
-        int boardWidth = player.boardModel.getSize().c;
-
-        for (Point p : player.clearingCells) {
-            if (p.r >= 0 && p.r < boardHeight && p.c >= 0 && p.c < boardWidth) {
-                player.boardModel.getBoard()[p.r][p.c] = 0;
-            }
-        }
-
-        player.clearingCells.clear();
-    }
-
     // ===== 렌더링 =====
 
-    private void updateGameBoard() {
+    public void updateGameBoard() {
         int[][] board = player.boardModel.getBoard();
         player.renderer.renderBoard(board, player.flashMask, player.isFlashing, player.flashOn);
     }
 
-    private void updateNextBlockPreview() {
+    public void updateNextBlockPreview() {
         Block nextBlock = player.nextBlockModel.peekNext();
         player.renderer.renderNextBlock(nextBlock);
     }
 
-    private void updateScoreDisplay() {
+    public void updateScoreDisplay() {
         scoreLabel.setText(player.scoreModel.toString());
     }
 
-    private void updateLevelDisplay() {
+    public void updateLevelDisplay() {
         levelLabel.setText(String.valueOf(gameModel.getLevel()));
     }
 
-    private void updateLinesDisplay() {
+    public void updateLinesDisplay() {
         linesLabel.setText(String.valueOf(gameModel.getTotalLinesCleared()));
     }
 
     // ===== 일시정지 / 재시작 / 메뉴 이동 =====
-
-    private void togglePause() {
-        if (gameModel.isGameOver())
-            return;
-
-        gameModel.setPaused(!gameModel.isPaused());
-
-        if (gameModel.isPaused()) {
-            showPauseOverlay();
-        } else {
-            hidePauseOverlay();
-        }
-    }
 
     private void showPauseOverlay() {
         pauseOverlay.setVisible(true);
@@ -531,6 +288,14 @@ public class GameController extends BaseController<GameModel> implements RouterA
         pauseOverlay.setVisible(false);
         pauseOverlay.setManaged(false);
         root.requestFocus();
+    }
+
+    public void updatePauseUI(boolean isPaused) {
+        if (isPaused) {
+            showPauseOverlay();
+        } else {
+            hidePauseOverlay();
+        }
     }
 
     private void showGameOverlay() {
@@ -548,18 +313,16 @@ public class GameController extends BaseController<GameModel> implements RouterA
         gameModel.setPaused(false);
         hidePauseOverlay();
 
-        if (gameLoop != null) {
-            lastUpdate = 0;
-            lastDropTime = 0;
-            gameLoop.start();
-        } else {
-            startGameLoop();
+        if (gameEngine != null) {
+            // gameEngine.resume(); // 필요한 경우 추가
         }
         root.requestFocus();
     }
 
     private void goToMenuFromPause() {
-        resetGameController();
+        if (gameEngine != null) {
+            gameEngine.stopGame();
+        }
         hidePauseOverlay();
 
         if (router != null) {
@@ -567,21 +330,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         }
     }
 
-    private void restartGame() {
-        resetGameController();
-        setupUI();
-
-        if (gameLoop != null)
-            gameLoop.start();
-        else
-            startGameLoop();
-
-        gameModel.spawnNewBlock();
-        root.requestFocus();
-    }
-
     private void goToMenu() {
-        resetGameController();
         hideGameOverlay();
 
         if (router != null) {
@@ -589,35 +338,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         }
     }
 
-    private void resetGameController() {
-        resetGameLoop();
-        gameModel.reset();
-        resetPlayerSlot();
-    }
-
-    private void resetGameLoop() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
-
-        lastUpdate = 0;
-        lastDropTime = 0;
-    }
-
-    private void resetPlayerSlot() {
-        if (player != null) {
-            player.reset();
-        }
-    }
-
-    void handleGameOver() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
-        showGameOver();
-    }
-
-    private void showGameOver() {
+    public void showGameOver() {
         showGameOverlay();
 
         router.showScoreBoard(true, gameModel.isItemMode(), player.scoreModel.getScore());
@@ -625,9 +346,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     @Override
     public void cleanup() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-            gameLoop = null;
+        if (gameEngine != null) {
+            gameEngine.stopGame();
         }
     }
 }
