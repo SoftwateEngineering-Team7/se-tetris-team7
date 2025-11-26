@@ -5,7 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import org.tetris.network.comand.GameCommand;
+import org.tetris.network.comand.*;
 
 /**
  * 서버 측에서 개별 클라이언트와의 통신을 담당하는 Runnable 클래스.
@@ -114,7 +114,12 @@ public class ServerThread {
 
                     // TODO: 커맨드 검증 로직 추가 (유효성 검사, 권한 확인)
                     
-                    if (command instanceof org.tetris.network.comand.GameOverCommand) {
+                    if (command instanceof PingCommand) {
+                        // Ping 요청에 대한 Pong 응답
+                        PingCommand pingCmd = (PingCommand) command;
+                        PongCommand pongCmd = new PongCommand(pingCmd.getTimestamp());
+                        sendCommand(pongCmd);
+                    } else if (command instanceof GameOverCommand) {
                         // 게임 오버 처리
                         GameServer.getInstance().broadcast(command); // 일단 모두에게 알림
                     } else {
