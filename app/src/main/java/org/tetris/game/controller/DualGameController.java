@@ -81,6 +81,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         setupEventHandlers();
 
+        // 엔진 시작은 initialize 후 runLater에서 처리됨
         Platform.runLater(() -> {
             setupPlayerSlots();
             setupGameEngine();

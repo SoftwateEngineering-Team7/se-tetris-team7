@@ -44,6 +44,22 @@ public class KeyLayout {
         return hardDropKey;
     }
 
+    public KeyCode getLeft() {
+        return leftKey;
+    }
+
+    public KeyCode getRight() {
+        return rightKey;
+    }
+
+    public KeyCode getDown() {
+        return downKey;
+    }
+
+    public KeyCode getUp() {
+        return upKey;
+    }
+
     /**
      * 현재 설정된 레이아웃의 키 코드를 반환
      */
