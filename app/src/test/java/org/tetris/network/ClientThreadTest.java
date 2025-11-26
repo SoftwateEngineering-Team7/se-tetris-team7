@@ -1,11 +1,8 @@
 package org.tetris.network;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.tetris.network.comand.GameCommand;
 import org.tetris.network.comand.MoveLeftCommand;
-import org.tetris.network.game.GameEngine;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -14,100 +11,126 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 /**
  * ClientThread의 연결, 명령 전송, 연결 해제 기능을 테스트합니다.
+ * BaseNetworkTest를 상속받아 공통 설정을 재사용합니다.
  */
-public class ClientThreadTest {
-    private ClientThread clientThread;
-    private GameEngine gameEngine;
-    private ServerSocket mockServerSocket; // 서버 소켓
-    private Thread serverAcceptThread; // 서버 소켓 연결 수락 스레드
+public class ClientThreadTest extends BaseNetworkTest {
 
-    @Before
+    private ClientThread clientThread;
+    private ServerSocket mockServerSocket;
+    private Thread serverAcceptThread;
+
+    @Override
     public void setUp() throws IOException {
-        gameEngine = new GameEngine();
-        clientThread = new ClientThread(gameEngine);
-        
-        // 목업 소켓 셋업
-        // OS가 여유 포트를 할당하도록 포트 0 사용
-        mockServerSocket = new ServerSocket(0); 
+        super.setUp();
+        // ClientThreadTest는 GameServer 대신 Mock ServerSocket을 사용하므로
+        // BaseNetworkTest의 startServer()를 호출하지 않고 개별 설정합니다.
+
+        // 엔진과 클라이언트 생성 (BaseNetworkTest 헬퍼 사용)
+        clientThread = createClientWithLocalMultiEngine();
+
+        // 목업 소켓 셋업 (포트 0 = 자동 할당)
+        mockServerSocket = new ServerSocket(0);
     }
 
-    @After
-    public void tearDown() throws IOException {
-        if (clientThread != null) {
-            clientThread.disconnect();
-        }
-        if (mockServerSocket != null && !mockServerSocket.isClosed()) {
-            mockServerSocket.close();
-        }
-        if (serverAcceptThread != null && serverAcceptThread.isAlive()) {
-            serverAcceptThread.interrupt();
-            try {
-                serverAcceptThread.join(1000); // 스레드가 종료될 때까지 대기
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        // 포트 해제를 위한 대기 시간
+    @Override
+    public void tearDown() {
+        super.tearDown(); // 클라이언트 연결 해제 등 처리
+
         try {
+            if (mockServerSocket != null && !mockServerSocket.isClosed()) {
+                mockServerSocket.close();
+            }
+            if (serverAcceptThread != null && serverAcceptThread.isAlive()) {
+                serverAcceptThread.interrupt();
+                serverAcceptThread.join(1000);
+            }
             Thread.sleep(50);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (IOException | InterruptedException e) {
+            // Ignore cleanup errors
         }
     }
 
     @Test
     public void testConnectSuccess() throws IOException {
-        // 연결을 수락할 스레드 시작
-        serverAcceptThread = new Thread(() -> {
-            try {
-                Socket socket = mockServerSocket.accept();
-                // 핸드셰이크: 헤더 쓰기 후 헤더 읽기
-                new ObjectOutputStream(socket.getOutputStream()).flush();
-                new ObjectInputStream(socket.getInputStream());
-            } catch (IOException e) {
-                // 종료 중 예외 발생
-            }
-        });
-        serverAcceptThread.start();
+        startMockServer();
 
-        // 목업 서버에 연결
         clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
-        // 예외가 발생하지 않으면 연결 성공
+        // 예외 없으면 성공
     }
 
     @Test
     public void testConnectToInvalidHost() {
         try {
-            // 존재하지 않는 호스트에 연결 시도
             clientThread.connect("invalid-host-12345", mockServerSocket.getLocalPort());
             fail("Should throw exception when connecting to invalid host");
         } catch (UnknownHostException e) {
-            // 예외 발생
+            // Expected
         } catch (IOException e) {
-            // 이것도 허용됨
+            // Also acceptable
         }
     }
 
     @Test
     public void testConnectToClosedPort() {
         try {
-            // 닫힌 포트에 연결 시도 (54321이 닫혀 있거나 적어도 우리 목업 서버가 아니라고 가정)
-            // 확실히 닫힌 포트를 사용하는 것이 좋지만, 간단한 테스트에서는 임의의 포트를 선택하는 것이 일반적임
+            // 닫힌 포트 (임의의 포트 사용, 충돌 가능성 낮음)
             clientThread.connect("localhost", 54321);
             fail("Should throw exception when connecting to closed port");
         } catch (IOException e) {
-            // 예상됨
+            // Expected
         }
     }
 
     @Test
     public void testDuplicateConnect() throws IOException {
-        // 서버 시작
+        startMockServerLoop();
+
+        clientThread.connect("localhost", mockServerSocket.getLocalPort());
+        // 두 번째 연결 시도 (로그만 찍히고 무시됨)
+        clientThread.connect("localhost", mockServerSocket.getLocalPort());
+    }
+
+    @Test
+    public void testSendCommandWhenNotConnected() {
+        GameCommand command = new MoveLeftCommand();
+        // 연결 없이 전송 -> 예외 없이 로그만 출력되어야 함
+        clientThread.sendCommand(command);
+    }
+
+    @Test
+    public void testDisconnect() throws IOException {
+        startMockServer();
+
+        clientThread.connect("localhost", mockServerSocket.getLocalPort());
+        clientThread.disconnect();
+    }
+
+    @Test
+    public void testDisconnectWhenNotConnected() {
+        clientThread.disconnect();
+    }
+
+    // --- Helpers ---
+
+    private void startMockServer() {
+        serverAcceptThread = new Thread(() -> {
+            try {
+                Socket socket = mockServerSocket.accept();
+                // Handshake
+                new ObjectOutputStream(socket.getOutputStream()).flush();
+                new ObjectInputStream(socket.getInputStream());
+            } catch (IOException e) {
+                // Ignore
+            }
+        });
+        serverAcceptThread.start();
+    }
+
+    private void startMockServerLoop() {
         serverAcceptThread = new Thread(() -> {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
@@ -116,51 +139,9 @@ public class ClientThreadTest {
                     new ObjectInputStream(socket.getInputStream());
                 }
             } catch (IOException e) {
-                // 예상됨
+                // Ignore
             }
         });
         serverAcceptThread.start();
-        
-        // 첫 번째 연결
-        clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
-        // 두 번째 연결 시도 (무시되거나 적절히 처리되어야 함)
-        clientThread.connect("localhost", mockServerSocket.getLocalPort());
-    }
-
-    @Test
-    public void testSendCommandWhenNotConnected() {
-        // 연결 없이 커맨드 전송 시도
-        GameCommand command = new MoveLeftCommand();
-        
-        // 안전해야 함 (예외 없음)
-        clientThread.sendCommand(command);
-    }
-
-    @Test
-    public void testDisconnect() throws IOException {
-        // 서버 시작
-        serverAcceptThread = new Thread(() -> {
-            try {
-                Socket socket = mockServerSocket.accept();
-                new ObjectOutputStream(socket.getOutputStream()).flush();
-                new ObjectInputStream(socket.getInputStream());
-            } catch (IOException e) {
-                // 예상됨
-            }
-        });
-        serverAcceptThread.start();
-        
-        // 연결
-        clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
-        // 연결 해제
-        clientThread.disconnect();
-    }
-
-    @Test
-    public void testDisconnectWhenNotConnected() {
-        // 연결 없이 연결 해제
-        clientThread.disconnect();
     }
 }
