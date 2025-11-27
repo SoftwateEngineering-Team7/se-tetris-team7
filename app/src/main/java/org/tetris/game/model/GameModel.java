@@ -11,7 +11,7 @@ public class GameModel extends BaseModel {
     public final static int MAX_DROP_INTERVAL = 60; // 최대 낙하 간격 (레벨 1)
     public final static int MIN_DROP_INTERVAL = 10; // 드롭 간격 감소량
 
-    private final NextBlockModel nextBlockModel;
+    private NextBlockModel nextBlockModel;
     private final Board board;
     private ScoreModel scoreModel;
 
@@ -20,7 +20,7 @@ public class GameModel extends BaseModel {
 
     private boolean isItemMode = false;
     private ItemController itemController = new ItemController();
-
+    private long nextBlockSeed;
     // 게임 상태
     private boolean isGameOver;
     private boolean isPaused;
@@ -33,9 +33,19 @@ public class GameModel extends BaseModel {
         this.level = 1;
         this.isGameOver = false;
         this.isPaused = false;
+        this.nextBlockSeed = System.currentTimeMillis();
 
         // 첫 블럭 설정
         spawnNewBlock();
+    }
+
+    public long getNextBlockSeed() {
+        return nextBlockSeed;
+    }
+
+    public void setNextBlockSeed(long nextBlockSeed) {
+        this.nextBlockSeed = nextBlockSeed;
+        this.nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, nextBlockSeed);
     }
 
     public Board getBoardModel() {
