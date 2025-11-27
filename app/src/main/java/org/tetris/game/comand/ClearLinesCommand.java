@@ -3,12 +3,14 @@ package org.tetris.game.comand;
 import org.tetris.game.engine.GameEngine;
 
 public class ClearLinesCommand implements GameCommand {
+    private final int linesCleared;
 
-    public ClearLinesCommand() {
+    public ClearLinesCommand(int linesCleared) {
+        this.linesCleared = linesCleared;
     }
 
     @Override
     public void execute(GameEngine<?, ?> game) {
-        // engine.onLinesCleared(lines); // GameEngine에 메서드 추가 필요
+        game.onLinesCleared(linesCleared);
     }
 }

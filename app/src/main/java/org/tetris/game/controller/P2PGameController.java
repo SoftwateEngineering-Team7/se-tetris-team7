@@ -233,6 +233,7 @@ public class P2PGameController extends BaseController<P2PGameModel> implements R
 
     // === UI Updates called by Engine ===
 
+    @Override
     public void updateGameBoard() {
         updateGameBoard(localPlayer);
         updateGameBoard(remotePlayer);
@@ -249,6 +250,7 @@ public class P2PGameController extends BaseController<P2PGameModel> implements R
         slot.renderer.renderBoard(board, slot.flashMask, slot.isFlashing, slot.flashOn);
     }
 
+    @Override
     public void updatePauseUI(boolean isPaused) {
         if (isPaused)
             showPauseOverlay();

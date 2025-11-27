@@ -31,10 +31,12 @@ public class DualGameModel extends BaseModel implements Pausable {
         return player2GameModel;
     }
 
+    @Override
     public boolean isPaused() {
         return isPaused;
     }
 
+    @Override
     public void setPaused(boolean paused) {
         this.isPaused = paused;
     }
