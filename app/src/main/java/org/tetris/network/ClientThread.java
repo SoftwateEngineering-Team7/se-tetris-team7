@@ -14,16 +14,15 @@ import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.comand.PingCommand;
 
 /**
- * 클라이언트가 서버와 통신하기 위한 핸들러 클래스.
- * 서버 -> 클라이언트를 처리하는 클래스
- * 소켓 연결, 데이터 송수신, 비동기 수신 스레드 관리를 캡슐화하여
- * ServerHandler는 별도의 스레드에서 실행됩니다.
- * 클라이언트의 다른 부분에서는 사용하기 쉬운 API만 노출합니다.
+ * 클라이언트가 서버와 통신하기 위한 핸들러 클래스. 서버 -> 클라이언트를 처리하는 클래스 소켓 연결, 데이터 송수신, 비동기 수신 스레드 관리를 캡슐화하여
+ * ServerHandler는 별도의 스레드에서 실행됩니다. 클라이언트의 다른 부분에서는 사용하기 쉬운 API만 노출합니다.
  * 
  * TODO: 네트워크 지연 감지 - 전송 지연 시간 측정 및 "랙 걸린 상태" 표시
+ * 
  * TODO: 연결 타임아웃 관리 - 일정 시간 이상 응답 없으면 연결 끊김으로 판단
+ * 
  * TODO: 연결 끊김 처리 - 에러 메시지 표시 후 P2P 대전 모드 초기 화면으로 복귀
- * TODO: Heartbeat/Ping 메커니즘 - 주기적으로 연결 상태 확인
+ * 
  * TODO: 재연결 시도 - 일시적 끊김 시 자동 재연결 시도 (exponential backoff)
  */
 public class ClientThread {
@@ -152,8 +151,8 @@ public class ClientThread {
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     // 서버로부터 커맨드를 수신 대기합니다. (Blocking call)
                     Command command = (Command) ois.readObject();
-                    System.out.println(
-                            "[CLIENT-RECEIVER] Received command from server: " + command.getClass().getSimpleName());
+                    System.out.println("[CLIENT-RECEIVER] Received command from server: "
+                            + command.getClass().getSimpleName());
                     // 수신된 커맨드를 로컬 게임 엔진에서 실행합니다.
                     if (command instanceof GameMenuCommand && command instanceof GameCommand) {
                         if (menuExecutor != null) {

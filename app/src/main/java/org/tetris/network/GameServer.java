@@ -11,18 +11,9 @@ import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.dto.MatchSettings;
 
 /**
- * 게임 서버의 메인 클래스 (싱글톤 패턴).
- * P2P 대전 모드에서 호스트 역할을 수행하며, 연결된 클라이언트를 관리합니다.
+ * 게임 서버의 메인 클래스 (싱글톤 패턴). P2P 대전 모드에서 호스트 역할을 수행하며, 연결된 클라이언트를 관리합니다.
  * 
- * TODO: UI 통합 - 서버 IP 주소를 화면에 표시
- * TODO: 1:1 대전 연결 제한 - 최대 2명의 클라이언트(호스트 + 게스트 1명)만 접속 가능하도록 제한
- * TODO: 연결 완료 알림 - 클라이언트 접속 시 UI에 알림 표시
- * TODO: 대기 상태 화면 - 클라이언트 접속 대기 중 상태 표시
- * 
- * TODO: 게임 모드 선택 - 서버(호스트)가 일반/아이템/시간제한 모드 선택
  * TODO: 모드 선택 동기화 - 선택한 모드를 클라이언트에게 전송
- * TODO: 준비 상태 관리 - 서버/클라이언트 각각의 '게임 시작' 버튼 상태 관리
- * TODO: 게임 시작 동기화 - 양측 모두 준비 완료 시 게임 시작
  */
 public class GameServer {
     public static final int PORT = 12345; // 서버 포트
@@ -37,8 +28,7 @@ public class GameServer {
     /**
      * Private 생성자 (싱글톤 패턴)
      */
-    private GameServer() {
-    }
+    private GameServer() {}
 
     /**
      * GameServer 싱글톤 인스턴스를 반환합니다.
@@ -84,16 +74,16 @@ public class GameServer {
 
                     synchronized (this) {
                         if (client1 == null) {
-                            System.out.println("[SERVER] Player 1 connected: " + clientSocket.getInetAddress());
+                            System.out.println("[SERVER] Player 1 connected: "
+                                    + clientSocket.getInetAddress());
                             client1 = new ServerThread(clientSocket);
                             client1.start();
                         } else if (client2 == null) {
-                            System.out.println("[SERVER] Player 2 connected: " + clientSocket.getInetAddress());
+                            System.out.println("[SERVER] Player 2 connected: "
+                                    + clientSocket.getInetAddress());
                             client2 = new ServerThread(clientSocket);
                             client2.start();
 
-                            // 두 명 접속 완료 -> 게임 시작
-                            startGame();
                         } else {
                             System.out.println("[SERVER] Connection rejected: Server is full.");
                             clientSocket.close();

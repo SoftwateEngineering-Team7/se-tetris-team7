@@ -4,6 +4,7 @@ import org.tetris.Router;
 import org.tetris.game.model.GameMode;
 import org.tetris.network.GameClient;
 import org.tetris.network.comand.GameMenuCommandExecutor;
+import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -16,6 +17,20 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 
+/**
+ * 
+ * TODO: 게임 모드 선택 - 서버(호스트)가 일반/아이템/시간제한 모드 선택
+ * 
+ * TODO: 모드 선택 동기화 - 선택한 모드를 클라이언트에게 전송
+ * 
+ * TODO: 연결 상태 메시지 - "연결 중...", "연결 성공" 등 상태 표시
+ * 
+ * TODO: 대기 상태 화면 - 게임 시작 대기 중 상태 표시
+ * 
+ * TODO: 연결 실패 처리 잘못된 IP 또는 연결 불가 시 에러 메시지
+ * 
+ * TODO: 게임 모드 수신 - 서버가 선택한 모드 수신 및 표시
+ */
 public class NetworkMenuController extends BaseController<NetworkMenu>
         implements RouterAware, GameMenuCommandExecutor {
 
@@ -44,8 +59,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     @FXML
     private Button readyButton;
 
+    GameClient client;
+
     public NetworkMenuController(NetworkMenu networkMenu) {
         super(networkMenu);
+        this.client = GameClient.getInstance();
     }
 
     @Override
@@ -90,6 +108,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
         // 선택된 항목을 보여주는 버튼 셀도 흰색으로 설정
         gameModeCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -100,6 +119,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
                     setStyle("-fx-text-fill: white;");
                 }
             }
+
         });
 
         // 초기값 설정
@@ -131,8 +151,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         addLog("네트워크 게임 초기화 완료");
 
         // Register as Menu Executor
-        if (GameClient.getInstance().getClientThread() != null) {
-            GameClient.getInstance().getClientThread().setMenuExecutor(this);
+        if (client != null) {
+            client.setMenuExecutor(this);
         }
     }
 
@@ -208,6 +228,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             addLog("준비 취소");
             readyButton.setText("READY");
         }
+        client.sendCommand(new ReadyCommand(model.isReady()));
     }
 
     @Override
@@ -220,8 +241,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
             model.setOtherIsReady(others);
             if (others) {
+                addLog("상대방 준비 완료");
                 System.out.println("[CLIENT-ENGINE] Other Player is ready.");
             } else {
+                addLog("상대방 준비 취소");
                 System.out.println("[CLIENT-ENGINE] Other Player is not ready.");
             }
         });
@@ -231,7 +254,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     public void gameStart() {
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
-            router.showP2PGamePlaceholder(GameMode.NORMAL);
+            // router.showP2PGamePlaceholder(GameMode.NORMAL);
         });
     }
 

@@ -2,7 +2,6 @@ package org.tetris.network.menu.model;
 
 import java.io.IOException;
 
-import org.tetris.network.ClientThread;
 import org.tetris.network.GameClient;
 import org.tetris.network.comand.*;
 import org.tetris.network.GameServer;
@@ -22,12 +21,13 @@ public class NetworkMenu extends BaseModel {
     private int port;
     private boolean isReady;
 
-    private ClientThread client;
+    private GameClient client;
     private LongProperty ping = new SimpleLongProperty();
     private BooleanProperty otherIsReady = new SimpleBooleanProperty();
 
     public NetworkMenu() {
         clear();
+        this.client = GameClient.getInstance();
     }
 
     public boolean getIsHost() {
@@ -64,10 +64,6 @@ public class NetworkMenu extends BaseModel {
 
     public void setIsReady(boolean isReady) {
         this.isReady = isReady;
-
-        if (client != null) {
-            client.sendCommand(new ReadyCommand(isReady));
-        }
     }
 
     public boolean isValidIP(String ipString) {
@@ -94,7 +90,6 @@ public class NetworkMenu extends BaseModel {
     }
 
     public void create() {
-        ClientThread client = GameClient.getInstance().getClientThread();
         if (client != null) {
             client.disconnect();
         }
@@ -105,12 +100,8 @@ public class NetworkMenu extends BaseModel {
             throw new RuntimeException("서버 시작에 실패했습니다", e);
         }
 
-        try {
-            GameClient.getInstance().getClientThread().connect("localhost", port);
-            this.ipAddress = GameServer.getInstance().getHostIP().getHostAddress();
-        } catch (IOException e) {
-            throw new RuntimeException("클라이언트 연결에 실패했습니다", e);
-        }
+        client.connect("localhost", port);
+        this.ipAddress = GameServer.getInstance().getHostIP().getHostAddress();
 
         System.out.println("호스트 방 생성 - IP: " + ipAddress + ", 포트: " + port);
     }
@@ -126,17 +117,11 @@ public class NetworkMenu extends BaseModel {
     }
 
     public void join() {
-        try {
-            GameClient.getInstance().getClientThread().connect(ipAddress, port);
-        } catch (IOException e) {
-            throw new RuntimeException("서버 연결에 실패했습니다: " + ipAddress + ":" + port, e);
-        }
-
+        client.connect(ipAddress, port);
         System.out.println("방 참여 성공 - IP: " + ipAddress + ", 포트: " + port);
     }
 
     public void clear() {
-        ClientThread client = GameClient.getInstance().getClientThread();
         if (client != null) {
             client.disconnect();
         }
