@@ -5,7 +5,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.tetris.network.comand.GameCommand;
 import org.tetris.network.comand.MoveLeftCommand;
-import org.tetris.network.game.GameEngine;
+import org.tetris.network.mocks.TestGameCommandExecutor;
+import org.tetris.network.mocks.TestGameMenuCommandExecutor;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -21,18 +22,23 @@ import static org.junit.Assert.*;
  */
 public class ClientThreadTest {
     private ClientThread clientThread;
-    private GameEngine gameEngine;
+    private TestGameCommandExecutor gameExecutor;
+    private TestGameMenuCommandExecutor menuExecutor;
     private ServerSocket mockServerSocket; // 서버 소켓
     private Thread serverAcceptThread; // 서버 소켓 연결 수락 스레드
 
     @Before
     public void setUp() throws IOException {
-        gameEngine = new GameEngine();
-        clientThread = new ClientThread(gameEngine);
-        
+        clientThread = new ClientThread();
+        gameExecutor = new TestGameCommandExecutor();
+        menuExecutor = new TestGameMenuCommandExecutor();
+
+        clientThread.setGameExecutor(gameExecutor);
+        clientThread.setMenuExecutor(menuExecutor);
+
         // 목업 소켓 셋업
         // OS가 여유 포트를 할당하도록 포트 0 사용
-        mockServerSocket = new ServerSocket(0); 
+        mockServerSocket = new ServerSocket(0);
     }
 
     @After
@@ -76,7 +82,7 @@ public class ClientThreadTest {
 
         // 목업 서버에 연결
         clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
+
         // 예외가 발생하지 않으면 연결 성공
     }
 
@@ -120,10 +126,10 @@ public class ClientThreadTest {
             }
         });
         serverAcceptThread.start();
-        
+
         // 첫 번째 연결
         clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
+
         // 두 번째 연결 시도 (무시되거나 적절히 처리되어야 함)
         clientThread.connect("localhost", mockServerSocket.getLocalPort());
     }
@@ -132,7 +138,7 @@ public class ClientThreadTest {
     public void testSendCommandWhenNotConnected() {
         // 연결 없이 커맨드 전송 시도
         GameCommand command = new MoveLeftCommand();
-        
+
         // 안전해야 함 (예외 없음)
         clientThread.sendCommand(command);
     }
@@ -150,10 +156,10 @@ public class ClientThreadTest {
             }
         });
         serverAcceptThread.start();
-        
+
         // 연결
         clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
+
         // 연결 해제
         clientThread.disconnect();
     }

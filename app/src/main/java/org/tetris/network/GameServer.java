@@ -4,25 +4,20 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.tetris.network.comand.GameCommand;
+import org.tetris.network.comand.Command;
+
+import org.tetris.network.comand.GameStartCommand;
+import org.tetris.network.comand.ReadyCommand;
+import org.tetris.network.dto.MatchSettings;
 
 /**
- * 게임 서버의 메인 클래스 (싱글톤 패턴).
- * P2P 대전 모드에서 호스트 역할을 수행하며, 연결된 클라이언트를 관리합니다.
+ * 게임 서버의 메인 클래스 (싱글톤 패턴). P2P 대전 모드에서 호스트 역할을 수행하며, 연결된 클라이언트를 관리합니다.
  * 
- * TODO: UI 통합 - 서버 IP 주소를 화면에 표시
- * TODO: 1:1 대전 연결 제한 - 최대 2명의 클라이언트(호스트 + 게스트 1명)만 접속 가능하도록 제한
- * TODO: 연결 완료 알림 - 클라이언트 접속 시 UI에 알림 표시
- * TODO: 대기 상태 화면 - 클라이언트 접속 대기 중 상태 표시
- * 
- * TODO: 게임 모드 선택 - 서버(호스트)가 일반/아이템/시간제한 모드 선택
  * TODO: 모드 선택 동기화 - 선택한 모드를 클라이언트에게 전송
- * TODO: 준비 상태 관리 - 서버/클라이언트 각각의 '게임 시작' 버튼 상태 관리
- * TODO: 게임 시작 동기화 - 양측 모두 준비 완료 시 게임 시작
  */
 public class GameServer {
     public static final int PORT = 12345; // 서버 포트
-    
+
     private static GameServer instance;
     private ServerThread client1;
     private ServerThread client2;
@@ -33,8 +28,7 @@ public class GameServer {
     /**
      * Private 생성자 (싱글톤 패턴)
      */
-    private GameServer() {
-    }
+    private GameServer() {}
 
     /**
      * GameServer 싱글톤 인스턴스를 반환합니다.
@@ -77,19 +71,19 @@ public class GameServer {
             try {
                 while (running && !Thread.currentThread().isInterrupted()) {
                     Socket clientSocket = serverSocket.accept();
-                    
+
                     synchronized (this) {
                         if (client1 == null) {
-                            System.out.println("[SERVER] Player 1 connected: " + clientSocket.getInetAddress());
+                            System.out.println("[SERVER] Player 1 connected: "
+                                    + clientSocket.getInetAddress());
                             client1 = new ServerThread(clientSocket);
                             client1.start();
                         } else if (client2 == null) {
-                            System.out.println("[SERVER] Player 2 connected: " + clientSocket.getInetAddress());
+                            System.out.println("[SERVER] Player 2 connected: "
+                                    + clientSocket.getInetAddress());
                             client2 = new ServerThread(clientSocket);
                             client2.start();
-                            
-                            // 두 명 접속 완료 -> 게임 시작
-                            startGame();
+
                         } else {
                             System.out.println("[SERVER] Connection rejected: Server is full.");
                             clientSocket.close();
@@ -105,12 +99,45 @@ public class GameServer {
         serverThread.start();
     }
 
+    private boolean client1Ready = false;
+    private boolean client2Ready = false;
+
+    public void onClientReady(ServerThread client, boolean isReady) {
+        if (client == client1) {
+            client1Ready = isReady;
+        } else if (client == client2) {
+            client2Ready = isReady;
+        }
+
+        // Notify other client about readiness
+        ReadyCommand readyCmd = new ReadyCommand(isReady);
+        sendToOtherClient(client, readyCmd);
+
+        // Check if both are ready
+        if (client1Ready && client2Ready) {
+            startGame();
+        }
+    }
+
     private void startGame() {
-        System.out.println("[SERVER] Both players connected. Starting game...");
-        
-        GameCommand readyCommand = new org.tetris.network.comand.ReadyCommand(false);
-        
-        broadcast(readyCommand);
+        System.out.println("[SERVER] Both players ready. Starting game...");
+
+        long seed1 = System.currentTimeMillis();
+        long seed2 = seed1 + 1000; // Different seed for player 2
+
+        // Send GameStartCommand with (mySeed, otherSeed)
+        // For Client 1: mySeed = seed1, otherSeed = seed2
+        if (client1 != null) {
+            client1.sendCommand(new GameStartCommand(new MatchSettings(seed1, seed2)));
+        }
+        // For Client 2: mySeed = seed2, otherSeed = seed1
+        if (client2 != null) {
+            client2.sendCommand(new GameStartCommand(new MatchSettings(seed2, seed1)));
+        }
+
+        // Reset readiness for next game?
+        client1Ready = false;
+        client2Ready = false;
     }
 
     /**
@@ -118,7 +145,7 @@ public class GameServer {
      */
     public void stop() {
         running = false;
-        
+
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
@@ -126,18 +153,20 @@ public class GameServer {
         } catch (IOException e) {
             System.err.println("[SERVER] Error closing server socket: " + e.getMessage());
         }
-        
+
         if (serverThread != null) {
             serverThread.interrupt();
         }
-        
+
         // 클라이언트 연결 종료
-        if (client1 != null) client1.close();
-        if (client2 != null) client2.close();
-        
+        if (client1 != null)
+            client1.close();
+        if (client2 != null)
+            client2.close();
+
         client1 = null;
         client2 = null;
-        
+
         System.out.println("[SERVER] Server stopped.");
     }
 
@@ -152,7 +181,7 @@ public class GameServer {
             client2 = null;
             System.out.println("[SERVER] Player 2 disconnected.");
         }
-        
+
         // 한 명이 나가면 게임 종료 처리
         // TODO: 남은 플레이어에게 승리 메시지 전송 등
     }
@@ -160,7 +189,7 @@ public class GameServer {
     /**
      * 특정 클라이언트를 제외한 다른 클라이언트에게 커맨드를 전송합니다. (Relay)
      */
-    public synchronized void sendToOtherClient(ServerThread sender, GameCommand command) {
+    public synchronized void sendToOtherClient(ServerThread sender, Command command) {
         if (sender == client1 && client2 != null) {
             client2.sendCommand(command);
         } else if (sender == client2 && client1 != null) {
@@ -171,9 +200,11 @@ public class GameServer {
     /**
      * 모든 클라이언트에게 커맨드를 전송합니다.
      */
-    public synchronized void broadcast(GameCommand command) {
-        if (client1 != null) client1.sendCommand(command);
-        if (client2 != null) client2.sendCommand(command);
+    public synchronized void broadcast(Command command) {
+        if (client1 != null)
+            client1.sendCommand(command);
+        if (client2 != null)
+            client2.sendCommand(command);
     }
 
     /**
@@ -185,7 +216,7 @@ public class GameServer {
         client2 = null;
         serverSocket = null;
         serverThread = null;
-        
+
         // 포트가 완전히 해제될 시간을 줌
         try {
             Thread.sleep(100);

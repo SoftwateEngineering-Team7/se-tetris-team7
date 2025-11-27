@@ -17,7 +17,7 @@ public class ServerThread {
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
 
-    private final java.util.concurrent.BlockingQueue<GameCommand> sendQueue = new java.util.concurrent.LinkedBlockingQueue<>();
+    private final java.util.concurrent.BlockingQueue<Command> sendQueue = new java.util.concurrent.LinkedBlockingQueue<>();
     private Thread senderThread;
     private Thread receiverThread;
 
@@ -53,11 +53,13 @@ public class ServerThread {
 
     /**
      * 이 클라이언트에게 커맨드를 전송합니다. (큐에 추가)
+     * 
      * @param command 전송할 커맨드
      */
-    public void sendCommand(GameCommand command) {
+    public void sendCommand(Command command) {
         if (!sendQueue.offer(command)) {
-            System.err.println("[SERVER-THREAD] Send queue full. Dropping command: " + command.getClass().getSimpleName());
+            System.err.println(
+                    "[SERVER-THREAD] Send queue full. Dropping command: " + command.getClass().getSimpleName());
         }
     }
 
@@ -66,11 +68,16 @@ public class ServerThread {
      */
     public void close() {
         try {
-            if (senderThread != null) senderThread.interrupt();
-            if (receiverThread != null) receiverThread.interrupt();
-            if (ois != null) ois.close();
-            if (oos != null) oos.close();
-            if (socket != null && !socket.isClosed()) socket.close();
+            if (senderThread != null)
+                senderThread.interrupt();
+            if (receiverThread != null)
+                receiverThread.interrupt();
+            if (ois != null)
+                ois.close();
+            if (oos != null)
+                oos.close();
+            if (socket != null && !socket.isClosed())
+                socket.close();
         } catch (IOException ex) {
             System.err.println("[SERVER-THREAD] Error closing resources: " + ex.getMessage());
         }
@@ -84,7 +91,7 @@ public class ServerThread {
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    GameCommand command = sendQueue.take(); // 큐가 빌 때까지 대기 (Blocking)
+                    Command command = sendQueue.take(); // 큐가 빌 때까지 대기 (Blocking)
                     synchronized (oos) {
                         oos.writeObject(command);
                         oos.flush();
@@ -107,18 +114,19 @@ public class ServerThread {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     // 클라이언트로부터 커맨드를 읽어옵니다.
-                    GameCommand command = (GameCommand) ois.readObject();
+                    Command command = (Command) ois.readObject();
 
                     // 서버 콘솔에 수신된 커맨드 정보를 출력합니다.
                     System.out.println("[SERVER-THREAD] Received command: " + command.getClass().getSimpleName());
 
-                    // TODO: 커맨드 검증 로직 추가 (유효성 검사, 권한 확인)
-                    
                     if (command instanceof PingCommand) {
                         // Ping 요청에 대한 Pong 응답
                         PingCommand pingCmd = (PingCommand) command;
                         PongCommand pongCmd = new PongCommand(pingCmd.getTimestamp());
                         sendCommand(pongCmd);
+                    } else if (command instanceof ReadyCommand) {
+                        ReadyCommand readyCmd = (ReadyCommand) command;
+                        GameServer.getInstance().onClientReady(ServerThread.this, readyCmd.getIsReady());
                     } else if (command instanceof GameOverCommand) {
                         // 게임 오버 처리
                         GameServer.getInstance().broadcast(command); // 일단 모두에게 알림
