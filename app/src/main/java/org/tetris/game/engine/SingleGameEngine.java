@@ -22,7 +22,6 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
         super(player, gameModel, controller);
     }
 
-    @Override
     public void startGame(long seed) {
 
         startGameLoop();
@@ -36,12 +35,10 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
         startGameLoop();
     }
 
-    @Override
     public void stopGame() {
         resetGameLoop();
     }
 
-    @Override
     public void gameOver(int score) {
         if (gameLoop != null) {
             gameLoop.stop();
@@ -50,17 +47,14 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
 
     }
 
-    @Override
     public void onGameResult(boolean isWinner, int score) {
 
     }
 
-    @Override
     public void updateState(String state) {
         super.updateState(state);
     }
 
-    @Override
     public String getCurrentState() {
         return super.getCurrentState();
     }
@@ -104,17 +98,17 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
 
         long timeSinceLastDrop = now - lastDropTime;
         if (timeSinceLastDrop >= dropIntervalNanos) {
-            if (player != null) {
-                boolean moved = player.boardModel.autoDown();
+            boolean moved = player.boardModel.autoDown();
 
+            if (player != null) {
                 if (moved) {
                     player.scoreModel.blockDropped();
                 } else {
                     lockBlock(player, gameModel);
                 }
-
-                lastDropTime = now;
             }
+
+            lastDropTime = now;
         }
 
         controller.updateGameBoard();

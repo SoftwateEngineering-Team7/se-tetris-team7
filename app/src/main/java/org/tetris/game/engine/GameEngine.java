@@ -161,8 +161,8 @@ public abstract class GameEngine<C extends GameViewCallback, M extends BaseModel
         target.clearingRows.addAll(fullRows);
 
         // 아이템 활성화
-        if (targetModel != null && controller != null) {
-            targetModel.tryActivateItem(controller);
+        if (targetModel != null && controller instanceof org.tetris.game.model.items.ItemActivation) {
+            targetModel.tryActivateItem((org.tetris.game.model.items.ItemActivation) controller);
         }
 
         if (target.boardModel.getIsForceDown()) {
