@@ -38,9 +38,12 @@ public class NextBlockModel
 	 * @param blockProbList 블럭별 출현 확률 리스트 (I, J, L, O, S, T, Z 순서)
 	 * @param fillCount 블럭 큐를 채울 블럭의 수
 	 */
-	public NextBlockModel(int[] blockProbList, int fillCount)
-	{
-		this.random = new Random();
+	public NextBlockModel(int[] blockProbList, int fillCount) {
+		this(blockProbList, fillCount, System.currentTimeMillis());
+	}
+
+	public NextBlockModel(int[] blockProbList, int fillCount, long seed) {
+		this.random = new Random(seed);
 		this.nextBlocks = new LinkedList<Block>();
 		this.fillCount = fillCount;
 

@@ -21,7 +21,7 @@ public class NextBlockModelTest {
             else if (block instanceof TBlock) counts[5]++;
             else if (block instanceof ZBlock) counts[6]++;
         }
-        
+
         return counts;
     }
 
@@ -125,7 +125,21 @@ public class NextBlockModelTest {
         emptyModel.swapNext(testBlock); // 빈 큐에서도 정상 동작해야 함
         
         Block result = emptyModel.peekNext();
-        assertEquals("빈 큐에서 swapNext 후 peekNext는 교체된 블록을 반환해야 합니다",
-                    testBlock.getClass(), result.getClass());
+        assertEquals("빈 큐에서 swapNext 후 peekNext는 교체된 블록을 반환해야 합니다", testBlock.getClass(),
+                result.getClass());
+    }
+
+    @Test
+    public void testConstructorWithSeed() {
+        long seed = 12345L;
+        NextBlockModel model1 = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, seed);
+        NextBlockModel model2 = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, seed);
+
+        for (int i = 0; i < 10; i++) {
+            Block b1 = model1.getBlock();
+            Block b2 = model2.getBlock();
+            assertEquals("같은 시드로 생성된 모델은 같은 블록 순서를 가져야 합니다 (" + i + "번째)", b1.getClass(),
+                    b2.getClass());
+        }
     }
 }

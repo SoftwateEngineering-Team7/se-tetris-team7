@@ -7,6 +7,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.util.Difficulty;
+import org.tetris.game.model.blocks.Block;
+import org.tetris.game.model.blocks.*;
 
 public class GameModelTest {
 
@@ -313,5 +315,23 @@ public class GameModelTest {
         // 레벨 2일 때 드롭 인터벌
         // 60 - round((2 - 1) * 5 * 1.2) = 54
         assertEquals("레벨 2일 때 드롭 인터벌은 54이어야 합니다", 54, gameModel.getDropInterval());
+    }
+
+    @Test
+    public void testSetNextBlockSeed() {
+        long seed = 98765L;
+        gameModel.setNextBlockSeed(seed);
+        assertEquals("시드가 설정되어야 합니다", seed, gameModel.getNextBlockSeed());
+
+        // 같은 시드로 다른 모델 생성
+        GameModel otherModel = new GameModel();
+        otherModel.setNextBlockSeed(seed);
+
+        // 블록 순서 비교
+        for (int i = 0; i < 10; i++) {
+            Block b1 = gameModel.getNextBlockModel().getBlock();
+            Block b2 = otherModel.getNextBlockModel().getBlock();
+            assertEquals("같은 시드를 가진 모델은 같은 블록 순서를 가져야 합니다", b1.getClass(), b2.getClass());
+        }
     }
 }
