@@ -10,7 +10,7 @@
     prefWidth="800" prefHeight="600">
     
     <center>
-        <VBox fx:id="mainVBox" alignment="CENTER" spacing="20" />
+        <VBox fx:id="mainVBox" alignment="CENTER" spacing="5" />
     </center>
     
     <bottom>
