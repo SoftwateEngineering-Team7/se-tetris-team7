@@ -23,6 +23,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 
 public class DualGameController extends BaseController<DualGameModel> implements RouterAware, ItemActivation {
 
@@ -41,6 +42,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private Label levelLabel1;
     @FXML
     private Label linesLabel1;
+    @FXML
+    private VBox timeAttackBox1;
+    @FXML
+    private Label timerLabel1;
 
     // Player 2 (오른쪽)
     @FXML
@@ -53,6 +58,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private Label levelLabel2;
     @FXML
     private Label linesLabel2;
+    @FXML
+    private VBox timeAttackBox2;
+    @FXML
+    private Label timerLabel2;
 
     // 오버레이 & 버튼
     @FXML
@@ -92,6 +101,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
     private static final int MIN_CELL_SIZE = 16;
     private static final double PREVIEW_RATIO = 0.8;
+    private boolean isTimeAttackMode = false;
 
     public DualGameController(DualGameModel model) {
         super(model);
@@ -139,6 +149,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
         dualGameModel.getPlayer1GameModel().setDifficulty();
         dualGameModel.getPlayer2GameModel().setDifficulty();
         dualGameModel.getTimeAttack().setTimeAttackMode(timeMode);
+        isTimeAttackMode = timeMode;
+        updateTimeAttackVisibility();
     }
 
     // PlayerSlot 생성 로직 통합
@@ -205,6 +217,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void setupUI() {
         hideGameOverlay();
         hidePauseOverlay();
+        updateTimeAttackVisibility();
         updateUI();
     }
 
@@ -590,6 +603,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
             linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
             player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
         }
+
+        updateTimeAttackTimer();
     }
 
     private void updateGameBoard(PlayerSlot player) {
@@ -603,6 +618,40 @@ public class DualGameController extends BaseController<DualGameModel> implements
             scoreLabel1.setText(player1.scoreModel.toString());
         if (player2 != null)
             scoreLabel2.setText(player2.scoreModel.toString());
+    }
+
+    private void updateTimeAttackVisibility() {
+        boolean show = isTimeAttackMode;
+
+        if (timeAttackBox1 != null) {
+            timeAttackBox1.setVisible(show);
+            timeAttackBox1.setManaged(show);
+        }
+        if (timeAttackBox2 != null) {
+            timeAttackBox2.setVisible(show);
+            timeAttackBox2.setManaged(show);
+        }
+    }
+
+    private void updateTimeAttackTimer() {
+        if (!isTimeAttackMode) {
+            return;
+        }
+
+        int remainingSeconds = (int) Math.ceil(dualGameModel.getTimeAttack().getRemainingSeconds(playTime));
+        String formatted = formatSeconds(Math.max(remainingSeconds, 0));
+
+        if (timerLabel1 != null)
+            timerLabel1.setText(formatted);
+        if (timerLabel2 != null)
+            timerLabel2.setText(formatted);
+    }
+
+    private String formatSeconds(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     // === Pause & Menu ===

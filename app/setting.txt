@@ -1,0 +1,6 @@
+#Tetris Settings
+#Thu Nov 27 12:47:55 KST 2025
+difficulty=EASY
+isColorBlind=false
+keyLayout=ARROWS
+screen=SMALL
