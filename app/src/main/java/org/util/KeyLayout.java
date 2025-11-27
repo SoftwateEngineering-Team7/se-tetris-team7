@@ -1,71 +1,175 @@
 package org.util;
 
 import javafx.scene.input.KeyCode;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 키 바인딩을 관리하는 클래스 (Player 1, Player 2 지원)
+ * 각 플레이어별로 독립적인 키 설정을 관리합니다.
+ */
 
 public class KeyLayout {
-    public static final String KEY_ARROWS = "ARROWS";
-    public static final String KEY_WASD = "WASD";
+    // Player 1 키 맵
 
-    private static String currentLayout = KEY_ARROWS; // 기본값
+    private static final Map<Integer, KeyCode> player1Keys = new HashMap<>();
     
-    private final String name;
-    private final KeyCode leftKey;
-    private final KeyCode rightKey;
-    private final KeyCode downKey;
-    private final KeyCode upKey;
+    // Player 2 키 맵
+    private static final Map<Integer, KeyCode> player2Keys = new HashMap<>();
+    
+    // 키 타입 상수 (Integer로 관리)
+    public static final int KEY_LEFT = 0;
+    public static final int KEY_RIGHT = 1;
+    public static final int KEY_DOWN = 2;
+    public static final int KEY_UP = 3;
+    public static final int KEY_HARD_DROP = 4;
+    
+    static {
+        // Player 1 기본 키 설정 (화살표 + SPACE)
+        player1Keys.put(KEY_LEFT, KeyCode.LEFT);
+        player1Keys.put(KEY_RIGHT, KeyCode.RIGHT);
+        player1Keys.put(KEY_DOWN, KeyCode.DOWN);
+        player1Keys.put(KEY_UP, KeyCode.UP);
+        player1Keys.put(KEY_HARD_DROP, KeyCode.SPACE);
+        
+        // Player 2 기본 키 설정 (WASD + SHIFT)
+        player2Keys.put(KEY_LEFT, KeyCode.A);
+        player2Keys.put(KEY_RIGHT, KeyCode.D);
+        player2Keys.put(KEY_DOWN, KeyCode.S);
+        player2Keys.put(KEY_UP, KeyCode.W);
+        player2Keys.put(KEY_HARD_DROP, KeyCode.SHIFT);
+    }
 
-    private KeyLayout(String name, KeyCode left, KeyCode right, KeyCode down, KeyCode up) {
-        this.name = name;
-        this.leftKey = left;
-        this.rightKey = right;
-        this.downKey = down;
-        this.upKey = up;
+    public static KeyCode getLeftKey(PlayerId id) {
+        return getKey(id, KEY_LEFT);
+    }
+
+
+    public static KeyCode getRightKey(PlayerId id) {
+        return getKey(id, KEY_RIGHT);
+    }
+
+
+    public static KeyCode getDownKey(PlayerId id) {
+        return getKey(id, KEY_DOWN);
+    }
+
+
+    public static KeyCode getUpKey(PlayerId id) {
+        return getKey(id, KEY_UP);
+    }
+    
+
+    public static KeyCode getHardDropKey(PlayerId id) {
+        return getKey(id, KEY_HARD_DROP);
     }
 
     /**
-     * 현재 설정된 레이아웃의 키 코드를 반환
+     * 특정 키 반환 (내부 헬퍼)
      */
-    public static KeyCode getLeftKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.leftKey : WASD.leftKey;
-    }
-
-    public static KeyCode getRightKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.rightKey : WASD.rightKey;
-    }
-
-    public static KeyCode getDownKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.downKey : WASD.downKey;
-    }
-
-    public static KeyCode getUpKey() {
-        return currentLayout.equals(KEY_ARROWS) ? ARROWS.upKey : WASD.upKey;
+    private static KeyCode getKey(PlayerId id, int keyType) {
+        Map<Integer, KeyCode> keys = getPlayerKeys(id);
+        return keys.get(keyType);
     }
 
     /**
-     * 레이아웃 설정
-     * @param layout 레이아웃 이름 ("ARROWS" 또는 "WASD")
+     * 플레이어별 키 맵 반환
      */
-    public static void setCurrentLayout(String layout) {
-        if (layout != null && (layout.equals(KEY_ARROWS) || layout.equals(KEY_WASD))) {
-            currentLayout = layout;
+    private static Map<Integer, KeyCode> getPlayerKeys(PlayerId id) {
+        if (id == PlayerId.PLAYER1) {
+            return player1Keys;
+        } else if (id == PlayerId.PLAYER2) {
+            return player2Keys;
+        } else {
+            throw new IllegalArgumentException("Invalid player index: " + id + ". Must be PLAYER1 or PLAYER2.");
         }
     }
 
     /**
-     * 현재 레이아웃 이름 반환
+     * 왼쪽 이동 키 설정
      */
-    public static String getCurrentLayout() {
-        return currentLayout;
+    public static void setLeftKey(PlayerId id, KeyCode key) {
+        setKey(id, KEY_LEFT, key);
     }
 
-    public String getName() {
-        return name;
+    /**
+     * 오른쪽 이동 키 설정
+     */
+    public static void setRightKey(PlayerId id, KeyCode key) {
+        setKey(id, KEY_RIGHT, key);
     }
 
-    // region 레이아웃 정의
+    /**
+     * 아래 이동 키 설정
+     */
+    public static void setDownKey(PlayerId id, KeyCode key) {
+        setKey(id, KEY_DOWN, key);
+    }
 
-    public static final KeyLayout ARROWS = new KeyLayout(KEY_ARROWS, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.DOWN, KeyCode.UP);
-    public static final KeyLayout WASD = new KeyLayout(KEY_WASD, KeyCode.A, KeyCode.D, KeyCode.S, KeyCode.W);
+    /**
+     * 위 이동 키 설정
+     */
+    public static void setUpKey(PlayerId id, KeyCode key) {
+        setKey(id, KEY_UP, key);
+    }
 
-    // endregion
+    /**
+     * 하드 드롭 키 설정
+     */
+    public static void setHardDropKey(PlayerId id, KeyCode key) {
+        setKey(id, KEY_HARD_DROP, key);
+    }
+
+    /**
+     * 특정 키 설정 (내부 헬퍼)
+     */
+    private static void setKey(PlayerId id, int keyType, KeyCode key) {
+        if (key == null) {
+            return;
+        }
+        Map<Integer, KeyCode> keys = getPlayerKeys(id);
+        keys.put(keyType, key);
+    }
+
+    /**
+     * 모든 키를 한 번에 설정
+     */
+    public static void setKeys(PlayerId id, KeyCode left, KeyCode right, KeyCode down, KeyCode up, KeyCode hardDrop) {
+        if (left != null) setLeftKey(id, left);
+        if (right != null) setRightKey(id, right);
+        if (down != null) setDownKey(id, down);
+        if (up != null) setUpKey(id, up);
+        if (hardDrop != null) setHardDropKey(id, hardDrop);
+    }
+
+    /**
+     * 기본 키 설정으로 초기화
+     */
+    public static void resetToDefault(PlayerId id) {
+        if (id == PlayerId.PLAYER1) {
+            player1Keys.clear();
+            player1Keys.put(KEY_LEFT, KeyCode.LEFT);
+            player1Keys.put(KEY_RIGHT, KeyCode.RIGHT);
+            player1Keys.put(KEY_DOWN, KeyCode.DOWN);
+            player1Keys.put(KEY_UP, KeyCode.UP);
+            player1Keys.put(KEY_HARD_DROP, KeyCode.SPACE);
+        } else if (id == PlayerId.PLAYER2) {
+            player2Keys.clear();
+            player2Keys.put(KEY_LEFT, KeyCode.A);
+            player2Keys.put(KEY_RIGHT, KeyCode.D);
+            player2Keys.put(KEY_DOWN, KeyCode.S);
+            player2Keys.put(KEY_UP, KeyCode.W);
+            player2Keys.put(KEY_HARD_DROP, KeyCode.SHIFT);
+        } else {
+            throw new IllegalArgumentException("Invalid player index: " + id + ". Must be PLAYER1 or PLAYER2.");
+        }
+    }
+
+    /**
+     * 모든 플레이어 키 초기화
+     */
+    public static void resetAllToDefault() {
+        resetToDefault(PlayerId.PLAYER1);
+        resetToDefault(PlayerId.PLAYER2);
+    }
 }

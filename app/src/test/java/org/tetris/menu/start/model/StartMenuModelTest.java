@@ -12,6 +12,7 @@ public class StartMenuModelTest {
     @Before
     public void setUp() {
         model = new StartMenuModel();
+        model.updateButtonCount(BUTTON_COUNT);
     }
 
     @Test
@@ -41,23 +42,23 @@ public class StartMenuModelTest {
         
         // 한 칸 뒤로 이동 (wrapping 발생)
         model.move(-1);
-        assertEquals("0에서 -1 이동하면 마지막 인덱스(5)로 래핑되어야 합니다.", 
-                     5, model.getSelectedIndex());
+        assertEquals("0에서 -1 이동하면 마지막 인덱스(4)로 래핑되어야 합니다.", 
+                     4, model.getSelectedIndex());
         
         // 한 칸 더 뒤로 이동
         model.move(-1);
-        assertEquals("5에서 -1 이동하면 인덱스는 4여야 합니다.", 4, model.getSelectedIndex());
+        assertEquals("4에서 -1 이동하면 인덱스는 3이어야 합니다.", 3, model.getSelectedIndex());
     }
 
     @Test
     public void testForwardWrapping() {
         // 마지막 인덱스로 이동
-        model.setSelectedIndex(5);
-        assertEquals(5, model.getSelectedIndex());
+        model.setSelectedIndex(4);
+        assertEquals(4, model.getSelectedIndex());
 
         // 한 칸 앞으로 이동 (wrapping 발생)
         model.move(1);
-        assertEquals("마지막 인덱스(5)에서 +1 이동하면 첫 번째 인덱스(0)로 래핑되어야 합니다.",
+        assertEquals("마지막 인덱스(4)에서 +1 이동하면 첫 번째 인덱스(0)로 래핑되어야 합니다.",
                      0, model.getSelectedIndex());
     }
 
@@ -68,8 +69,8 @@ public class StartMenuModelTest {
         
         // 한 칸 뒤로 이동 (wrapping 발생)
         model.move(-1);
-        assertEquals("0에서 -1 이동하면 마지막 인덱스(5)로 래핑되어야 합니다.", 
-                     5, model.getSelectedIndex());
+        assertEquals("0에서 -1 이동하면 마지막 인덱스(4)로 래핑되어야 합니다.", 
+                     4, model.getSelectedIndex());
     }
 
     @Test

@@ -5,7 +5,6 @@ import org.tetris.game.model.GameMode;
 import org.tetris.menu.start.model.StartMenuModel;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
-import org.util.KeyLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +43,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     // 메시지 텍스트 상수
     private static final String TEXT_WRONG_INPUT_Arrows = "잘못된 입력입니다.\n방향키와 Enter를 사용하세요.";
-    private static final String TEXT_WRONG_INPUT_WASD = "잘못된 입력입니다.\nWASD키와 Enter를 사용하세요.";
-    private static final String TEXT_COMING_SOON = "준비 중입니다.";
 
     private static final String STYLE_TITLE = "-fx-font-size: ";
     private static final String PX_STRING = "px;";
@@ -181,22 +178,18 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     private void handleKey(KeyEvent e) {
         KeyCode code = e.getCode();
-        if (code == KeyLayout.getDownKey() || e.getCode() == KeyLayout.getRightKey())
+        if (code == KeyCode.DOWN || code == KeyCode.RIGHT)
             setHighlightedButton(+1);
-        else if (code == KeyLayout.getUpKey() || e.getCode() == KeyLayout.getLeftKey())
+        else if (code == KeyCode.UP || code == KeyCode.LEFT)
             setHighlightedButton(-1);
-        else if (e.getCode() == KeyCode.ENTER)
+        else if (code == KeyCode.ENTER)
             fire();
         else
             showWrongInputLabel();
     }
 
     private void setupWrongInputLabelText() {
-        if (KeyLayout.getCurrentLayout().equals(KeyLayout.KEY_ARROWS)) {
-            wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
-        } else {
-            wrongInputLabel.setText(TEXT_WRONG_INPUT_WASD);
-        }
+        wrongInputLabel.setText(TEXT_WRONG_INPUT_Arrows);
     }
 
     private void showWrongInputLabel() {

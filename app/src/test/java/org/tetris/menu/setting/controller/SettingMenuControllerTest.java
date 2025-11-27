@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -16,18 +17,17 @@ import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.model.SettingMenuModel;
+import org.tetris.shared.MvcBundle;
 import org.testfx.framework.junit.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.input.KeyCode;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
@@ -36,40 +36,32 @@ import javafx.stage.Stage;
  */
 public class SettingMenuControllerTest extends ApplicationTest {
     
-    private Stage stage;
-    private Setting setting;
-    private SettingMenuModel model;
+    private SettingMenuFactory settingMenuFactory;
     private SettingMenuController controller;
+    private SettingMenuModel model;
+    private Stage stage;
     private final Path testFilePath = Paths.get("setting.txt");
     
     /**
      * TestFX의 start 메서드 - JavaFX 애플리케이션 시작
-     * Stage를 설정하고 FXML을 로드하여 Scene을 생성합니다.
+     * MvcBundle을 사용하여 초기화합니다.
      */
     @Override
     public void start(Stage s) throws Exception {
         this.stage = s;
         deleteSettingFile();
         
-        // Setting과 Model 초기화
-        setting = new Setting();
-        model = new SettingMenuModel(setting);
+        // Setting 생성 및 Factory 초기화
+        Setting setting = new Setting();
+        settingMenuFactory = new SettingMenuFactory(setting);
         
-        // FXML 로드
-        FXMLLoader loader = new FXMLLoader(
-            getClass().getResource("/org/tetris/menu/setting/view/settingmenu.fxml")
-        );
-        
-        // Controller를 먼저 생성하고 FXMLLoader에 설정
-        controller = new SettingMenuController(model);
-        loader.setController(controller);
-        
-        // FXML 로드
-        BorderPane root = loader.load();
+        // MvcBundle을 통해 컴포넌트 생성
+        MvcBundle<SettingMenuModel, ?, SettingMenuController> bundle = settingMenuFactory.create();
+        controller = bundle.controller();
+        model = bundle.model();
         
         // Scene 설정
-        Scene scene = new Scene(root, 800, 600);
-        stage.setScene(scene);
+        stage.setScene(bundle.view().getScene());
         stage.setTitle("Setting Menu Test");
         stage.show();
         stage.toFront();
@@ -115,12 +107,10 @@ public class SettingMenuControllerTest extends ApplicationTest {
      * Helper Methods
      * ======================================== */
     
+    private static final String STYLE_HIGHLIGHTED = "highlighted";
+    
     private BorderPane rootPane() {
         return lookup("#root").query();
-    }
-    
-    private VBox mainVBox() {
-        return lookup("#mainVBox").query();
     }
     
     private Button saveButton() {
@@ -142,21 +132,56 @@ public class SettingMenuControllerTest extends ApplicationTest {
                 .collect(Collectors.toList());
     }
     
-    private List<RadioButton> getRadioButtonsInPane(String paneId) {
-        VBox pane = lookup(paneId).query();
-        if (pane == null) return List.of();
+    /**
+     * 모든 포커스 가능한 노드들을 가져옵니다 (RadioButton, Button 등)
+     */
+    private List<javafx.scene.Node> getAllFocusableNodes() {
+        List<javafx.scene.Node> nodes = new ArrayList<>();
         
-        return pane.getChildrenUnmodifiable().stream()
-                .filter(n -> n instanceof RadioButton)
-                .map(n -> (RadioButton) n)
-                .collect(Collectors.toList());
+        // RadioButton들 추가
+        nodes.addAll(getAllRadioButtons());
+        
+        // 하단 버튼들 추가
+        nodes.add(saveButton());
+        nodes.add(resetButton());
+        nodes.add(backButton());
+        
+        // 키 바인딩 버튼들 추가
+        lookup(".key-binding-button").queryAll().stream()
+                .forEach(nodes::add);
+        
+        return nodes;
     }
     
-    private RadioButton getSelectedRadioButton(ToggleGroup group) {
-        if (group == null || group.getSelectedToggle() == null) {
-            return null;
+    /**
+     * 특정 노드가 highlighted 상태인지 확인
+     */
+    private boolean isHighlighted(javafx.scene.Node node) {
+        if (node == null) return false;
+        return node.getStyleClass().contains(STYLE_HIGHLIGHTED);
+    }
+    
+    /**
+     * highlighted 상태인 노드를 반환
+     */
+    private javafx.scene.Node getHighlightedNode() {
+        return getAllFocusableNodes().stream()
+                .filter(this::isHighlighted)
+                .findFirst()
+                .orElse(null);
+    }
+    
+    /**
+     * highlighted 상태인 노드의 인덱스를 반환 (-1이면 없음)
+     */
+    private int getHighlightedIndex() {
+        List<javafx.scene.Node> nodes = getAllFocusableNodes();
+        for (int i = 0; i < nodes.size(); i++) {
+            if (isHighlighted(nodes.get(i))) {
+                return i;
+            }
         }
-        return (RadioButton) group.getSelectedToggle();
+        return -1;
     }
     
     /*
@@ -216,7 +241,7 @@ public class SettingMenuControllerTest extends ApplicationTest {
     }
     
     /* ========================================
-     * RadioButton 선택 테스트
+     * RadioButton 선택 테스트 - Highlight 검증
      * ======================================== */
     
     @Test
@@ -229,12 +254,17 @@ public class SettingMenuControllerTest extends ApplicationTest {
         if (allRadioButtons.size() > 1) {
             RadioButton secondRadio = allRadioButtons.get(1);
             
+            // 클릭 전 highlighted 아님
+            assertFalse("클릭 전에는 highlighted가 아니어야 합니다", isHighlighted(secondRadio));
+            
             clickOn(secondRadio);
             WaitForAsyncUtils.waitForFxEvents();
             waitFor(100);
             
             // 선택되었는지 확인
             assertTrue("클릭한 라디오 버튼이 선택되어야 합니다", secondRadio.isSelected());
+            // 클릭 후 마우스가 위에 있으므로 highlighted 상태
+            assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(secondRadio));
         }
     }
     
@@ -255,11 +285,13 @@ public class SettingMenuControllerTest extends ApplicationTest {
                 WaitForAsyncUtils.waitForFxEvents();
                 assertTrue("첫 번째 버튼이 선택되어야 합니다", first.isSelected());
                 assertFalse("두 번째 버튼은 선택 해제되어야 합니다", second.isSelected());
+                assertTrue("클릭한 첫 번째 버튼이 highlighted 되어야 합니다", isHighlighted(first));
                 
                 clickOn(second);
                 WaitForAsyncUtils.waitForFxEvents();
                 assertFalse("첫 번째 버튼은 선택 해제되어야 합니다", first.isSelected());
                 assertTrue("두 번째 버튼이 선택되어야 합니다", second.isSelected());
+                assertTrue("클릭한 두 번째 버튼이 highlighted 되어야 합니다", isHighlighted(second));
             }
         }
     }
@@ -271,17 +303,22 @@ public class SettingMenuControllerTest extends ApplicationTest {
         if (!allRadioButtons.isEmpty()) {
             RadioButton firstRadio = allRadioButtons.get(0);
             
+            // 초기 상태: highlighted 아님
+            assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(firstRadio));
+            
             // 마우스를 라디오 버튼 위로 이동
             moveTo(firstRadio);
             WaitForAsyncUtils.waitForFxEvents();
+            waitFor(50);
             
-            // 호버 상태 확인 (hover pseudo-class 또는 스타일 변경)
+            // highlighted 상태 확인
+            assertTrue("마우스 호버 시 라디오 버튼이 highlighted 되어야 합니다", isHighlighted(firstRadio));
             assertTrue("라디오 버튼이 hover 상태여야 합니다", firstRadio.isHover());
         }
     }
     
     /* ========================================
-     * 버튼 클릭 테스트
+     * 버튼 클릭 테스트 - Highlight 검증
      * ======================================== */
     
     @Test
@@ -289,13 +326,16 @@ public class SettingMenuControllerTest extends ApplicationTest {
         Button saveBtn = saveButton();
         assertNotNull("Save 버튼이 존재해야 합니다", saveBtn);
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(saveBtn));
+        
         // Save 버튼 클릭
         clickOn(saveBtn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(100);
         
-        // 버튼이 클릭 가능한지 확인 (예외가 발생하지 않으면 성공)
-        assertTrue("Save 버튼이 클릭 가능해야 합니다", true);
+        // 클릭 후 마우스가 위에 있으므로 highlighted
+        assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(saveBtn));
     }
     
     @Test
@@ -303,13 +343,16 @@ public class SettingMenuControllerTest extends ApplicationTest {
         Button resetBtn = resetButton();
         assertNotNull("Reset 버튼이 존재해야 합니다", resetBtn);
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(resetBtn));
+        
         // Reset 버튼 클릭
         clickOn(resetBtn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(100);
         
-        // 버튼이 클릭 가능한지 확인
-        assertTrue("Reset 버튼이 클릭 가능해야 합니다", true);
+        // 클릭 후 highlighted 상태 확인
+        assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(resetBtn));
     }
     
     @Test
@@ -317,47 +360,70 @@ public class SettingMenuControllerTest extends ApplicationTest {
         Button backBtn = backButton();
         assertNotNull("Back 버튼이 존재해야 합니다", backBtn);
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(backBtn));
+        
         // Back 버튼 클릭
         clickOn(backBtn);
         WaitForAsyncUtils.waitForFxEvents();
         waitFor(100);
         
-        assertTrue("Back 버튼이 클릭 가능해야 합니다", true);
+        // 클릭 후 highlighted 상태 확인
+        assertTrue("클릭 후 마우스가 위에 있으면 highlighted 되어야 합니다", isHighlighted(backBtn));
     }
     
     @Test
     public void testButtonMouseHover() {
         Button saveBtn = saveButton();
         
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(saveBtn));
+        
         // 마우스를 버튼 위로 이동
         moveTo(saveBtn);
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
         
-        // 호버 상태 확인
+        // highlighted 및 호버 상태 확인
+        assertTrue("마우스 호버 시 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
         assertTrue("버튼이 hover 상태여야 합니다", saveBtn.isHover());
         
         // 마우스를 다른 곳으로 이동
         moveTo(rootPane());
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
         
-        // 호버 상태 해제 확인
+        // highlighted 및 호버 상태 해제 확인
+        assertFalse("마우스가 떠나면 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
         assertFalse("마우스가 떠나면 hover 상태가 해제되어야 합니다", saveBtn.isHover());
     }
     
     @Test
     public void testMultipleButtonClicks() {
-        // 여러 버튼을 순차적으로 클릭
-        clickOn(saveButton());
-        WaitForAsyncUtils.waitForFxEvents();
+        // 여러 버튼을 순차적으로 클릭하며 각각 highlighted 확인
+        Button saveBtn = saveButton();
+        Button resetBtn = resetButton();
+        Button backBtn = backButton();
         
-        clickOn(resetButton());
+        // Save 버튼 클릭
+        clickOn(saveBtn);
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertTrue("Save 버튼이 highlighted 되어야 합니다", isHighlighted(saveBtn));
         
-        clickOn(backButton());
+        // Reset 버튼으로 이동 및 클릭
+        clickOn(resetBtn);
         WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertFalse("Save 버튼의 highlighted가 해제되어야 합니다", isHighlighted(saveBtn));
+        assertTrue("Reset 버튼이 highlighted 되어야 합니다", isHighlighted(resetBtn));
         
-        // 모든 클릭이 성공적으로 수행되면 테스트 통과
-        assertTrue("모든 버튼이 순차적으로 클릭 가능해야 합니다", true);
+        // Back 버튼으로 이동 및 클릭
+        clickOn(backBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        assertFalse("Reset 버튼의 highlighted가 해제되어야 합니다", isHighlighted(resetBtn));
+        assertTrue("Back 버튼이 highlighted 되어야 합니다", isHighlighted(backBtn));
     }
 
     /* ========================================
@@ -417,7 +483,7 @@ public class SettingMenuControllerTest extends ApplicationTest {
         // 테스트 케이스 3: 초기 크기로 복원
         interact(() -> {
             stage.setWidth(800);
-            stage.setHeight(600);
+            stage.setHeight(800);
         });
         WaitForAsyncUtils.waitForFxEvents();
         WaitForAsyncUtils.sleep(100, TimeUnit.MILLISECONDS);
@@ -433,5 +499,251 @@ public class SettingMenuControllerTest extends ApplicationTest {
             assertNotNull("버튼이 존재해야 합니다", btn);
             assertTrue("버튼이 표시되어야 합니다", btn.isVisible());
         }
+    }
+
+    /* ========================================
+     * Key binding button tests - Highlight 검증
+     * ======================================== */
+
+    @Test
+    public void testKeyBindingButtonsExistAndDefaultDisplay() {
+        // key-binding 버튼은 P1(5) + P2(5)로 총 10개 존재해야 함
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertEquals("키 바인딩 버튼은 10개여야 합니다", 10, nodes.size());
+
+        // 텍스트 목록 중에 화살표/Space/Shift/WASD가 포함되어 있는지 확인
+        List<String> texts = nodes.stream()
+                .filter(n -> n instanceof Button)
+                .map(n -> ((Button) n).getText())
+                .toList();
+
+        // Player1 화살표와 Space
+        assertTrue("왼쪽 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("←")));
+        assertTrue("오른쪽 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("→")));
+        assertTrue("위 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("↑")));
+        assertTrue("아래 화살표가 표시되어야 합니다", texts.stream().anyMatch(t -> t.contains("↓")));
+        assertTrue("Space가 표시되어야 합니다", texts.stream().anyMatch(t -> t.toLowerCase().contains("space") || t.contains("Space")));
+
+        // Player2 WASD + Shift
+        assertTrue("A 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bA\\b.*") || t.contains("A:")));
+        assertTrue("W 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bW\\b.*") || t.contains("W:")));
+        assertTrue("S 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bS\\b.*") || t.contains("S:")));
+        assertTrue("D 키가 표시되어야 합니다", texts.stream().anyMatch(t -> t.matches(".*\\bD\\b.*") || t.contains("D:")));
+        assertTrue("Shift가 표시되어야 합니다", texts.stream().anyMatch(t -> t.toLowerCase().contains("shift") || t.contains("Shift")));
+    }
+
+    @Test
+    public void testClickKeyBindingAssignKey() {
+        // 첫 번째 key-binding 버튼을 클릭하고 새 키를 할당하면 버튼 텍스트가 갱신되어야 함
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 비어있어선 안됩니다", nodes.isEmpty());
+
+        Button btn = (Button) nodes.iterator().next();
+        
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(btn));
+        
+        // 클릭하여 바인딩 모드로 진입
+        clickOn(btn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // 클릭 후 highlighted 상태 확인
+        assertTrue("클릭 후 버튼이 highlighted 되어야 합니다", isHighlighted(btn));
+
+        // 새 키 입력 (예: J)
+        push(KeyCode.J);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+
+        // 버튼 텍스트에 J가 포함되어야 함
+        assertTrue("버튼 텍스트에 새로 입력한 키가 포함되어야 합니다: " + btn.getText(), btn.getText().contains("J"));
+    }
+    
+    @Test
+    public void testKeyBindingButtonMouseHover() {
+        // 키 바인딩 버튼에 마우스를 올리면 highlighted 되는지 확인
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 존재해야 합니다", nodes.isEmpty());
+        
+        Button keyBtn = (Button) nodes.iterator().next();
+        
+        // 초기 상태: highlighted 아님
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(keyBtn));
+        
+        // 마우스 호버
+        moveTo(keyBtn);
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 상태 확인
+        assertTrue("마우스 호버 시 키 바인딩 버튼이 highlighted 되어야 합니다", isHighlighted(keyBtn));
+        
+        // 마우스를 다른 곳으로 이동
+        moveTo(rootPane());
+        WaitForAsyncUtils.waitForFxEvents();
+        waitFor(50);
+        
+        // highlighted 해제 확인
+        assertFalse("마우스가 떠나면 highlighted가 해제되어야 합니다", isHighlighted(keyBtn));
+    }
+    
+    /* ========================================
+     * updateSizes 반응형 크기 조정 테스트
+     * ======================================== */
+    
+    @Test
+    public void testUpdateSizesWithDifferentWindowSizes() {
+        Button saveBtn = saveButton();
+        
+        // 800x800 (초기 크기) - 버튼 크기 확인
+        interact(() -> {
+            stage.setWidth(800);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double width800 = saveBtn.getPrefWidth();
+        double height800 = saveBtn.getPrefHeight();
+        
+        assertTrue("800x800에서 버튼 너비가 설정되어야 합니다", width800 > 0);
+        assertTrue("800x800에서 버튼 높이가 설정되어야 합니다", height800 > 0);
+        
+        // 1200x800 (큰 창) - 버튼 크기가 증가해야 함
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double width1200 = saveBtn.getPrefWidth();
+        
+        assertTrue("1200x800에서 버튼 너비가 800x800보다 커야 합니다", width1200 >= width800);
+        
+        // 600x400 (작은 창) - 버튼 크기가 감소해야 함
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double width600 = saveBtn.getPrefWidth();
+        
+        assertTrue("600x400에서 버튼이 여전히 표시되어야 합니다", saveBtn.isVisible());
+        assertTrue("600x400에서 버튼 너비가 800x800보다 작거나 같아야 합니다", width600 <= width800);
+    }
+    
+    @Test
+    public void testKeyBindingButtonSizeAdjustment() {
+        // 키 바인딩 버튼들의 크기도 반응형으로 조정되는지 확인
+        var nodes = lookup(".key-binding-button").queryAll();
+        assertFalse("키 바인딩 버튼이 존재해야 합니다", nodes.isEmpty());
+        
+        Button keyBtn = (Button) nodes.iterator().next();
+        
+        // 큰 창
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthLarge = keyBtn.getPrefWidth();
+        double heightLarge = keyBtn.getPrefHeight();
+        
+        assertTrue("큰 창에서 키 바인딩 버튼 너비가 설정되어야 합니다", widthLarge > 0);
+        assertTrue("큰 창에서 키 바인딩 버튼 높이가 설정되어야 합니다", heightLarge > 0);
+        
+        // 작은 창
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthSmall = keyBtn.getPrefWidth();
+        
+        assertTrue("작은 창에서도 키 바인딩 버튼이 표시되어야 합니다", keyBtn.isVisible());
+        assertTrue("작은 창에서 키 바인딩 버튼이 적절한 최소 크기를 유지해야 합니다", widthSmall >= 150);
+    }
+    
+    @Test
+    public void testButtonSpacingAdjustment() {
+        // buttonBox의 간격이 창 크기에 따라 조정되는지 확인
+        var buttonBox = lookup("#buttonBox").query();
+        assertNotNull("buttonBox가 존재해야 합니다", buttonBox);
+        
+        // 큰 창
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        assertTrue("큰 창에서 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
+        assertFalse("초기 상태에서는 highlighted가 아니어야 합니다", isHighlighted(buttonBox));
+        
+        // 작은 창
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        assertTrue("작은 창에서도 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
+    }
+    
+    @Test
+    public void testPlayerLabelSizeAdjustment() {
+        // Player 라벨들의 크기가 반응형으로 조정되는지 확인
+        // "Player 1 :" 라벨을 찾습니다.
+        var labels = lookup(".label").queryAllAs(javafx.scene.control.Label.class).stream()
+                .filter(l -> l.getText() != null && l.getText().contains("Player 1"))
+                .collect(Collectors.toList());
+        
+        assertFalse("Player 1 라벨이 존재해야 합니다", labels.isEmpty());
+        javafx.scene.control.Label playerLabel = labels.get(0);
+        
+        // 큰 창
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthLarge = playerLabel.getPrefWidth();
+        
+        assertTrue("큰 창에서 Player 라벨 너비가 설정되어야 합니다", widthLarge > 0);
+        
+        // 작은 창
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthSmall = playerLabel.getPrefWidth();
+        
+        assertTrue("작은 창에서도 Player 라벨이 표시되어야 합니다", playerLabel.isVisible());
+        // Controller에서 최소 너비를 80으로 설정했으므로 이를 검증
+        assertTrue("작은 창에서 Player 라벨이 적절한 최소 크기를 유지해야 합니다", widthSmall >= 80);
     }
 }
