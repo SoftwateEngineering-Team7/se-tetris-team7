@@ -1,6 +1,9 @@
 package org.tetris.network.menu.controller;
 
 import org.tetris.Router;
+import org.tetris.game.model.GameMode;
+import org.tetris.network.GameClient;
+import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -13,21 +16,33 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 
-public class NetworkMenuController extends BaseController<NetworkMenu> implements RouterAware{
+public class NetworkMenuController extends BaseController<NetworkMenu>
+        implements RouterAware, GameMenuCommandExecutor {
 
     private Router router;
 
-    @FXML private ToggleGroup connectionTypeGroup;
-    @FXML private RadioButton hostRadio;
-    @FXML private RadioButton clientRadio;
-    @FXML private TextField ipField;
-    @FXML private TextField portField;
-    @FXML private ComboBox<String> gameModeCombo;
-    @FXML private Button createButton;
-    @FXML private TextArea logArea;
-    @FXML private Button backButton;
-    @FXML private Button clearLogButton;
-    @FXML private Button readyButton;
+    @FXML
+    private ToggleGroup connectionTypeGroup;
+    @FXML
+    private RadioButton hostRadio;
+    @FXML
+    private RadioButton clientRadio;
+    @FXML
+    private TextField ipField;
+    @FXML
+    private TextField portField;
+    @FXML
+    private ComboBox<String> gameModeCombo;
+    @FXML
+    private Button createButton;
+    @FXML
+    private TextArea logArea;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Button clearLogButton;
+    @FXML
+    private Button readyButton;
 
     public NetworkMenuController(NetworkMenu networkMenu) {
         super(networkMenu);
@@ -42,7 +57,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
     public void initialize() {
         // 모델에 컨트롤러 등록 (Ping 업데이트를 위해)
         model.pingProperty().addListener((observable, oldValue, newValue) -> {
-        addLog("Ping: " + newValue + "ms");
+            addLog("Ping: " + newValue + "ms");
         });
 
         model.otherIsReadyProperty().addListener((observable, oldValue, newValue) -> {
@@ -52,10 +67,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         // ComboBox 초기화
         gameModeCombo.getItems().addAll("일반 모드", "아이템 모드", "타임어택 모드");
         gameModeCombo.setValue("일반 모드");
-        
+
         // ComboBox 스타일 강제 적용 (흰색 텍스트)
-        gameModeCombo.setStyle("-fx-background-color: #0f3460; -fx-text-fill: white; -fx-border-color: #533483; -fx-border-radius: 5; -fx-background-radius: 5;");
-        
+        gameModeCombo.setStyle(
+                "-fx-background-color: #0f3460; -fx-text-fill: white; -fx-border-color: #533483; -fx-border-radius: 5; -fx-background-radius: 5;");
+
         // ComboBox 버튼 셀과 리스트 셀의 텍스트 색상을 흰색으로 설정
         gameModeCombo.setCellFactory(listView -> {
             return new javafx.scene.control.ListCell<String>() {
@@ -71,7 +87,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
                 }
             };
         });
-        
+
         // 선택된 항목을 보여주는 버튼 셀도 흰색으로 설정
         gameModeCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
             @Override
@@ -113,6 +129,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         readyButton.setDisable(true);
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
+
+        // Register as Menu Executor
+        if (GameClient.getInstance().getClientThread() != null) {
+            GameClient.getInstance().getClientThread().setMenuExecutor(this);
+        }
     }
 
     @FXML
@@ -121,9 +142,9 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
             String ip = ipField.getText().trim();
             String portText = portField.getText().trim();
             int port = Integer.parseInt(portText);
-            
+
             String gameMode = gameModeCombo.getValue();
-            
+
             try {
                 model.isValidIP(ip);
                 model.isValidPort(port);
@@ -189,22 +210,56 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         }
     }
 
+    @Override
+    public void onReady(boolean others) {
+        javafx.application.Platform.runLater(() -> {
+            if (model == null) {
+                System.out.println("[CLIENT-ENGINE] NetworkMenu is not set. Ignoring onReady.");
+                return;
+            }
+
+            model.setOtherIsReady(others);
+            if (others) {
+                System.out.println("[CLIENT-ENGINE] Other Player is ready.");
+            } else {
+                System.out.println("[CLIENT-ENGINE] Other Player is not ready.");
+            }
+        });
+    }
+
+    @Override
+    public void gameStart() {
+        javafx.application.Platform.runLater(() -> {
+            System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
+            router.showP2PGamePlaceholder(GameMode.NORMAL);
+        });
+    }
+
+    @Override
+    public synchronized void updatePing(long ping) {
+        System.out.println("[CLIENT-ENGINE] Ping: " + ping + "ms");
+        if (model != null) {
+            model.setPing(ping);
+        }
+    }
+
     /**
      * 로그 메시지를 추가합니다.
+     * 
      * @param message 추가할 로그 메시지
      */
     public void addLog(String message) {
-        String timestamp = java.time.LocalTime.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")
-        );
+        String timestamp = java.time.LocalTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
         logArea.appendText("[" + timestamp + "] " + message + "\n");
-        
+
         // 스크롤을 맨 아래로 이동
         logArea.setScrollTop(Double.MAX_VALUE);
     }
 
     /**
      * 현재 선택된 게임 모드를 반환합니다.
+     * 
      * @return 선택된 게임 모드
      */
     public String getSelectedGameMode() {
