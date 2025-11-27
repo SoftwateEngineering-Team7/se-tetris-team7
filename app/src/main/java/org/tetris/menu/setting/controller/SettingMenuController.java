@@ -629,12 +629,25 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
 
     // 문자열을 최대 max 개로 자르는 헬퍼
     private static String truncateToCodePoints(String s, int max) {
-        if (s == null)
+        if (s == null) {
             return "";
-        return s.codePoints()
-                .limit(max)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
+        }
+
+        // 1차 최적화: 문자열 길이(char 개수)가 max보다 작거나 같으면
+        // 코드포인트 개수도 무조건 max 이하이므로 바로 반환 (O(1))
+        if (s.length() <= max) {
+            return s;
+        }
+
+        // 2차 검사: 실제 코드포인트 개수가 max 이하인 경우 바로 반환
+        // (이모지 등이 섞여 있어 길이는 길지만 실제 글자 수는 적은 경우 대비)
+        if (s.codePointCount(0, s.length()) <= max) {
+            return s;
+        }
+
+        // max 개수만큼의 코드포인트가 위치한 인덱스를 찾아서 자름
+        int endIndex = s.offsetByCodePoints(0, max);
+        return s.substring(0, endIndex);
     }
 
     private void updateKeyBindingButtons() {
