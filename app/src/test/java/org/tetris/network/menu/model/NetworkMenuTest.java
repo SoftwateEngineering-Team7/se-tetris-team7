@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.tetris.network.GameServer;
 
 public class NetworkMenuTest {
-    
+
     private NetworkMenu networkMenu;
 
     @Before
@@ -25,7 +25,7 @@ public class NetworkMenuTest {
             networkMenu.clear();
         }
         GameServer.getInstance().stop();
-        
+
         // 포트 해제 대기
         try {
             Thread.sleep(200);
@@ -52,9 +52,10 @@ public class NetworkMenuTest {
 
         // Then
         assertTrue("Host 모드여야 합니다", networkMenu.getIsHost());
-        assertEquals("localhost", networkMenu.getIpAddress());
+        String expectedIp = GameServer.getInstance().getHostIP().getHostAddress();
+        assertEquals(expectedIp, networkMenu.getIpAddress());
         assertEquals(12345, networkMenu.getPort());
-        
+
         // 서버가 실행 중인지 확인
         assertTrue("서버가 실행 중이어야 합니다", GameServer.getInstance() != null);
     }
@@ -66,7 +67,7 @@ public class NetworkMenuTest {
         hostMenu.setIsHost(true);
         hostMenu.setPort(12345);
         hostMenu.create();
-        
+
         Thread.sleep(300); // 서버 준비 대기
 
         // When - 클라이언트 연결
@@ -81,7 +82,7 @@ public class NetworkMenuTest {
         assertFalse("Client 모드여야 합니다", networkMenu.getIsHost());
         assertEquals("localhost", networkMenu.getIpAddress());
         assertEquals(12345, networkMenu.getPort());
-        
+
         // 정리
         hostMenu.clear();
     }
@@ -99,11 +100,13 @@ public class NetworkMenuTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetInvalidIpAddress() {
+        networkMenu.setIsHost(false);
         networkMenu.setIpAddress("999.999.999.999");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetEmptyIpAddress() {
+        networkMenu.setIsHost(false);
         networkMenu.setIpAddress("");
     }
 
@@ -160,6 +163,7 @@ public class NetworkMenuTest {
 
     @Test
     public void testIsValidIP() {
+        networkMenu.setIsHost(false);
         assertTrue(networkMenu.isValidIP("192.168.1.1"));
         assertTrue(networkMenu.isValidIP("localhost"));
         assertTrue(networkMenu.isValidIP("127.0.0.1"));
@@ -167,11 +171,13 @@ public class NetworkMenuTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testIsValidIPWithInvalidIP() {
+        networkMenu.setIsHost(false);
         networkMenu.isValidIP("invalid_ip");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIsValidIPWithNull() {
+        networkMenu.setIsHost(false);
         networkMenu.isValidIP(null);
     }
 

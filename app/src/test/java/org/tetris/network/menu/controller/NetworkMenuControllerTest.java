@@ -14,7 +14,7 @@ import org.tetris.shared.MvcBundle;
 
 import javafx.stage.Stage;
 
-public class NetworkMenuControllerTest extends ApplicationTest{
+public class NetworkMenuControllerTest extends ApplicationTest {
     private NetworkMenuFactory nmFactory = new NetworkMenuFactory();
     private NetworkMenuController controller;
     private NetworkMenu model;
@@ -22,7 +22,7 @@ public class NetworkMenuControllerTest extends ApplicationTest{
     @Override
     public void start(Stage stage) {
         MvcBundle<?, ?, ?> bundle = nmFactory.create();
-    
+
         controller = (NetworkMenuController) bundle.controller();
         model = (NetworkMenu) bundle.model();
 
@@ -32,11 +32,10 @@ public class NetworkMenuControllerTest extends ApplicationTest{
     }
 
     @Test
-    public void testShow()
-    {
+    public void testShow() {
         // 1초 동안 화면을 보여줍니다
         sleep(1000);
-        
+
         // 기본 UI 요소들이 표시되는지 확인
         verifyThat("#hostRadio", isVisible());
         verifyThat("#clientRadio", isVisible());
@@ -49,12 +48,12 @@ public class NetworkMenuControllerTest extends ApplicationTest{
     }
 
     @Test
-    public void testHostClientSelection(){
+    public void testHostClientSelection() {
         // Host 선택 테스트
         clickOn("#hostRadio");
         sleep(1000);
         verifyThat("#hostRadio", isVisible());
-        
+
         // Client 선택 테스트
         clickOn("#clientRadio");
         sleep(1000);
@@ -63,18 +62,20 @@ public class NetworkMenuControllerTest extends ApplicationTest{
 
     @Test
     public void testIpFieldInput() {
-        clickOn("#ipField").write("192.168.1.100");
+        doubleClickOn("#ipField").write("192.168.1.100");
         verifyThat("#ipField", TextInputControlMatchers.hasText("192.168.1.100"));
     }
 
     @Test
     public void testPortFieldInput() {
-        clickOn("#portField").write("54321");
+        doubleClickOn("#portField").write("54321");
         verifyThat("#portField", TextInputControlMatchers.hasText("54321"));
     }
 
     @Test
     public void testGameModeCombo() {
+        clickOn("#hostRadio");
+        sleep(500);
         clickOn("#gameModeCombo");
         sleep(500);
         // 콤보박스 드롭다운이 열리는지 확인
@@ -88,7 +89,7 @@ public class NetworkMenuControllerTest extends ApplicationTest{
         clickOn("#createButton");
         sleep(1000);
         // 로그 영역에 메시지가 추가되었는지 확인
-        verifyThat("#logArea", isVisible());       
+        verifyThat("#logArea", isVisible());
 
         sleep(1000);
 
@@ -101,11 +102,11 @@ public class NetworkMenuControllerTest extends ApplicationTest{
         // 먼저 로그를 생성하기 위해 create 버튼 클릭
         clickOn("#createButton");
         sleep(500);
-        
+
         // 로그 클리어 버튼 클릭
         clickOn("#clearLogButton");
         sleep(1000);
-        
+
         // 로그 영역이 여전히 존재하는지 확인
         verifyThat("#logArea", isVisible());
     }
