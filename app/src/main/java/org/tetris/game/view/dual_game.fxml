@@ -122,6 +122,22 @@
                             </Label>
                         </children>
                     </VBox>
+
+                    <!-- Player 1 TIMER (Time Attack 전용) -->
+                    <VBox fx:id="timeAttackBox1" alignment="CENTER" spacing="5" visible="false" managed="false">
+                        <children>
+                            <Label text="TIME" textFill="#e94560">
+                                <font>
+                                    <Font name="Arial Black" size="16.0" />
+                                </font>
+                            </Label>
+                            <Label fx:id="timerLabel1" text="03:00" textFill="white">
+                                <font>
+                                    <Font name="Consolas Bold" size="22.0" />
+                                </font>
+                            </Label>
+                        </children>
+                    </VBox>
                 </children>
                 <BorderPane.margin>
                     <Insets top="20.0" left="20.0" bottom="20.0" right="10.0" />
@@ -204,6 +220,22 @@
                                 </font>
                             </Label>
                             <Label fx:id="linesLabel2" text="0" textFill="white">
+                                <font>
+                                    <Font name="Consolas Bold" size="22.0" />
+                                </font>
+                            </Label>
+                        </children>
+                    </VBox>
+
+                    <!-- Player 2 TIMER (Time Attack 전용) -->
+                    <VBox fx:id="timeAttackBox2" alignment="CENTER" spacing="5" visible="false" managed="false">
+                        <children>
+                            <Label text="TIME" textFill="#e94560">
+                                <font>
+                                    <Font name="Arial Black" size="16.0" />
+                                </font>
+                            </Label>
+                            <Label fx:id="timerLabel2" text="03:00" textFill="white">
                                 <font>
                                     <Font name="Consolas Bold" size="22.0" />
                                 </font>

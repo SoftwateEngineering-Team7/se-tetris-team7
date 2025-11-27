@@ -23,6 +23,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 
 public class DualGameController extends BaseController<DualGameModel> implements RouterAware, ItemActivation {
 
@@ -41,6 +42,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private Label levelLabel1;
     @FXML
     private Label linesLabel1;
+    @FXML
+    private VBox timeAttackBox1;
+    @FXML
+    private Label timerLabel1;
 
     // Player 2 (오른쪽)
     @FXML
@@ -53,6 +58,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private Label levelLabel2;
     @FXML
     private Label linesLabel2;
+    @FXML
+    private VBox timeAttackBox2;
+    @FXML
+    private Label timerLabel2;
 
     // 오버레이 & 버튼
     @FXML
@@ -84,6 +93,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     private long lastUpdate = 0L;
     private static final long FRAME_TIME = 16_666_667L; // ~60 FPS (나노초)
+    private long lastLogTime = 0L;
 
     // 플래시 애니메이션 파라미터
     private static final int FLASH_TIMES = 2;
@@ -91,6 +101,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
     private static final int MIN_CELL_SIZE = 16;
     private static final double PREVIEW_RATIO = 0.8;
+    private boolean isTimeAttackMode = false;
 
     public DualGameController(DualGameModel model) {
         super(model);
@@ -122,7 +133,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         setupEventHandlers();
         startGameLoop();
-        
+
         dualGameModel.getPlayer1GameModel().spawnNewBlock();
         dualGameModel.getPlayer2GameModel().spawnNewBlock();
     }
@@ -130,12 +141,16 @@ public class DualGameController extends BaseController<DualGameModel> implements
     // Dual 모드에서도 아이템 모드 / 난이도 설정
     public void setUpGameMode(GameMode mode) {
         boolean itemMode = (mode == GameMode.ITEM);
+        boolean timeMode = (mode == GameMode.TIME_ATTACK);
 
         dualGameModel.getPlayer1GameModel().setItemMode(itemMode);
         dualGameModel.getPlayer2GameModel().setItemMode(itemMode);
 
         dualGameModel.getPlayer1GameModel().setDifficulty();
         dualGameModel.getPlayer2GameModel().setDifficulty();
+        dualGameModel.getTimeAttack().setTimeAttackMode(timeMode);
+        isTimeAttackMode = timeMode;
+        updateTimeAttackVisibility();
     }
 
     // PlayerSlot 생성 로직 통합
@@ -202,6 +217,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void setupUI() {
         hideGameOverlay();
         hidePauseOverlay();
+        updateTimeAttackVisibility();
         updateUI();
     }
 
@@ -303,12 +319,21 @@ public class DualGameController extends BaseController<DualGameModel> implements
         lockCurrentBlock(player);
     }
 
+    private boolean isPaused() {
+        return player1.gameModel.isPaused() || player2.gameModel.isPaused();
+    }
+
+    private double playTime = 0.0;
+
     // === 게임 루프 ===
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
+            double deltaTime = 0.0;
+            long previousTime = System.nanoTime();
+
             @Override
             public void handle(long now) {
-                if(player1 == null || player2 == null)
+                if (player1 == null || player2 == null)
                     return;
 
                 if (lastUpdate == 0L) {
@@ -316,6 +341,13 @@ public class DualGameController extends BaseController<DualGameModel> implements
                     player1.lastDropTime = now;
                     player2.lastDropTime = now;
                     return;
+                }
+
+                deltaTime = (now - previousTime) / 1_000_000_000.0;
+                previousTime = now;
+
+                if (!isPaused()) {
+                    playTime += deltaTime; // 초 단위
                 }
 
                 long elapsed = now - lastUpdate;
@@ -329,11 +361,16 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void update(long now) {
-        GameModel gm1 = player1.gameModel;
-        GameModel gm2 = player2.gameModel;
-
-        if (gm1.isPaused() || gm2.isPaused())
+        if (isPaused())
             return;
+
+        if (lastLogTime == 0L) {
+            lastLogTime = now;
+        } else if (now - lastLogTime >= 1_000_000_000L) {
+            System.out.println(dualGameModel.getTimeAttack().getRemainingSeconds(playTime) + " seconds left");
+            lastLogTime = now;
+        }
+
         if (player1 == null || player2 == null)
             return;
 
@@ -368,15 +405,32 @@ public class DualGameController extends BaseController<DualGameModel> implements
         }
     }
 
-    private void checkGameOverState() {
-        GameModel gm1 = player1.gameModel;
-        GameModel gm2 = player2.gameModel;
+    private boolean isGameOver = false;
 
-        boolean p1Over = gm1.isGameOver();
-        boolean p2Over = gm2.isGameOver();
+    private void checkGameOverState() {
+        isGameOver = false;
+
+        boolean p1Over = player1.gameModel.isGameOver();
+        boolean p2Over = player2.gameModel.isGameOver();
+
+        if (dualGameModel.getTimeAttack().getRemainingSeconds(playTime) == 0) {
+            int score1 = player1.scoreModel.getScore();
+            int score2 = player2.scoreModel.getScore();
+
+            if (score1 > score2)
+                p2Over = true;
+            else if (score1 < score2)
+                p1Over = true;
+            else { // 동점
+                p1Over = true;
+                p2Over = true;
+            }
+        }
 
         if (!p1Over && !p2Over)
             return;
+
+        isGameOver = true;
 
         if (gameLoop != null)
             gameLoop.stop();
@@ -398,7 +452,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
             winnerLabel.setText(result);
         if (router != null) {
             // boolean isItemMode 사용
-            boolean isItem = gm1.isItemMode();
+            boolean isItem = player1.gameModel.isItemMode();
             router.showScoreBoard(true, isItem, Math.max(p1Score, p2Score));
         }
     }
@@ -438,7 +492,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     private void beginFlash(PlayerSlot player, long now) {
         player.isFlashing = true;
-        player.flashMask = player.renderer.buildFlashMask(player.clearingRows, player.clearingCols, player.clearingCells);
+        player.flashMask = player.renderer.buildFlashMask(player.clearingRows, player.clearingCols,
+                player.clearingCells);
         player.flashOn = false;
         player.flashToggleCount = 0;
         player.nextFlashAt = now;
@@ -548,6 +603,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
             linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
             player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
         }
+
+        updateTimeAttackTimer();
     }
 
     private void updateGameBoard(PlayerSlot player) {
@@ -563,9 +620,43 @@ public class DualGameController extends BaseController<DualGameModel> implements
             scoreLabel2.setText(player2.scoreModel.toString());
     }
 
+    private void updateTimeAttackVisibility() {
+        boolean show = isTimeAttackMode;
+
+        if (timeAttackBox1 != null) {
+            timeAttackBox1.setVisible(show);
+            timeAttackBox1.setManaged(show);
+        }
+        if (timeAttackBox2 != null) {
+            timeAttackBox2.setVisible(show);
+            timeAttackBox2.setManaged(show);
+        }
+    }
+
+    private void updateTimeAttackTimer() {
+        if (!isTimeAttackMode) {
+            return;
+        }
+
+        int remainingSeconds = (int) Math.ceil(dualGameModel.getTimeAttack().getRemainingSeconds(playTime));
+        String formatted = formatSeconds(Math.max(remainingSeconds, 0));
+
+        if (timerLabel1 != null)
+            timerLabel1.setText(formatted);
+        if (timerLabel2 != null)
+            timerLabel2.setText(formatted);
+    }
+
+    private String formatSeconds(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
     // === Pause & Menu ===
     private void togglePause() {
-        if (dualGameModel.getPlayer1GameModel().isGameOver() && dualGameModel.getPlayer2GameModel().isGameOver())
+        if (isGameOver)
             return;
         boolean paused = !dualGameModel.getPlayer1GameModel().isPaused();
         dualGameModel.getPlayer1GameModel().setPaused(paused);
@@ -578,8 +669,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void resumeGame() {
-        dualGameModel.getPlayer1GameModel().setPaused(false);
-        dualGameModel.getPlayer2GameModel().setPaused(false);
+        player1.gameModel.setPaused(false);
+        player2.gameModel.setPaused(false);
         hidePauseOverlay();
         if (gameLoop != null) {
             lastUpdate = 0L;
@@ -592,10 +683,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void restartGame() {
         resetGameController();
         setupUI();
-        if (gameLoop != null)
-            gameLoop.start();
-        else
-            startGameLoop();
+
+        startGameLoop();
 
         player1.gameModel.spawnNewBlock();
         player2.gameModel.spawnNewBlock();
@@ -618,9 +707,11 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void resetGameController() {
+        playTime = 0.0;
+
         if (gameLoop != null)
             gameLoop.stop();
-        
+
         lastUpdate = 0L;
 
         if (player1 != null)

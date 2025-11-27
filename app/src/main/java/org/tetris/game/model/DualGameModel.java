@@ -7,12 +7,14 @@ public class DualGameModel extends BaseModel {
     private GameModel player2GameModel;
     private AttackModel player1AttackModel; // Player 1이 받을 공격
     private AttackModel player2AttackModel; // Player 2가 받을 공격
+    private TimeAttack timeAttack;
 
     public DualGameModel() {
         this.player1GameModel = new GameModel();
         this.player2GameModel = new GameModel();
         this.player1AttackModel = new AttackModel();
         this.player2AttackModel = new AttackModel();
+        this.timeAttack = new TimeAttack();
     }
 
     public GameModel getPlayer1GameModel() {
@@ -29,5 +31,9 @@ public class DualGameModel extends BaseModel {
 
     public AttackModel getPlayer2AttackModel() {
         return player2AttackModel;
+    }
+
+    public TimeAttack getTimeAttack() {
+        return timeAttack;
     }
 }
