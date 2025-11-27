@@ -1,20 +1,18 @@
 package org.tetris.network.comand;
 
-import org.tetris.network.game.GameEngine;
-
-public class ReadyCommand implements GameCommand{
+public class ReadyCommand implements GameMenuCommand {
     private boolean isReady;
 
-    public ReadyCommand(boolean isReady){
+    public ReadyCommand(boolean isReady) {
         this.isReady = isReady;
     }
 
     @Override
-    public void execute(GameEngine game) {
-        game.onReadyCommand(isReady);
+    public void execute(GameMenuCommandExecutor executor) {
+        executor.onReady(isReady);
     }
 
-    public boolean getIsReady(){
+    public boolean getIsReady() {
         return isReady;
     }
 }

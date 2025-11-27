@@ -1,7 +1,5 @@
 package org.tetris.network.comand;
 
-import org.tetris.network.game.GameEngine;
-
 public class GameResultCommand implements GameCommand {
     private final boolean isWinner;
     private final int score;
@@ -12,7 +10,7 @@ public class GameResultCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
-        game.onGameResult(isWinner, score);
+    public void execute(GameCommandExecutor executor) {
+        executor.onGameResult(isWinner, score);
     }
 }

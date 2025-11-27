@@ -1,7 +1,5 @@
 package org.tetris.network.comand;
 
-import org.tetris.network.game.GameEngine;
-
 public class AttackCommand implements GameCommand {
     private final int lines;
 
@@ -10,7 +8,7 @@ public class AttackCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
-        game.attack(lines);
+    public void execute(GameCommandExecutor executor) {
+        executor.attack(lines);
     }
 }

@@ -17,7 +17,7 @@ public interface GameCommandExecutor {
     void hardDrop();
 
     // 게임 상태
-    void gameStart(long seed);
+    void gameStart(long mySeed, long otherSeed);
 
     void gameOver(int score);
 

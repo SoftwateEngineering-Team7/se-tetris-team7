@@ -1,16 +1,22 @@
 package org.tetris.network.comand;
 
-import org.tetris.network.game.GameEngine;
+public class GameStartCommand implements GameCommand, GameMenuCommand {
+    private final long mySeed;
+    private final long otherSeed;
 
-public class GameStartCommand implements GameCommand {
-    private final long seed;
-
-    public GameStartCommand(long seed) {
-        this.seed = seed;
+    public GameStartCommand(long mySeed, long otherSeed) {
+        this.mySeed = mySeed;
+        this.otherSeed = otherSeed;
     }
 
     @Override
-    public void execute(GameEngine game) {
-        game.startGame(seed);
+    public void execute(GameCommandExecutor executor) {
+        executor.gameStart(mySeed, otherSeed);
     }
+
+    @Override
+    public void execute(GameMenuCommandExecutor executor) {
+        executor.gameStart();
+    }
+
 }
