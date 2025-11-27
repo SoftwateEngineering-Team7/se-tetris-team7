@@ -2,8 +2,6 @@ package org.tetris.network;
 
 import java.io.IOException;
 
-import org.tetris.network.game.GameEngine;
-
 /**
  * 네트워크 모듈을 사용하는 클라이언트 예제 클래스.
  * P2P 대전 모드에서 클라이언트 역할을 수행합니다.
@@ -20,12 +18,31 @@ import org.tetris.network.game.GameEngine;
  * TODO: 준비 완료 전송 - 준비 완료 시 서버에게 알림
  */
 public class GameClient {
-    public static void main(String[] args) {
-        // 1. 로컬 게임 엔진을 생성합니다.
-        GameEngine localGameEngine = new GameEngine();
+    private static GameClient instance;
+    private ClientThread clientThread;
 
-        // 2. ClientThread를 생성하고 게임 엔진을 전달합니다.
-        ClientThread clientThread = new ClientThread(localGameEngine);
+    public static GameClient getInstance() {
+        if (instance == null) {
+            instance = new GameClient();
+        }
+        return instance;
+    }
+
+    public ClientThread getClientThread() {
+        if (clientThread == null) {
+            clientThread = new ClientThread();
+        }
+        return clientThread;
+    }
+
+    public static void main(String[] args) {
+        GameClient client = getInstance();
+        client.start(args);
+    }
+
+    public void start(String[] args) {
+        // 2. ClientThread를 생성합니다.
+        clientThread = new ClientThread();
 
         try {
             // TODO: UI에서 IP 주소 입력받기
@@ -36,7 +53,6 @@ public class GameClient {
             // TODO: 준비 상태 관리 - '게임 시작' 버튼 상태 관리
             // TODO: 준비 완료 전송 - 준비 완료 시 서버에게 알림
 
-            
             // TODO: 게임 종료 시 연결 해제
 
         } catch (IOException e) {

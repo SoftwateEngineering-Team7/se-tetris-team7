@@ -6,8 +6,12 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import org.tetris.network.comand.Command;
 import org.tetris.network.comand.GameCommand;
-import org.tetris.network.game.GameEngine;
+import org.tetris.network.comand.GameCommandExecutor;
+import org.tetris.network.comand.GameMenuCommand;
+import org.tetris.network.comand.GameMenuCommandExecutor;
+import org.tetris.network.comand.PingCommand;
 
 /**
  * 클라이언트가 서버와 통신하기 위한 핸들러 클래스.
@@ -26,17 +30,27 @@ public class ClientThread {
     private Socket socket;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
-    private final GameEngine gameEngine;
+    private GameCommandExecutor gameExecutor;
+    private GameMenuCommandExecutor menuExecutor;
     private volatile boolean connected = false;
     private Thread receiverThread;
     private Thread pingThread;
 
-    public ClientThread(GameEngine gameEngine) {
-        this.gameEngine = gameEngine;
+    public ClientThread() {
+        // Executors will be set later
+    }
+
+    public void setGameExecutor(GameCommandExecutor gameExecutor) {
+        this.gameExecutor = gameExecutor;
+    }
+
+    public void setMenuExecutor(GameMenuCommandExecutor menuExecutor) {
+        this.menuExecutor = menuExecutor;
     }
 
     /**
      * 서버에 연결하고 비동기 커맨드 수신을 시작합니다.
+     * 
      * @param host 서버 호스트 주소
      * @param port 서버 포트 번호
      */
@@ -54,23 +68,20 @@ public class ClientThread {
         // 서버로부터 커맨드를 수신하는 별도의 스레드를 시작합니다.
         receiverThread = new Thread(new CommandReceiver());
         receiverThread.start();
-        
+
         // Ping을 주기적으로 전송하는 스레드를 시작합니다.
         pingThread = new Thread(new PingSender());
         pingThread.start();
-        
+
         System.out.println("[CLIENT-FACADE] Connected to server at " + host + ":" + port);
-        
-        // TODO: 연결 성공 콜백 구현 - UI에 알림 전달
-        // onConnectionSuccess() 콜백 호출
-        // TODO: Heartbeat 메커니즘 추가 (연결 유지 확인)
     }
 
     /**
      * 서버로 GameCommand 객체를 전송합니다.
+     * 
      * @param command 전송할 커맨드
      */
-    public void sendCommand(GameCommand command) {
+    public void sendCommand(Command command) {
         if (!connected) {
             System.err.println("[CLIENT-FACADE] Not connected. Cannot send command.");
             return;
@@ -82,8 +93,6 @@ public class ClientThread {
             }
         } catch (IOException e) {
             System.err.println("[CLIENT-FACADE] Error sending command: " + e.getMessage());
-            // TODO: 재연결 로직 구현
-            // TODO: 전송 실패 콜백 구현
         }
     }
 
@@ -92,17 +101,20 @@ public class ClientThread {
      */
     public void disconnect() {
         connected = false;
-        if (receiverThread != null) receiverThread.interrupt();
-        if (pingThread != null) pingThread.interrupt();
-        
         try {
-            if (oos != null) oos.close();
-            if (ois != null) ois.close();
-            if (socket != null && !socket.isClosed()) socket.close();
-            System.out.println("[CLIENT-FACADE] Disconnected from server.");
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+            if (receiverThread != null) {
+                receiverThread.interrupt();
+            }
+            if (pingThread != null) {
+                pingThread.interrupt();
+            }
         } catch (IOException e) {
-            System.err.println("[CLIENT-FACADE] Error during disconnection: " + e.getMessage());
+            e.printStackTrace();
         }
+        System.out.println("[CLIENT-FACADE] Disconnected.");
     }
 
     /**
@@ -115,13 +127,13 @@ public class ClientThread {
             try {
                 // 첫 ping은 즉시 전송
                 if (connected) {
-                    sendCommand(new org.tetris.network.comand.PingCommand());
+                    sendCommand(new PingCommand());
                 }
-                
+
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     Thread.sleep(PING_INTERVAL);
                     if (connected) {
-                        sendCommand(new org.tetris.network.comand.PingCommand());
+                        sendCommand(new PingCommand());
                     }
                 }
             } catch (InterruptedException e) {
@@ -139,10 +151,26 @@ public class ClientThread {
             try {
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     // 서버로부터 커맨드를 수신 대기합니다. (Blocking call)
-                    GameCommand command = (GameCommand) ois.readObject();
-                    System.out.println("[CLIENT-RECEIVER] Received command from server: " + command.getClass().getSimpleName());
+                    Command command = (Command) ois.readObject();
+                    System.out.println(
+                            "[CLIENT-RECEIVER] Received command from server: " + command.getClass().getSimpleName());
                     // 수신된 커맨드를 로컬 게임 엔진에서 실행합니다.
-                    command.execute(gameEngine);
+                    if (command instanceof GameMenuCommand && command instanceof GameCommand) {
+                        if (menuExecutor != null) {
+                            ((GameMenuCommand) command).execute(menuExecutor);
+                        }
+                        if (gameExecutor != null) {
+                            ((GameCommand) command).execute(gameExecutor);
+                        }
+                    } else if (command instanceof GameMenuCommand) {
+                        if (menuExecutor != null) {
+                            ((GameMenuCommand) command).execute(menuExecutor);
+                        }
+                    } else if (command instanceof GameCommand) {
+                        if (gameExecutor != null) {
+                            ((GameCommand) command).execute(gameExecutor);
+                        }
+                    }
                 }
             } catch (IOException | ClassNotFoundException e) {
                 if (connected) {
