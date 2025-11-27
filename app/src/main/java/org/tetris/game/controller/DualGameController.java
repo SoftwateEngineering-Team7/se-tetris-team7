@@ -11,6 +11,8 @@ import org.tetris.game.model.items.ItemActivation;
 import org.tetris.game.view.GameViewRenderer;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
+import org.util.KeyLayout;
+import org.util.PlayerId;
 import org.util.Point;
 
 import javafx.animation.AnimationTimer;
@@ -261,11 +263,19 @@ public class DualGameController extends BaseController<DualGameModel> implements
             return;
         }
 
-        // P1 입력 (WASD + F)
-        handlePlayerInput(e, player1, KeyCode.A, KeyCode.D, KeyCode.W, KeyCode.S, KeyCode.F);
+        handlePlayerInput(e, player1, 
+                KeyLayout.getLeftKey(PlayerId.PLAYER1), 
+                KeyLayout.getRightKey(PlayerId.PLAYER1),
+                KeyLayout.getUpKey(PlayerId.PLAYER1),
+                KeyLayout.getDownKey(PlayerId.PLAYER1),
+                KeyLayout.getHardDropKey(PlayerId.PLAYER1));
 
-        // P2 입력 (Arrow Keys + SLASH)
-        handlePlayerInput(e, player2, KeyCode.LEFT, KeyCode.RIGHT, KeyCode.UP, KeyCode.DOWN, KeyCode.SPACE);
+        handlePlayerInput(e, player2, 
+                KeyLayout.getLeftKey(PlayerId.PLAYER2), 
+                KeyLayout.getRightKey(PlayerId.PLAYER2),
+                KeyLayout.getUpKey(PlayerId.PLAYER2),
+                KeyLayout.getDownKey(PlayerId.PLAYER2),
+                KeyLayout.getHardDropKey(PlayerId.PLAYER2));
 
         updateScoreDisplay();
         e.consume();
