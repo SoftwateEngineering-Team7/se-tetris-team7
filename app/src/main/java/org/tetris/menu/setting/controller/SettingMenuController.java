@@ -575,36 +575,25 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
         previousKeyBindingButtonText = null;
     }
 
-    private boolean isKeyAlreadyBound(String keyName, String direction) {
-        // 1. 현재 설정된 모든 키를 맵(Map)에 담습니다. (Key: 식별자, Value: 키 코드)
-        Map<String, String> currentBindings = new HashMap<>();
+    private boolean isKeyAlreadyBound(String keyName, String exceptDirection) {
+        // Player 1의 키와 겹치는지 검사
+        boolean p1Overlap = 
+                (!"LEFT".equals(exceptDirection) && keyEquals(model.getKeyLeft(PlayerId.PLAYER1), keyName)) ||
+                (!"RIGHT".equals(exceptDirection) && keyEquals(model.getKeyRight(PlayerId.PLAYER1), keyName)) ||
+                (!"DOWN".equals(exceptDirection) && keyEquals(model.getKeyDown(PlayerId.PLAYER1), keyName)) ||
+                (!"UP".equals(exceptDirection) && keyEquals(model.getKeyUp(PlayerId.PLAYER1), keyName)) ||
+                (!"HARD_DROP".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(PlayerId.PLAYER1), keyName));
 
-        // --- Player 1 설정 ---
-        currentBindings.put("LEFT", model.getKeyLeft(PlayerId.PLAYER1));
-        currentBindings.put("RIGHT", model.getKeyRight(PlayerId.PLAYER1));
-        currentBindings.put("UP", model.getKeyUp(PlayerId.PLAYER1));
-        currentBindings.put("DOWN", model.getKeyDown(PlayerId.PLAYER1));
-        currentBindings.put("HARD_DROP", model.getKeyHardDrop(PlayerId.PLAYER1));
+        // Player 2의 키와 겹치는지 검사
+        boolean p2Overlap = 
+                (!"LEFT2".equals(exceptDirection) && keyEquals(model.getKeyLeft(PlayerId.PLAYER2), keyName)) ||
+                (!"RIGHT2".equals(exceptDirection) && keyEquals(model.getKeyRight(PlayerId.PLAYER2), keyName)) ||
+                (!"DOWN2".equals(exceptDirection) && keyEquals(model.getKeyDown(PlayerId.PLAYER2), keyName)) ||
+                (!"UP2".equals(exceptDirection) && keyEquals(model.getKeyUp(PlayerId.PLAYER2), keyName)) ||
+                (!"HARD_DROP2".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(PlayerId.PLAYER2), keyName));
 
-        // --- Player 2 설정 (식별자 구분) ---
-        currentBindings.put("LEFT2", model.getKeyLeft(PlayerId.PLAYER2));
-        currentBindings.put("RIGHT2", model.getKeyRight(PlayerId.PLAYER2));
-        currentBindings.put("UP2", model.getKeyUp(PlayerId.PLAYER2));
-        currentBindings.put("DOWN2", model.getKeyDown(PlayerId.PLAYER2));
-        currentBindings.put("HARD_DROP2", model.getKeyHardDrop(PlayerId.PLAYER2));
-
-        // 2. 현재 변경하려는 키(exceptDirection)는 중복 검사 대상에서 제거합니다.
-        // (자기 자신과는 비교할 필요가 없기 때문)
-        currentBindings.remove(direction);
-
-        // 3. 나머지 모든 키 중에서 입력된 keyName과 겹치는 것이 있는지 확인합니다.
-        for (String existingKey : currentBindings.values()) {
-            if (keyEquals(existingKey, keyName)) {
-                return true; // 중복됨
-            }
-        }
-
-        return false; // 중복 없음 (사용 가능)
+        // 둘 중 하나라도 겹치면 true 반환
+        return p1Overlap || p2Overlap;
     }
 
     private boolean keyEquals(String a, String b) {
