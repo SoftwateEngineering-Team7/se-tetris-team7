@@ -306,6 +306,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
         lockCurrentBlock(player);
     }
 
+    private boolean isPaused() {
+        return player1.gameModel.isPaused() || player2.gameModel.isPaused();
+    }
+
     private double playTime = 0.0;
 
     // === 게임 루프 ===
@@ -329,7 +333,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
                 deltaTime = (now - previousTime) / 1_000_000_000.0;
                 previousTime = now;
 
-                if (!dualGameModel.getPlayer1GameModel().isPaused()) {
+                if (!isPaused()) {
                     playTime += deltaTime; // 초 단위
                 }
 
@@ -344,10 +348,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void update(long now) {
-        GameModel gm1 = player1.gameModel;
-        GameModel gm2 = player2.gameModel;
-
-        if (gm1.isPaused() || gm2.isPaused())
+        if (isPaused())
             return;
 
         if (lastLogTime == 0L) {
@@ -391,12 +392,13 @@ public class DualGameController extends BaseController<DualGameModel> implements
         }
     }
 
-    private void checkGameOverState() {
-        GameModel gm1 = player1.gameModel;
-        GameModel gm2 = player2.gameModel;
+    private boolean isGameOver = false;
 
-        boolean p1Over = gm1.isGameOver();
-        boolean p2Over = gm2.isGameOver();
+    private void checkGameOverState() {
+        isGameOver = false;
+
+        boolean p1Over = player1.gameModel.isGameOver();
+        boolean p2Over = player2.gameModel.isGameOver();
 
         if (dualGameModel.getTimeAttack().getRemainingSeconds(playTime) == 0) {
             int score1 = player1.scoreModel.getScore();
@@ -414,6 +416,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         if (!p1Over && !p2Over)
             return;
+
+        isGameOver = true;
 
         if (gameLoop != null)
             gameLoop.stop();
@@ -435,7 +439,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
             winnerLabel.setText(result);
         if (router != null) {
             // boolean isItemMode 사용
-            boolean isItem = gm1.isItemMode();
+            boolean isItem = player1.gameModel.isItemMode();
             router.showScoreBoard(true, isItem, Math.max(p1Score, p2Score));
         }
     }
@@ -603,7 +607,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     // === Pause & Menu ===
     private void togglePause() {
-        if (dualGameModel.getPlayer1GameModel().isGameOver() && dualGameModel.getPlayer2GameModel().isGameOver())
+        if (isGameOver)
             return;
         boolean paused = !dualGameModel.getPlayer1GameModel().isPaused();
         dualGameModel.getPlayer1GameModel().setPaused(paused);
@@ -616,8 +620,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void resumeGame() {
-        dualGameModel.getPlayer1GameModel().setPaused(false);
-        dualGameModel.getPlayer2GameModel().setPaused(false);
+        player1.gameModel.setPaused(false);
+        player2.gameModel.setPaused(false);
         hidePauseOverlay();
         if (gameLoop != null) {
             lastUpdate = 0L;
