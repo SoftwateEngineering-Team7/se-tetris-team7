@@ -27,7 +27,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
-public class DualGameController extends BaseController<DualGameModel> implements RouterAware, ItemActivation {
+public class DualGameController<M extends DualGameModel> extends BaseController<M>
+        implements RouterAware, ItemActivation {
 
     // === FXML 바인딩 ===
     @FXML
@@ -81,14 +82,14 @@ public class DualGameController extends BaseController<DualGameModel> implements
     @FXML
     private Button pauseMenuButton;
     @FXML
-    private Label winnerLabel;
+    protected Label winnerLabel;
 
     // === 모델 및 슬롯 ===
-    private final DualGameModel dualGameModel;
+    protected final M dualGameModel;
 
-    private PlayerSlot player1;
-    private PlayerSlot player2;
-    private PlayerSlot activeItemTarget;
+    protected PlayerSlot player1;
+    protected PlayerSlot player2;
+    protected PlayerSlot activeItemTarget;
 
     private Router router;
     private AnimationTimer gameLoop;
@@ -105,7 +106,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private static final double PREVIEW_RATIO = 0.8;
     private boolean isTimeAttackMode = false;
 
-    public DualGameController(DualGameModel model) {
+    public DualGameController(M model) {
         super(model);
         this.dualGameModel = model;
     }
@@ -247,7 +248,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     // === 키 입력 처리 (통합) ===
-    private void handleKeyPress(KeyEvent e) {
+    protected void handleKeyPress(KeyEvent e) {
         if (e.getCode() == KeyCode.P) {
             togglePause();
             e.consume();
@@ -281,7 +282,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
         e.consume();
     }
 
-    private void handlePlayerInput(
+    protected void handlePlayerInput(
             KeyEvent e, PlayerSlot player,
             KeyCode left, KeyCode right, KeyCode rotate,
             KeyCode down, KeyCode hardDrop) {
@@ -321,7 +322,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
         }
     }
 
-    private void handleHardDrop(PlayerSlot player) {
+    protected void handleHardDrop(PlayerSlot player) {
         int dropDistance = player.boardModel.hardDrop();
         player.scoreModel.add(dropDistance * 2);
 
@@ -468,7 +469,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     // === 블록 고정 및 로직 ===
-    private void lockCurrentBlock(PlayerSlot player) {
+    protected void lockCurrentBlock(PlayerSlot player) {
         GameModel gm = player.gameModel;
         List<Integer> fullRows = player.boardModel.findFullRows();
         player.clearingRows.addAll(fullRows);
@@ -617,7 +618,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
         updateTimeAttackTimer();
     }
 
-    private void updateGameBoard(PlayerSlot player) {
+    protected void updateGameBoard(PlayerSlot player) {
         if (player == null)
             return;
         player.renderer.renderBoard(player.boardModel.getBoard(), player.flashMask, player.isFlashing, player.flashOn);
@@ -665,7 +666,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     // === Pause & Menu ===
-    private void togglePause() {
+    protected void togglePause() {
         if (isGameOver)
             return;
         boolean paused = !dualGameModel.getPlayer1GameModel().isPaused();
@@ -676,6 +677,16 @@ public class DualGameController extends BaseController<DualGameModel> implements
             showPauseOverlay();
         else
             hidePauseOverlay();
+    }
+
+    protected void stopGame() {
+        player1.gameModel.setPaused(false);
+        player2.gameModel.setPaused(false);
+        hidePauseOverlay();
+        if (gameLoop != null) {
+            gameLoop.stop(); // Stop the game loop
+            lastUpdate = 0L;
+        }
     }
 
     private void resumeGame() {
@@ -730,22 +741,22 @@ public class DualGameController extends BaseController<DualGameModel> implements
             player2.reset();
     }
 
-    private void showGameOverlay() {
+    protected void showGameOverlay() {
         gameOverOverlay.setVisible(true);
         gameOverOverlay.setManaged(true);
     }
 
-    private void hideGameOverlay() {
+    protected void hideGameOverlay() {
         gameOverOverlay.setVisible(false);
         gameOverOverlay.setManaged(false);
     }
 
-    private void showPauseOverlay() {
+    protected void showPauseOverlay() {
         pauseOverlay.setVisible(true);
         pauseOverlay.setManaged(true);
     }
 
-    private void hidePauseOverlay() {
+    protected void hidePauseOverlay() {
         pauseOverlay.setVisible(false);
         pauseOverlay.setManaged(false);
         root.requestFocus();

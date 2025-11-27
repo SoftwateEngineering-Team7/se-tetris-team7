@@ -7,8 +7,10 @@ import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.network.menu.NetworkMenuFactory;
 import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
+import org.tetris.game.P2PGameFactory;
 import org.tetris.game.controller.DualGameController;
 import org.tetris.game.controller.GameController;
+import org.tetris.game.controller.P2PGameController;
 import org.tetris.game.model.GameMode;
 import org.tetris.scoreboard.controller.ScoreBoardController;
 import org.tetris.scoreboard.model.ScoreBoard;
@@ -29,6 +31,7 @@ public final class Router {
     private final MvcFactory<?, ?> dualGameFactory;
     private final MvcFactory<ScoreBoard, ScoreBoardController> scoreBoardFactory;
     private final MvcFactory<?, ?> networkMenuFactory;
+    private final MvcFactory<?, ?> p2pGameFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -42,6 +45,7 @@ public final class Router {
         this.scoreBoardFactory = new ScoreBoardFactory();
         this.networkMenuFactory = new NetworkMenuFactory();
         this.dualGameFactory = new DualGameFactory();
+        this.p2pGameFactory = new P2PGameFactory();
 
         setStageSize();
         stage.setTitle("Tetris");
@@ -73,6 +77,14 @@ public final class Router {
     public void showDualGamePlaceholder(GameMode mode) {
         var controller = show(dualGameFactory);
         if (controller instanceof DualGameController gameController) {
+            gameController.setUpGameMode(mode);
+            gameController.initialize();
+        }
+    }
+
+    public void showP2PGamePlaceholder(GameMode mode) {
+        var controller = show(p2pGameFactory);
+        if (controller instanceof P2PGameController gameController) {
             gameController.setUpGameMode(mode);
             gameController.initialize();
         }
