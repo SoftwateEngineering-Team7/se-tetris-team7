@@ -575,19 +575,36 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
         previousKeyBindingButtonText = null;
     }
 
-    private boolean isKeyAlreadyBound(String keyName, String exceptDirection) {
-        // P1 P2 키셋 중복 방지
-        return (!"LEFT".equals(exceptDirection) && keyEquals(model.getKeyLeft(PlayerId.PLAYER1), keyName)) ||
-                (!"RIGHT".equals(exceptDirection) && keyEquals(model.getKeyRight(PlayerId.PLAYER1), keyName)) ||
-                (!"DOWN".equals(exceptDirection) && keyEquals(model.getKeyDown(PlayerId.PLAYER1), keyName)) ||
-                (!"UP".equals(exceptDirection) && keyEquals(model.getKeyUp(PlayerId.PLAYER1), keyName)) ||
-                (!"HARD_DROP".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(PlayerId.PLAYER1), keyName)) ||
+    private boolean isKeyAlreadyBound(String keyName, String direction) {
+        // 1. 현재 설정된 모든 키를 맵(Map)에 담습니다. (Key: 식별자, Value: 키 코드)
+        Map<String, String> currentBindings = new HashMap<>();
 
-                (!"LEFT2".equals(exceptDirection) && keyEquals(model.getKeyLeft(PlayerId.PLAYER2), keyName)) ||
-                (!"RIGHT2".equals(exceptDirection) && keyEquals(model.getKeyRight(PlayerId.PLAYER2), keyName)) ||
-                (!"DOWN2".equals(exceptDirection) && keyEquals(model.getKeyDown(PlayerId.PLAYER2), keyName)) ||
-                (!"UP2".equals(exceptDirection) && keyEquals(model.getKeyUp(PlayerId.PLAYER2), keyName)) ||
-                (!"HARD_DROP2".equals(exceptDirection) && keyEquals(model.getKeyHardDrop(PlayerId.PLAYER2), keyName));
+        // --- Player 1 설정 ---
+        currentBindings.put("LEFT", model.getKeyLeft(PlayerId.PLAYER1));
+        currentBindings.put("RIGHT", model.getKeyRight(PlayerId.PLAYER1));
+        currentBindings.put("UP", model.getKeyUp(PlayerId.PLAYER1));
+        currentBindings.put("DOWN", model.getKeyDown(PlayerId.PLAYER1));
+        currentBindings.put("HARD_DROP", model.getKeyHardDrop(PlayerId.PLAYER1));
+
+        // --- Player 2 설정 (식별자 구분) ---
+        currentBindings.put("LEFT2", model.getKeyLeft(PlayerId.PLAYER2));
+        currentBindings.put("RIGHT2", model.getKeyRight(PlayerId.PLAYER2));
+        currentBindings.put("UP2", model.getKeyUp(PlayerId.PLAYER2));
+        currentBindings.put("DOWN2", model.getKeyDown(PlayerId.PLAYER2));
+        currentBindings.put("HARD_DROP2", model.getKeyHardDrop(PlayerId.PLAYER2));
+
+        // 2. 현재 변경하려는 키(exceptDirection)는 중복 검사 대상에서 제거합니다.
+        // (자기 자신과는 비교할 필요가 없기 때문)
+        currentBindings.remove(direction);
+
+        // 3. 나머지 모든 키 중에서 입력된 keyName과 겹치는 것이 있는지 확인합니다.
+        for (String existingKey : currentBindings.values()) {
+            if (keyEquals(existingKey, keyName)) {
+                return true; // 중복됨
+            }
+        }
+
+        return false; // 중복 없음 (사용 가능)
     }
 
     private boolean keyEquals(String a, String b) {
@@ -623,6 +640,9 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
             case BACK_SPACE -> "Back";
             case CAPS -> "Caps";
             case WINDOWS -> "Win";
+            case PAGE_UP -> "PgUp";
+            case PAGE_DOWN -> "PgDn";
+            case DELETE -> "Del";
             default -> truncateToCodePoints(key.getName(), 6); // ← 여기서 6글자 제한
         };
     }
@@ -783,7 +803,7 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
         });
 
         // Player 라벨 폭을 창 크기에 비례해 통일
-        double labelW = clamp(w * 0.12, 100, 160); // 비율/최소/최대는 상황에 맞게 조정
+        double labelW = clamp(w * 0.1, 80, 160); // 비율/최소/최대는 상황에 맞게 조정
         for (Label L : playerRowLabels) {
             L.setMinWidth(labelW);
             L.setPrefWidth(labelW);
@@ -793,9 +813,9 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
 
         // 키 바인딩 버튼 통합 사이즈 조절
         Consumer<Collection<Button>> sizeButtons = buttons -> {
-            double bW = clamp(w * 0.18, 150, 180);
+            double bW = clamp(w * 0.2, 150, 180);
             double bH = clamp(h * 0.06, 30, 50);
-            double bFont = clamp(bW * 0.06, 10, 15);
+            double bFont = clamp(bW * 0.06, 9, 15);
             for (Button x : buttons) {
                 x.setPrefWidth(bW);
                 x.setPrefHeight(bH);

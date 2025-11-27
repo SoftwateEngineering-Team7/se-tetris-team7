@@ -130,9 +130,8 @@ public class Setting {
      * @param key 키 이름
      */
     public void setKeyLeft(PlayerId id, String key) {
-        if (key == null) {
-            key = (id == PlayerId.PLAYER1) ? "LEFT" : "A";
-        }
+        if (key == null) 
+            return;
         String propertyKey = (id == PlayerId.PLAYER1) ? KEY_LEFT_P1 : KEY_LEFT_P2;
         props.setProperty(propertyKey, key);
         saveSettingFile();
@@ -144,9 +143,8 @@ public class Setting {
      * @param key 키 이름
      */
     public void setKeyRight(PlayerId id, String key) {
-        if (key == null) {
-            key = (id == PlayerId.PLAYER1) ? "RIGHT" : "D";
-        }
+        if (key == null) 
+            return;
         String propertyKey = (id == PlayerId.PLAYER1) ? KEY_RIGHT_P1 : KEY_RIGHT_P2;
         props.setProperty(propertyKey, key);
         saveSettingFile();
@@ -158,9 +156,8 @@ public class Setting {
      * @param key 키 이름
      */
     public void setKeyDown(PlayerId id, String key) {
-        if (key == null) {
-            key = (id == PlayerId.PLAYER1) ? "DOWN" : "S";
-        }
+        if (key == null)
+            return;
         String propertyKey = (id == PlayerId.PLAYER1) ? KEY_DOWN_P1 : KEY_DOWN_P2;
         props.setProperty(propertyKey, key);
         saveSettingFile();
@@ -172,9 +169,8 @@ public class Setting {
      * @param key 키 이름
      */
     public void setKeyUp(PlayerId id, String key) {
-        if (key == null) {
-            key = (id == PlayerId.PLAYER1) ? "UP" : "W";
-        }
+        if (key == null)
+            return;
         String propertyKey = (id == PlayerId.PLAYER1) ? KEY_UP_P1 : KEY_UP_P2;
         props.setProperty(propertyKey, key);
         saveSettingFile();
@@ -186,9 +182,8 @@ public class Setting {
      * @param key 키 이름
      */
     public void setKeyHardDrop(PlayerId id, String key) {
-        if (key == null) {
-            key = (id == PlayerId.PLAYER1) ? "SPACE" : "SHIFT";
-        }
+        if (key == null) 
+            return;
         String propertyKey = (id == PlayerId.PLAYER1) ? KEY_HARD_DROP_P1 : KEY_HARD_DROP_P2;
         props.setProperty(propertyKey, key);
         saveSettingFile();
@@ -196,14 +191,14 @@ public class Setting {
 
     public void setScreenPreset(String preset) {
         if (preset == null)
-            preset = "SMALL";
+            return;
         props.setProperty(KEY_SCREEN, preset);
         saveSettingFile();
     }
 
     public void setDifficulty(String difficulty) {
         if (difficulty == null)
-            difficulty = "EASY";
+            return;
         props.setProperty(KEY_DIFFICULTY, difficulty);
         saveSettingFile();
     }

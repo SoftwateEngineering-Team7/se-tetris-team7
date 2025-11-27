@@ -706,4 +706,44 @@ public class SettingMenuControllerTest extends ApplicationTest {
         
         assertTrue("작은 창에서도 buttonBox가 표시되어야 합니다", buttonBox.isVisible());
     }
+    
+    @Test
+    public void testPlayerLabelSizeAdjustment() {
+        // Player 라벨들의 크기가 반응형으로 조정되는지 확인
+        // "Player 1 :" 라벨을 찾습니다.
+        var labels = lookup(".label").queryAllAs(javafx.scene.control.Label.class).stream()
+                .filter(l -> l.getText() != null && l.getText().contains("Player 1"))
+                .collect(Collectors.toList());
+        
+        assertFalse("Player 1 라벨이 존재해야 합니다", labels.isEmpty());
+        javafx.scene.control.Label playerLabel = labels.get(0);
+        
+        // 큰 창
+        interact(() -> {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthLarge = playerLabel.getPrefWidth();
+        
+        assertTrue("큰 창에서 Player 라벨 너비가 설정되어야 합니다", widthLarge > 0);
+        
+        // 작은 창
+        interact(() -> {
+            stage.setWidth(600);
+            stage.setHeight(400);
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(150, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        double widthSmall = playerLabel.getPrefWidth();
+        
+        assertTrue("작은 창에서도 Player 라벨이 표시되어야 합니다", playerLabel.isVisible());
+        // Controller에서 최소 너비를 80으로 설정했으므로 이를 검증
+        assertTrue("작은 창에서 Player 라벨이 적절한 최소 크기를 유지해야 합니다", widthSmall >= 80);
+    }
 }
