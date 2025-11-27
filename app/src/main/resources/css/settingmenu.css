@@ -146,7 +146,7 @@
     -fx-background-color: #0f3460;
     -fx-text-fill: white;
     -fx-border-color: #533483;
-    -fx-border-width: 2px;
+    -fx-border-width: 0px;
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
     -fx-padding: 8px 12px;
