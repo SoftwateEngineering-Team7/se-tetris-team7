@@ -116,6 +116,12 @@ public class P2PGameController extends BaseController<P2PGameModel> implements R
         // router.showScoreBoard(...);
     }
 
+    private long seed;
+
+    public void setSeed(long seed) {
+        this.seed = seed;
+    }
+
     @Override
     public void initialize() {
         super.initialize();
@@ -127,7 +133,13 @@ public class P2PGameController extends BaseController<P2PGameModel> implements R
             setupPlayerSlots();
             setupUI();
 
-            gameEngine = new P2PGameEngine(localPlayer, remotePlayer, p2pModel, this);
+            gameEngine = P2PGameEngine.create()
+                    .player(localPlayer)
+                    .player2(remotePlayer)
+                    .gameModel(p2pModel)
+                    .controller(this)
+                    .build();
+
             if (clientThread != null) {
                 gameEngine.setClientThread(clientThread);
             }
@@ -135,15 +147,35 @@ public class P2PGameController extends BaseController<P2PGameModel> implements R
             // Setup KeyHandler for Local Player
             keyHandler = new GameKeyHandler(gameEngine, KeyLayout.WASD); // Or ARROWS based on pref
             // Configure Local Commands
-            keyHandler.setMoveLeftCommand(game -> ((P2PGameEngine) game).doLocalMoveLeft());
-            keyHandler.setMoveRightCommand(game -> ((P2PGameEngine) game).doLocalMoveRight());
-            keyHandler.setRotateCommand(game -> ((P2PGameEngine) game).doLocalRotate());
-            keyHandler.setSoftDropCommand(game -> ((P2PGameEngine) game).doLocalSoftDrop());
-            keyHandler.setHardDropCommand(game -> ((P2PGameEngine) game).doLocalHardDrop());
+            keyHandler.setMoveLeftCommand(game -> {
+                ((P2PGameEngine) game).doLocalMoveLeft();
+                if (clientThread != null)
+                    clientThread.sendCommand(new org.tetris.game.comand.MoveLeftCommand());
+            });
+            keyHandler.setMoveRightCommand(game -> {
+                ((P2PGameEngine) game).doLocalMoveRight();
+                if (clientThread != null)
+                    clientThread.sendCommand(new org.tetris.game.comand.MoveRightCommand());
+            });
+            keyHandler.setRotateCommand(game -> {
+                ((P2PGameEngine) game).doLocalRotate();
+                if (clientThread != null)
+                    clientThread.sendCommand(new org.tetris.game.comand.RotateCommand());
+            });
+            keyHandler.setSoftDropCommand(game -> {
+                ((P2PGameEngine) game).doLocalSoftDrop();
+                if (clientThread != null)
+                    clientThread.sendCommand(new org.tetris.game.comand.SoftDropCommand());
+            });
+            keyHandler.setHardDropCommand(game -> {
+                ((P2PGameEngine) game).doLocalHardDrop();
+                if (clientThread != null)
+                    clientThread.sendCommand(new org.tetris.game.comand.HardDropCommand());
+            });
             // Pause command is default (togglePause), which P2PGameEngine handles (local
             // pause + notify?)
 
-            gameEngine.startGame(0); // TODO: Seed sync
+            gameEngine.startGame(seed);
 
             root.requestFocus();
         });
@@ -168,7 +200,8 @@ public class P2PGameController extends BaseController<P2PGameModel> implements R
 
         localPlayer = new PlayerSlot(localGameModel, localGameModel.getBoardModel(), localGameModel.getNextBlockModel(),
                 localGameModel.getScoreModel(), null, renderer1);
-        remotePlayer = new PlayerSlot(remoteGameModel, remoteGameModel.getBoardModel(), remoteGameModel.getNextBlockModel(),
+        remotePlayer = new PlayerSlot(remoteGameModel, remoteGameModel.getBoardModel(),
+                remoteGameModel.getNextBlockModel(),
                 remoteGameModel.getScoreModel(), null, renderer2);
 
         renderer1.setupSinglePlayerLayout();

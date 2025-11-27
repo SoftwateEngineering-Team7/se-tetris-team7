@@ -13,8 +13,9 @@ public class GameModel extends BaseModel implements Pausable {
     public final static int MAX_DROP_INTERVAL = 60; // 최대 낙하 간격 (레벨 1)
     public final static int MIN_DROP_INTERVAL = 10; // 드롭 간격 감소량
 
-    private final NextBlockModel nextBlockModel;
+    private NextBlockModel nextBlockModel;
     private final Board board;
+    private long seed;
     private ScoreModel scoreModel;
 
     private int totalLinesCleared;
@@ -38,6 +39,28 @@ public class GameModel extends BaseModel implements Pausable {
 
         // 첫 블럭 설정
         spawnNewBlock();
+    }
+
+    public GameModel(long seed) {
+        this.board = new Board();
+        this.nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, seed);
+        this.scoreModel = new ScoreModel();
+        this.totalLinesCleared = 0;
+        this.level = 1;
+        this.isGameOver = false;
+        this.isPaused = false;
+
+        // 첫 블럭 설정
+        spawnNewBlock();
+    }
+
+    public long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
+        this.nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, seed);
     }
 
     public Board getBoardModel() {

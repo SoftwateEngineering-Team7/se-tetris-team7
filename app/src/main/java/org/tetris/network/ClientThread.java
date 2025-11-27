@@ -26,17 +26,18 @@ public class ClientThread {
     private Socket socket;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
-    private final GameEngine gameEngine;
+    private GameEngine<?, ?> gameEngine;
     private volatile boolean connected = false;
     private Thread receiverThread;
     private Thread pingThread;
 
-    public ClientThread(GameEngine gameEngine) {
+    public ClientThread(GameEngine<?, ?> gameEngine) {
         this.gameEngine = gameEngine;
     }
 
     /**
      * 서버에 연결하고 비동기 커맨드 수신을 시작합니다.
+     * 
      * @param host 서버 호스트 주소
      * @param port 서버 포트 번호
      */
@@ -54,13 +55,13 @@ public class ClientThread {
         // 서버로부터 커맨드를 수신하는 별도의 스레드를 시작합니다.
         receiverThread = new Thread(new CommandReceiver());
         receiverThread.start();
-        
+
         // Ping을 주기적으로 전송하는 스레드를 시작합니다.
         pingThread = new Thread(new PingSender());
         pingThread.start();
-        
+
         System.out.println("[CLIENT-FACADE] Connected to server at " + host + ":" + port);
-        
+
         // TODO: 연결 성공 콜백 구현 - UI에 알림 전달
         // onConnectionSuccess() 콜백 호출
         // TODO: Heartbeat 메커니즘 추가 (연결 유지 확인)
@@ -68,6 +69,7 @@ public class ClientThread {
 
     /**
      * 서버로 GameCommand 객체를 전송합니다.
+     * 
      * @param command 전송할 커맨드
      */
     public void sendCommand(GameCommand command) {
@@ -92,13 +94,18 @@ public class ClientThread {
      */
     public void disconnect() {
         connected = false;
-        if (receiverThread != null) receiverThread.interrupt();
-        if (pingThread != null) pingThread.interrupt();
-        
+        if (receiverThread != null)
+            receiverThread.interrupt();
+        if (pingThread != null)
+            pingThread.interrupt();
+
         try {
-            if (oos != null) oos.close();
-            if (ois != null) ois.close();
-            if (socket != null && !socket.isClosed()) socket.close();
+            if (oos != null)
+                oos.close();
+            if (ois != null)
+                ois.close();
+            if (socket != null && !socket.isClosed())
+                socket.close();
             System.out.println("[CLIENT-FACADE] Disconnected from server.");
         } catch (IOException e) {
             System.err.println("[CLIENT-FACADE] Error during disconnection: " + e.getMessage());
@@ -117,7 +124,7 @@ public class ClientThread {
                 if (connected) {
                     sendCommand(new org.tetris.game.comand.PingCommand());
                 }
-                
+
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     Thread.sleep(PING_INTERVAL);
                     if (connected) {
@@ -140,7 +147,8 @@ public class ClientThread {
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     // 서버로부터 커맨드를 수신 대기합니다. (Blocking call)
                     GameCommand command = (GameCommand) ois.readObject();
-                    System.out.println("[CLIENT-RECEIVER] Received command from server: " + command.getClass().getSimpleName());
+                    System.out.println(
+                            "[CLIENT-RECEIVER] Received command from server: " + command.getClass().getSimpleName());
                     // 수신된 커맨드를 로컬 게임 엔진에서 실행합니다.
                     command.execute(gameEngine);
                 }

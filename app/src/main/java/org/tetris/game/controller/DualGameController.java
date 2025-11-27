@@ -27,31 +27,50 @@ import javafx.scene.layout.Pane;
 public class DualGameController extends BaseController<DualGameModel> implements RouterAware, ItemActivation {
 
     // === FXML 바인딩 ===
-    @FXML private BorderPane root;
+    @FXML
+    private BorderPane root;
 
     // Player 1 (왼쪽)
-    @FXML private Pane gameBoard1;
-    @FXML private Pane nextBlockPane1;
-    @FXML private Label scoreLabel1;
-    @FXML private Label levelLabel1;
-    @FXML private Label linesLabel1;
+    @FXML
+    private Pane gameBoard1;
+    @FXML
+    private Pane nextBlockPane1;
+    @FXML
+    private Label scoreLabel1;
+    @FXML
+    private Label levelLabel1;
+    @FXML
+    private Label linesLabel1;
 
     // Player 2 (오른쪽)
-    @FXML private Pane gameBoard2;
-    @FXML private Pane nextBlockPane2;
-    @FXML private Label scoreLabel2;
-    @FXML private Label levelLabel2;
-    @FXML private Label linesLabel2;
+    @FXML
+    private Pane gameBoard2;
+    @FXML
+    private Pane nextBlockPane2;
+    @FXML
+    private Label scoreLabel2;
+    @FXML
+    private Label levelLabel2;
+    @FXML
+    private Label linesLabel2;
 
     // 오버레이 & 버튼
-    @FXML private HBox gameOverOverlay;
-    @FXML private HBox pauseOverlay;
-    @FXML private Button pauseButton;
-    @FXML private Button restartButton;
-    @FXML private Button menuButton;
-    @FXML private Button resumeButton;
-    @FXML private Button pauseMenuButton;
-    @FXML private Label winnerLabel;
+    @FXML
+    private HBox gameOverOverlay;
+    @FXML
+    private HBox pauseOverlay;
+    @FXML
+    private Button pauseButton;
+    @FXML
+    private Button restartButton;
+    @FXML
+    private Button menuButton;
+    @FXML
+    private Button resumeButton;
+    @FXML
+    private Button pauseMenuButton;
+    @FXML
+    private Label winnerLabel;
 
     private static final int MIN_CELL_SIZE = 16;
     private static final double PREVIEW_RATIO = 0.8;
@@ -109,7 +128,7 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
         GameViewRenderer renderer1 = new GameViewRenderer(
                 gameBoard1, nextBlockPane1, boardSize, cellSize1, previewCellSize1);
-        
+
         GameViewRenderer renderer2 = new GameViewRenderer(
                 gameBoard2, nextBlockPane2, boardSize, cellSize2, previewCellSize2);
 
@@ -131,54 +150,69 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void setupGameEngine() {
-        gameEngine = new LocalMultiGameEngine(player1, player2, dualGameModel, new GameViewCallback() {
-            @Override
-            public void updateGameBoard() {
-                DualGameController.this.updateGameBoard(player1);
-                DualGameController.this.updateGameBoard(player2);
-            }
+        gameEngine = LocalMultiGameEngine.builder()
+                .player(player1)
+                .player2(player2)
+                .gameModel(dualGameModel)
+                .controller(new GameViewCallback() {
+                    @Override
+                    public void updateGameBoard() {
+                        DualGameController.this.updateGameBoard(player1);
+                        DualGameController.this.updateGameBoard(player2);
+                    }
 
-            @Override
-            public void updateScoreDisplay() {
-                DualGameController.this.updateScoreDisplay();
-            }
+                    @Override
+                    public void updateScoreDisplay() {
+                        DualGameController.this.updateScoreDisplay();
+                    }
 
-            @Override
-            public void updateLevelDisplay() {
-                DualGameController.this.updateLevelDisplay();
-            }
+                    @Override
+                    public void updateLevelDisplay() {
+                        DualGameController.this.updateLevelDisplay();
+                    }
 
-            @Override
-            public void updateLinesDisplay() {
-                DualGameController.this.updateLinesDisplay();
-            }
+                    @Override
+                    public void updateLinesDisplay() {
+                        DualGameController.this.updateLinesDisplay();
+                    }
 
-            @Override
-            public void updateNextBlockPreview() {
-                DualGameController.this.updateNextBlockPreview();
-            }
+                    @Override
+                    public void updateNextBlockPreview() {
+                        DualGameController.this.updateNextBlockPreview();
+                    }
 
-            @Override
-            public void showGameOver() {
-                checkGameOverState();
-            }
+                    @Override
+                    public void showGameOver() {
+                        checkGameOverState();
+                    }
 
-            @Override
-            public void updatePauseUI(boolean isPaused) {
-                if (isPaused) showPauseOverlay();
-                else hidePauseOverlay();
-            }
+                    @Override
+                    public void updatePauseUI(boolean isPaused) {
+                        if (isPaused)
+                            showPauseOverlay();
+                        else
+                            hidePauseOverlay();
+                    }
 
-            @Override public void addClearingRow(int row) {}
-            @Override public void addClearingCol(int col) {}
-            @Override public void addClearingCells(List<Point> cells) {}
-        });
+                    @Override
+                    public void addClearingRow(int row) {
+                    }
+
+                    @Override
+                    public void addClearingCol(int col) {
+                    }
+
+                    @Override
+                    public void addClearingCells(List<Point> cells) {
+                    }
+                })
+                .build();
 
         // Key Handlers
         keyHandler1 = new GameKeyHandler(gameEngine, KeyLayout.WASD);
 
         keyHandler2 = new GameKeyHandler(gameEngine, KeyLayout.ARROWS);
-        
+
         // Configure P2 Commands
         keyHandler2.setMoveLeftCommand(game -> ((LocalMultiGameEngine) game).moveLeftP2());
         keyHandler2.setMoveRightCommand(game -> ((LocalMultiGameEngine) game).moveRightP2());
@@ -193,8 +227,10 @@ public class DualGameController extends BaseController<DualGameModel> implements
         double paneWidth = boardPane.getWidth();
         double paneHeight = boardPane.getHeight();
 
-        if (paneWidth <= 0) paneWidth = boardPane.getPrefWidth();
-        if (paneHeight <= 0) paneHeight = boardPane.getPrefHeight();
+        if (paneWidth <= 0)
+            paneWidth = boardPane.getPrefWidth();
+        if (paneHeight <= 0)
+            paneHeight = boardPane.getPrefHeight();
 
         if ((paneWidth <= 0 || paneHeight <= 0) && root.getScene() != null && root.getScene().getWindow() != null) {
             paneWidth = Math.max(paneWidth, root.getScene().getWindow().getWidth() / 2.0);
@@ -219,7 +255,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
     private void setupEventHandlers() {
         if (root.getScene() == null) {
             root.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) setupKeyboardInput();
+                if (newScene != null)
+                    setupKeyboardInput();
             });
         } else {
             setupKeyboardInput();
@@ -239,12 +276,13 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void handleKeyPress(KeyEvent e) {
-        if (gameEngine == null) return;
-        
+        if (gameEngine == null)
+            return;
+
         // Delegate to handlers
         // Note: GameKeyHandler consumes event if matched.
         // We try handler1 first, then handler2.
-        
+
         keyHandler1.handleKeyPress(e);
         if (!e.isConsumed()) {
             keyHandler2.handleKeyPress(e);
@@ -253,34 +291,44 @@ public class DualGameController extends BaseController<DualGameModel> implements
 
     // === UI 업데이트 ===
     private void updateGameBoard(PlayerSlot slot) {
-        if (slot == null) return;
+        if (slot == null)
+            return;
         int[][] board = slot.boardModel.getBoard();
         slot.renderer.renderBoard(board, slot.flashMask, slot.isFlashing, slot.flashOn);
     }
 
     private void updateScoreDisplay() {
-        if (player1 != null) scoreLabel1.setText(player1.scoreModel.toString());
-        if (player2 != null) scoreLabel2.setText(player2.scoreModel.toString());
+        if (player1 != null)
+            scoreLabel1.setText(player1.scoreModel.toString());
+        if (player2 != null)
+            scoreLabel2.setText(player2.scoreModel.toString());
     }
 
     private void updateLevelDisplay() {
-        if (player1 != null) levelLabel1.setText(String.valueOf(player1.gameModel.getLevel()));
-        if (player2 != null) levelLabel2.setText(String.valueOf(player2.gameModel.getLevel()));
+        if (player1 != null)
+            levelLabel1.setText(String.valueOf(player1.gameModel.getLevel()));
+        if (player2 != null)
+            levelLabel2.setText(String.valueOf(player2.gameModel.getLevel()));
     }
 
     private void updateLinesDisplay() {
-        if (player1 != null) linesLabel1.setText(String.valueOf(player1.gameModel.getTotalLinesCleared()));
-        if (player2 != null) linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
+        if (player1 != null)
+            linesLabel1.setText(String.valueOf(player1.gameModel.getTotalLinesCleared()));
+        if (player2 != null)
+            linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
     }
 
     private void updateNextBlockPreview() {
-        if (player1 != null) player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
-        if (player2 != null) player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
+        if (player1 != null)
+            player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
+        if (player2 != null)
+            player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
     }
 
     // === Pause & Menu ===
     private void togglePause() {
-        if (gameEngine != null) gameEngine.togglePause();
+        if (gameEngine != null)
+            gameEngine.togglePause();
     }
 
     private void resumeGame() {
@@ -298,15 +346,19 @@ public class DualGameController extends BaseController<DualGameModel> implements
     }
 
     private void goToMenu() {
-        if (gameEngine != null) gameEngine.stopGame();
+        if (gameEngine != null)
+            gameEngine.stopGame();
         hideGameOverlay();
-        if (router != null) router.showStartMenu();
+        if (router != null)
+            router.showStartMenu();
     }
 
     private void goToMenuFromPause() {
-        if (gameEngine != null) gameEngine.stopGame();
+        if (gameEngine != null)
+            gameEngine.stopGame();
         hidePauseOverlay();
-        if (router != null) router.showStartMenu();
+        if (router != null)
+            router.showStartMenu();
     }
 
     // === ItemActivation ===
@@ -357,7 +409,8 @@ public class DualGameController extends BaseController<DualGameModel> implements
         boolean p1Over = dualGameModel.getPlayer1GameModel().isGameOver();
         boolean p2Over = dualGameModel.getPlayer2GameModel().isGameOver();
 
-        if (!p1Over && !p2Over) return;
+        if (!p1Over && !p2Over)
+            return;
 
         showGameOverlay();
 

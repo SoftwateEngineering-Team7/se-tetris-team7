@@ -3,12 +3,14 @@ package org.tetris.game.controller;
 import java.util.List;
 
 import org.tetris.Router;
-import org.tetris.game.comand.*;
+import org.tetris.game.comand.RestartGameCommand;
+import org.tetris.game.comand.TogglePauseCommand;
 import org.tetris.game.engine.SingleGameEngine;
 import org.tetris.game.model.Board;
 import org.tetris.game.model.GameModel;
 import org.tetris.game.model.ScoreModel;
 import org.tetris.game.model.blocks.Block;
+import org.tetris.game.model.items.ItemActivation;
 
 import org.tetris.game.model.NextBlockModel;
 import org.tetris.game.model.PlayerSlot;
@@ -17,15 +19,12 @@ import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 import org.tetris.game.view.GameViewCallback;
 
-import org.util.KeyLayout;
 import org.util.Point;
 
 import javafx.fxml.FXML;
-
 import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -83,6 +82,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private SingleGameEngine gameEngine;
     private GameKeyHandler keyHandler;
 
+    public GameController(GameModel model) {
+        super(model);
+        this.gameModel = model;
+    }
+
     // ===== ItemActivation 구현 (아이템이 지울 행/열/셀 추가) =====
 
     @Override
@@ -105,64 +109,59 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
     @Override
     public void addClearingCells(List<Point> cells) {
-        if (player == null || cells == null)
+        if (player == null)
             return;
-        for (Point cell : cells) {
-            if (!player.clearingCells.contains(cell)) {
-                player.clearingCells.add(cell);
-            }
-        }
+        player.clearingCells.addAll(cells);
     }
 
-    // ===== 생성자 / Router =====
+    private void setupEventHandlers() {
+        // 키보드 입력 처리
+        if (root.getScene() == null) {
+            root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) {
+                    setupKeyboardInput();
+                }
+            });
+        } else {
+            setupKeyboardInput();
+        }
 
-    public GameController(GameModel gameModel) {
-        super(gameModel);
-        this.gameModel = model;
+        // 버튼 이벤트 핸들러
+        pauseButton.setOnAction(e -> new TogglePauseCommand().execute(gameEngine));
+        restartButton.setOnAction(e -> new RestartGameCommand().execute(gameEngine));
+        menuButton.setOnAction(e -> goToMenu());
+        resumeButton.setOnAction(e -> resumeGame());
+        pauseMenuButton.setOnAction(e -> goToMenuFromPause());
     }
 
     @Override
-    public void setRouter(Router router) {
-        this.router = router;
-    }
-
-    // ===== 초기화 =====
-
-    @FXML
     public void initialize() {
-        super.initialize();
+        // 게임 모델 초기화 (Router에서 주입받거나 생성)
+        if (gameModel == null) {
+            gameModel = new GameModel();
+        }
 
-        // 게임 상태 초기화
-        gameModel.reset();
+        // PlayerSlot 설정
+        setupPlayerSlot();
 
-        // Stage 크기가 잡힌 후 PlayerSlot + UI 세팅
-        Platform.runLater(() -> {
-            setupPlayerSlot();
-            setupUI();
+        // 엔진 초기화 및 시작
+        gameEngine = SingleGameEngine.builder()
+                .player(player)
+                .gameModel(gameModel)
+                .controller(this)
+                .build();
 
-            // 엔진 초기화 및 시작
-            gameEngine = new SingleGameEngine(player, gameModel, this);
-            keyHandler = new GameKeyHandler(gameEngine); // Default WASD or ARROWS? Let's check KeyLayout default.
-            // Actually GameKeyHandler default is WASD. Single player usually uses Arrows or
-            // WASD.
-            // Let's use ARROWS for single player as it's more standard for casual play, or
-            // WASD if preferred.
-            // The original code checked KeyLayout.getUpKey(), which depends on
-            // KeyLayout.currentLayout.
-            // So we should pass KeyLayout.ARROWS or WASD based on
-            // KeyLayout.getCurrentLayout().
-            // But KeyLayout.getCurrentLayout() returns a String.
-            // Let's just use KeyLayout.ARROWS for now or respect KeyLayout.
-            if (KeyLayout.getCurrentLayout().equals(KeyLayout.KEY_WASD)) {
-                keyHandler = new GameKeyHandler(gameEngine, KeyLayout.WASD);
-            } else {
-                keyHandler = new GameKeyHandler(gameEngine, KeyLayout.ARROWS);
-            }
+        // 키 핸들러 초기화 (엔진 필요)
+        keyHandler = new GameKeyHandler(gameEngine);
 
-            gameEngine.startGame(0);
-        });
-
+        // 이벤트 핸들러 설정
         setupEventHandlers();
+
+        // 게임 시작
+        Platform.runLater(() -> {
+            gameEngine.startGame(System.currentTimeMillis());
+            root.requestFocus();
+        });
     }
 
     // PlayerSlot + BoardRender 생성 (PlayerSlot이 렌더러를 가짐)
@@ -193,37 +192,6 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         this.player = new PlayerSlot(gameModel, boardModel, nextBlockModel, scoreModel, null, renderer);
         renderer.setupSinglePlayerLayout();
-    }
-
-    // UI 기본 상태 세팅
-    private void setupUI() {
-        updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
-        updateNextBlockPreview();
-
-        hideGameOverlay();
-        hidePauseOverlay();
-    }
-
-    private void setupEventHandlers() {
-        // 키보드 입력 처리
-        if (root.getScene() == null) {
-            root.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) {
-                    setupKeyboardInput();
-                }
-            });
-        } else {
-            setupKeyboardInput();
-        }
-
-        // 버튼 이벤트 핸들러
-        pauseButton.setOnAction(e -> new TogglePauseCommand().execute(gameEngine));
-        restartButton.setOnAction(e -> new RestartGameCommand().execute(gameEngine));
-        menuButton.setOnAction(e -> goToMenu());
-        resumeButton.setOnAction(e -> resumeGame());
-        pauseMenuButton.setOnAction(e -> goToMenuFromPause());
     }
 
     private void setupKeyboardInput() {
@@ -348,5 +316,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
         if (gameEngine != null) {
             gameEngine.stopGame();
         }
+    }
+
+    @Override
+    public void setRouter(Router router) {
+        this.router = router;
     }
 }

@@ -14,12 +14,24 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
     private long lastUpdate = 0;
     private long lastDropTime = 0; // 마지막 블록 낙하 시간
 
-    public SingleGameEngine() {
-        throw new UnsupportedOperationException("SingleGameEngine cannot be instantiated without a GameModel");
+    protected SingleGameEngine(PlayerSlot player, GameModel gameModel, GameViewCallback controller) {
+        super(player, gameModel, controller);
     }
 
-    public SingleGameEngine(PlayerSlot player, GameModel gameModel, GameViewCallback controller) {
-        super(player, gameModel, controller);
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends GameEngine.Builder<Builder, GameViewCallback, GameModel> {
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        @Override
+        public SingleGameEngine build() {
+            return new SingleGameEngine(player, gameModel, controller);
+        }
     }
 
     public void startGame(long seed) {
@@ -61,7 +73,7 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
 
     // ===== 메인 게임 루프 =====
 
-    private void startGameLoop() {
+    protected void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -81,7 +93,7 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
         gameLoop.start();
     }
 
-    private void updateGameLoop(long now) {
+    protected void updateGameLoop(long now) {
         if (gameModel.isPaused() || gameModel.isGameOver()) {
             return;
         }
@@ -118,7 +130,7 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
         controller.updateNextBlockPreview();
     }
 
-    private void resetPlayerSlot() {
+    protected void resetPlayerSlot() {
         if (player != null) {
             player.isFlashing = false;
             player.flashOn = false;
@@ -133,7 +145,7 @@ public class SingleGameEngine extends GameEngine<GameViewCallback, GameModel> {
         }
     }
 
-    private void resetGameLoop() {
+    protected void resetGameLoop() {
         if (gameLoop != null) {
             gameLoop.stop();
         }

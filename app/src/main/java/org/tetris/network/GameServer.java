@@ -88,8 +88,7 @@ public class GameServer {
                             client2 = new ServerThread(clientSocket);
                             client2.start();
                             
-                            // 두 명 접속 완료 -> 게임 시작
-                            startGame();
+                            // 두 명 접속 완료. 준비 대기.
                         } else {
                             System.out.println("[SERVER] Connection rejected: Server is full.");
                             clientSocket.close();
@@ -105,12 +104,28 @@ public class GameServer {
         serverThread.start();
     }
 
+    private boolean client1Ready = false;
+    private boolean client2Ready = false;
+
+    public synchronized void onClientReady(ServerThread client, boolean isReady) {
+        if (client == client1) {
+            client1Ready = isReady;
+        } else if (client == client2) {
+            client2Ready = isReady;
+        }
+        
+        if (client1Ready && client2Ready) {
+            startGame();
+        }
+    }
+
     private void startGame() {
-        System.out.println("[SERVER] Both players connected. Starting game...");
+        System.out.println("[SERVER] Both players ready. Starting game...");
         
-        GameCommand readyCommand = new org.tetris.game.comand.ReadyCommand(false);
+        long seed = System.currentTimeMillis();
+        GameCommand startCommand = new org.tetris.game.comand.GameStartCommand(seed);
         
-        broadcast(readyCommand);
+        broadcast(startCommand);
     }
 
     /**

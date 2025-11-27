@@ -3,7 +3,6 @@ package org.tetris.network.menu.model;
 import java.io.IOException;
 
 import org.tetris.game.comand.*;
-import org.tetris.game.engine.GameEngine;
 import org.tetris.game.engine.P2PGameEngine;
 import org.tetris.network.ClientThread;
 import org.tetris.network.GameServer;
@@ -14,7 +13,7 @@ import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleLongProperty;
 
-public class NetworkMenu extends BaseModel{
+public class NetworkMenu extends BaseModel {
     private static final int DEFAULT_PORT = 54321;
     private static final int SERVER_STARTUP_DELAY_MS = 100;
 
@@ -23,48 +22,51 @@ public class NetworkMenu extends BaseModel{
     private int port;
     private boolean isReady;
 
-    private GameEngine engine;
+    private P2PGameEngine engine;
     private ClientThread client;
     private LongProperty ping = new SimpleLongProperty();
     private BooleanProperty otherIsReady = new SimpleBooleanProperty();
 
-    public NetworkMenu(){
+    private long seed;
+    private BooleanProperty gameStarted = new SimpleBooleanProperty(false);
+
+    public NetworkMenu() {
         clear();
     }
 
-    public boolean getIsHost(){
+    public boolean getIsHost() {
         return isHost;
     }
 
-    public String getIpAddress(){
+    public String getIpAddress() {
         return ipAddress;
     }
 
-    public int getPort(){
+    public int getPort() {
         return port;
     }
 
-    public boolean isReady(){
+    public boolean isReady() {
         return isReady;
     }
 
-    public void setIsHost(boolean isHost){
+    public void setIsHost(boolean isHost) {
         this.isHost = isHost;
     }
 
-    public void setIpAddress(String ipString){
-        if (isValidIP(ipString)){
+    public void setIpAddress(String ipString) {
+        if (isValidIP(ipString)) {
             this.ipAddress = ipString;
-        }            
+        }
     }
 
-    public void setPort(int port){
-        if (isValidPort(port)){
+    public void setPort(int port) {
+        if (isValidPort(port)) {
             this.port = port;
         }
     }
 
-    public void setIsReady(boolean isReady){
+    public void setIsReady(boolean isReady) {
         this.isReady = isReady;
 
         if (client != null) {
@@ -72,8 +74,7 @@ public class NetworkMenu extends BaseModel{
         }
     }
 
-    public boolean isValidIP(String ipString)
-    {
+    public boolean isValidIP(String ipString) {
         if (isHost) {
             return true; // 호스트 모드에서는 IP 검증이 필요 없음
         }
@@ -89,17 +90,14 @@ public class NetworkMenu extends BaseModel{
         return true;
     }
 
-    public boolean isValidPort(int port)
-    {
+    public boolean isValidPort(int port) {
         if (port < 1 || port > 65535) {
             throw new IllegalArgumentException("포트는 1-65535 범위여야 합니다");
         }
         return true;
     }
 
-
-    public void create()
-    {
+    public void create() {
         if (client != null) {
             client.disconnect();
         }
@@ -109,8 +107,8 @@ public class NetworkMenu extends BaseModel{
         } catch (IOException e) {
             throw new RuntimeException("서버 시작에 실패했습니다", e);
         }
-        
-        engine = new P2PGameEngine();
+
+        engine = P2PGameEngine.create().build();
         engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
@@ -126,7 +124,7 @@ public class NetworkMenu extends BaseModel{
 
     private void startServer() throws IOException {
         GameServer.getInstance().start(port);
-        
+
         try {
             Thread.sleep(SERVER_STARTUP_DELAY_MS);
         } catch (InterruptedException e) {
@@ -134,23 +132,25 @@ public class NetworkMenu extends BaseModel{
         }
     }
 
-    public void join()
-    {
-        engine = new P2PGameEngine();
+    public void join() {
+        if (client != null) {
+            client.disconnect();
+        }
+
+        engine = P2PGameEngine.create().build();
         engine.setNetworkMenu(this);
         client = new ClientThread(engine);
 
         try {
             client.connect(ipAddress, port);
         } catch (IOException e) {
-            throw new RuntimeException("서버 연결에 실패했습니다: " + ipAddress + ":" + port, e);
+            throw new RuntimeException("서버 연결에 실패했습니다", e);
         }
 
-        System.out.println("방 참여 성공 - IP: " + ipAddress + ", 포트: " + port);
+        System.out.println("서버 연결 시도 - IP: " + ipAddress + ", 포트: " + port);
     }
 
-    public void clear()
-    {
+    public void clear() {
         if (client != null) {
             client.disconnect();
             client = null;
@@ -160,7 +160,7 @@ public class NetworkMenu extends BaseModel{
         this.ipAddress = "";
         this.port = DEFAULT_PORT;
         this.isReady = false;
-        this.engine = new P2PGameEngine();
+        this.engine = P2PGameEngine.create().build();
         engine.setNetworkMenu(this);
         this.ping.set(0);
     }
@@ -189,5 +189,29 @@ public class NetworkMenu extends BaseModel{
 
     public void setOtherIsReady(boolean isReady) {
         this.otherIsReady.set(isReady);
+    }
+
+    public long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
+    }
+
+    public BooleanProperty gameStartedProperty() {
+        return gameStarted;
+    }
+
+    public boolean isGameStarted() {
+        return gameStarted.get();
+    }
+
+    public void setGameStarted(boolean started) {
+        this.gameStarted.set(started);
+    }
+
+    public ClientThread getClientThread() {
+        return client;
     }
 }

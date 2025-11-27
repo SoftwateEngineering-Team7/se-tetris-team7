@@ -1,6 +1,7 @@
 package org.tetris.game.comand;
 
 import org.tetris.game.engine.GameEngine;
+import org.tetris.game.engine.P2PGameEngine;
 
 /**
  * Ping에 대한 응답 커맨드.
@@ -18,9 +19,11 @@ public class PongCommand implements GameCommand {
     }
 
     @Override
-    public void execute(GameEngine game) {
-        long currentTime = System.currentTimeMillis();
-        long ping = currentTime - originalTimestamp;
-        game.updatePing(ping);
+    public void execute(GameEngine<?, ?> game) {
+        if (game instanceof P2PGameEngine) {
+            long currentTime = System.currentTimeMillis();
+            long ping = currentTime - originalTimestamp;
+            ((P2PGameEngine) game).updatePing(ping);
+        }
     }
 }

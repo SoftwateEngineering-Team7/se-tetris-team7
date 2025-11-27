@@ -27,57 +27,35 @@ public abstract class GameEngine<C extends GameViewCallback, M extends BaseModel
     protected static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
     protected static final long FRAME_TIME = 16_666_667; // ~60 FPS (나노초)
 
-    public GameEngine() {
-        this.player = null;
-        this.gameModel = (M) null;
-        this.controller = (C) null;
-    }
-
-    public GameEngine(M gameModel) {
-        this.gameModel = gameModel;
-        this.controller = (C) null;
-    }
-
-    public GameEngine(M gameModel, C controller) {
-        this.gameModel = gameModel;
-        this.controller = controller;
-    }
-
-    private NetworkMenu networkMenu;
-
-    public synchronized void setNetworkMenu(NetworkMenu networkMenu) {
-        this.networkMenu = networkMenu;
-    }
-
-    // TODO: 옵저버 리스트 구현 (UI 업데이트 리스너 등록)
-    // private List<GameStateObserver> observers = new ArrayList<>();
-
-    public void onReadyCommand(boolean others) {
-        if (networkMenu == null) {
-            throw new IllegalStateException("NetworkMenu is not set in GameEngine.");
-        }
-
-        networkMenu.setOtherIsReady(others);
-        if (others && networkMenu.isReady()) {
-            System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
-
-            long seed = System.currentTimeMillis();
-            GameCommand startCommand = new GameStartCommand(seed);
-            GameServer.getInstance().broadcast(startCommand);
-        } else {
-            System.out.println("[CLIENT-ENGINE] Other Player is not ready.");
-        }
-    }
-    public GameEngine(PlayerSlot player, M gameModel) {
-        this.player = player;
-        this.gameModel = gameModel;
-        this.controller = (C) null;
-    }
-
-    public GameEngine(PlayerSlot player, M gameModel, C controller) {
+    protected GameEngine(PlayerSlot player, M gameModel, C controller) {
         this.player = player;
         this.gameModel = gameModel;
         this.controller = controller;
+    }
+
+    public abstract static class Builder<T extends Builder<T, C, M>, C extends GameViewCallback, M extends BaseModel> {
+        protected PlayerSlot player;
+        protected M gameModel;
+        protected C controller;
+
+        protected abstract T self();
+
+        public T player(PlayerSlot player) {
+            this.player = player;
+            return self();
+        }
+
+        public T gameModel(M gameModel) {
+            this.gameModel = gameModel;
+            return self();
+        }
+
+        public T controller(C controller) {
+            this.controller = controller;
+            return self();
+        }
+
+        public abstract GameEngine<C, M> build();
     }
 
     public abstract void startGame(long seed);
@@ -300,10 +278,4 @@ public abstract class GameEngine<C extends GameViewCallback, M extends BaseModel
         return false;
     }
 
-    public synchronized void updatePing(long ping) {
-        System.out.println("[CLIENT-ENGINE] Ping: " + ping + "ms");
-        if (networkMenu != null) {
-            networkMenu.setPing(ping);
-        }
-    }
 }

@@ -59,7 +59,9 @@ public abstract class BaseNetworkTest {
     }
 
     protected ClientThread createClientWithLocalMultiEngine() {
-        LocalMultiGameEngine engine = new LocalMultiGameEngine(null, null, new DualGameModel(), null);
+        LocalMultiGameEngine engine = LocalMultiGameEngine.builder()
+                .gameModel(new DualGameModel())
+                .build();
         ClientThread client = new ClientThread(engine);
         clients.add(client);
         gameEngines.add(engine);
@@ -71,7 +73,9 @@ public abstract class BaseNetworkTest {
         // them or pass null if allowed
         // P2PGameEngine(PlayerSlot localPlayer, PlayerSlot remotePlayer, P2PGameModel
         // gameModel, P2PGameController controller)
-        P2PGameEngine engine = new P2PGameEngine(null, null, new P2PGameModel(), null);
+        P2PGameEngine engine = P2PGameEngine.create()
+                .gameModel(new P2PGameModel())
+                .build();
         engine.setClientThread(null); // Will be set when client is created? No, circular dependency.
 
         ClientThread client = new ClientThread(engine);

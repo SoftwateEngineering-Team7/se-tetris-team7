@@ -18,14 +18,39 @@ public class LocalMultiGameEngine extends GameEngine<GameViewCallback, DualGameM
     // Player 2 state
     private long lastDropTime2 = 0;
 
-    public LocalMultiGameEngine(PlayerSlot player1, PlayerSlot player2, DualGameModel gameModel,
+    protected LocalMultiGameEngine(PlayerSlot player1, PlayerSlot player2, DualGameModel gameModel,
             GameViewCallback controller) {
         super(player1, gameModel, controller);
         this.player2 = player2;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends GameEngine.Builder<Builder, GameViewCallback, DualGameModel> {
+        protected PlayerSlot player2;
+
+        public Builder player2(PlayerSlot player2) {
+            this.player2 = player2;
+            return this;
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        @Override
+        public LocalMultiGameEngine build() {
+            return new LocalMultiGameEngine(player, player2, gameModel, controller);
+        }
+    }
+
     @Override
     public void startGame(long seed) {
+        gameModel.getPlayer1GameModel().spawnNewBlock();
+        gameModel.getPlayer2GameModel().spawnNewBlock();
         startGameLoop();
     }
 
@@ -90,7 +115,7 @@ public class LocalMultiGameEngine extends GameEngine<GameViewCallback, DualGameM
         doHardDrop(player2, gameModel.getPlayer2GameModel());
     }
 
-    private void startGameLoop() {
+    protected void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -111,7 +136,7 @@ public class LocalMultiGameEngine extends GameEngine<GameViewCallback, DualGameM
         gameLoop.start();
     }
 
-    private void updateGameLoop(long now) {
+    protected void updateGameLoop(long now) {
         if (gameModel.isPaused())
             return;
         if (gameModel.getPlayer1GameModel().isGameOver() && gameModel.getPlayer2GameModel().isGameOver())
@@ -126,7 +151,7 @@ public class LocalMultiGameEngine extends GameEngine<GameViewCallback, DualGameM
         controller.updateNextBlockPreview();
     }
 
-    private void updatePlayer(PlayerSlot p, GameModel model, long now, int playerIdx) {
+    protected void updatePlayer(PlayerSlot p, GameModel model, long now, int playerIdx) {
         if (p == null || model.isGameOver())
             return;
 

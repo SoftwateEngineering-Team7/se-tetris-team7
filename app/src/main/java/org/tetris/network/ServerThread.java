@@ -119,6 +119,13 @@ public class ServerThread {
                         PingCommand pingCmd = (PingCommand) command;
                         PongCommand pongCmd = new PongCommand(pingCmd.getTimestamp());
                         sendCommand(pongCmd);
+                    } else if (command instanceof ReadyCommand) {
+                        // 준비 상태 처리
+                        ReadyCommand readyCmd = (ReadyCommand) command;
+                        GameServer.getInstance().onClientReady(ServerThread.this, readyCmd.getIsReady());
+                        
+                        // 상대방에게 준비 상태 알림
+                        GameServer.getInstance().sendToOtherClient(ServerThread.this, command);
                     } else if (command instanceof GameOverCommand) {
                         // 게임 오버 처리
                         GameServer.getInstance().broadcast(command); // 일단 모두에게 알림

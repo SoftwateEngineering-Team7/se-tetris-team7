@@ -12,6 +12,7 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.application.Platform;
 
 public class NetworkMenuController extends BaseController<NetworkMenu> implements RouterAware{
 
@@ -113,6 +114,17 @@ public class NetworkMenuController extends BaseController<NetworkMenu> implement
         readyButton.setDisable(true);
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
+
+        // 게임 시작 리스너
+        model.gameStartedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                Platform.runLater(() -> {
+                    if (router != null) {
+                        router.showP2PGamePlaceholder(model.getClientThread(), model.getSeed());
+                    }
+                });
+            }
+        });
     }
 
     @FXML

@@ -9,7 +9,7 @@ import org.tetris.shared.BaseModel;
  */
 import org.tetris.shared.Pausable;
 
-public class DualGameModel extends BaseModel implements Pausable {
+public class DualGameModel extends GameModel implements Pausable {
     private GameModel player1GameModel;
     private GameModel player2GameModel;
     private boolean isPaused;
