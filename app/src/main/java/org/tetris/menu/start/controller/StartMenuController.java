@@ -361,4 +361,10 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private static double clamp(double v, double min, double max) {
         return Math.max(min, Math.min(max, v));
     }
+    
+    @Override
+    public void cleanup(){
+        setHighlightedIndex(0);
+        showMainMenu();
+    }
 }
