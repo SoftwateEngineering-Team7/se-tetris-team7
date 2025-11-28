@@ -76,6 +76,16 @@ public class GameController extends BaseController<GameModel> implements RouterA
     @FXML
     private Button pauseMenuButton;
 
+    // Control Labels
+    @FXML
+    private Label moveControlLabel;
+    @FXML
+    private Label rotateControlLabel;
+    @FXML
+    private Label softDropControlLabel;
+    @FXML
+    private Label hardDropControlLabel;
+
     // ===== 모델 및 기타 필드 =====
 
     private GameModel gameModel;
@@ -187,8 +197,7 @@ public class GameController extends BaseController<GameModel> implements RouterA
         Point boardSize = boardModel.getSize();
 
         // 이 플레이어 전용 BoardRender 생성
-        GameViewRenderer renderer = new GameViewRenderer(gameBoard, nextBlockPane, boardSize, cellSize,
-                previewCellSize);
+        GameViewRenderer renderer = new GameViewRenderer(gameBoard, nextBlockPane, null, boardSize, cellSize, previewCellSize);
 
         this.player = new PlayerSlot(gameModel, boardModel, nextBlockModel, scoreModel, null, renderer);
         renderer.setupSinglePlayerLayout();
@@ -203,6 +212,30 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         hideGameOverlay();
         hidePauseOverlay();
+
+        // KeyLayout에서 키 이름 가져와서 Control 라벨 업데이트
+        updateControlLabels();
+    }
+
+    private void updateControlLabels() {
+        KeyCode leftKey = KeyLayout.getLeftKey(PlayerId.PLAYER1);
+        KeyCode rightKey = KeyLayout.getRightKey(PlayerId.PLAYER1);
+        KeyCode upKey = KeyLayout.getUpKey(PlayerId.PLAYER1);
+        KeyCode downKey = KeyLayout.getDownKey(PlayerId.PLAYER1);
+        KeyCode hardDropKey = KeyLayout.getHardDropKey(PlayerId.PLAYER1);
+
+        if (moveControlLabel != null) {
+            moveControlLabel.setText("Move: " + leftKey.getName() + " / " + rightKey.getName());
+        }
+        if (rotateControlLabel != null) {
+            rotateControlLabel.setText("Rotate: " + upKey.getName());
+        }
+        if (softDropControlLabel != null) {
+            softDropControlLabel.setText("Down: " + downKey.getName());
+        }
+        if (hardDropControlLabel != null) {
+            hardDropControlLabel.setText("Drop: " + hardDropKey.getName());
+        }
     }
 
     private void setupEventHandlers() {
