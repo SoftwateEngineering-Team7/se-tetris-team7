@@ -123,8 +123,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         });
 
         // 초기값 설정
-        hostRadio.setDisable(false);
-        clientRadio.setDisable(false);
+        hostRadio.setSelected(false);
+        clientRadio.setSelected(true);
         ipField.setText(model.getIpAddress());
         portField.setText(String.valueOf(model.getPort()));
 
@@ -207,6 +207,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     private void onBackPressed() {
         addLog("메인 메뉴로 돌아갑니다");
         if (router != null) {
+            hostRadio.setDisable(false);
+            clientRadio.setDisable(false);
             model.clear();
             router.showStartMenu();
         } else {
