@@ -143,25 +143,17 @@ public class GameViewRenderer {
         if (attacks == null || attacks.isEmpty())
             return;
 
-        // [핵심] 현재 캔버스 너비(w)를 10등분(boardSize.c)해서 셀 크기 계산
+        // 셀 크기 계산 (가로 기준)
         double currentAttackCellSize = w / boardSize.c;
 
-        // [수정 포인트] 시각적으로 몇 번째 줄(바닥부터 0, 1, 2...)인지 세는 변수 추가
+        // 쌓이는 블록의 시각적 행 인덱스 (바닥부터 0, 1, 2, ...)
         int visualRow = 0;
 
         // 리스트의 끝(가장 최근 공격)부터 처음까지 역순으로 순회
         for (int i = attacks.size() - 1; i >= 0; i--) {
             int[] rowData = attacks.get(i);
 
-            // [수정 포인트] i 대신 visualRow를 사용하여 y좌표 계산
-            // visualRow가 0이면(첫 루프) -> h - 1*size (맨 바닥)
-            // visualRow가 1이면(다음 루프) -> h - 2*size (그 위)
             double y = h - ((visualRow + 1) * currentAttackCellSize);
-
-            // 화면 위쪽으로 넘어가면 더 이상 그리지 않음 (최적화)
-            if (y + currentAttackCellSize < 0) {
-                break;
-            }
 
             for (int c = 0; c < boardSize.c; c++) {
                 int val = rowData[c];
