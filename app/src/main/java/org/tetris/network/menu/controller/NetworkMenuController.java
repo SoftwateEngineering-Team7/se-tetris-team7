@@ -123,7 +123,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         });
 
         // 초기값 설정
-        hostRadio.setSelected(true);
+        hostRadio.setDisable(false);
+        clientRadio.setDisable(false);
         ipField.setText(model.getIpAddress());
         portField.setText(String.valueOf(model.getPort()));
 
@@ -147,6 +148,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         });
         connectionTypeGroup.selectToggle(clientRadio);
         readyButton.setDisable(true);
+        
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
 

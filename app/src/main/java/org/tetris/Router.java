@@ -5,6 +5,7 @@ import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.network.menu.NetworkMenuFactory;
+import org.tetris.network.menu.controller.NetworkMenuController;
 import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.P2PGameFactory;
@@ -63,7 +64,10 @@ public final class Router {
     }
 
     public void showNetworkMenu() {
-        show(networkMenuFactory);
+        var controller = show(networkMenuFactory);
+        if (controller instanceof NetworkMenuController nmController) {
+            nmController.initialize();
+        }
     }
 
     public void showGamePlaceholder(boolean itemMode) {
