@@ -30,16 +30,18 @@ public class GameMenuCommandTest {
     @Test
     public void testGameStartCommand() {
         TestGameMenuCommandExecutor executor = new TestGameMenuCommandExecutor();
+        org.tetris.network.dto.MatchSettings settings = new org.tetris.network.dto.MatchSettings(1, 12345L, 67890L);
 
         GameMenuCommand command = new GameMenuCommand() {
             @Override
             public void execute(GameMenuCommandExecutor exec) {
-                exec.gameStart();
+                exec.gameStart(settings);
             }
         };
 
         command.execute(executor);
 
         assertTrue(executor.executedCommands.contains("gameStart"));
+        assertEquals(settings, executor.lastSettings);
     }
 }
