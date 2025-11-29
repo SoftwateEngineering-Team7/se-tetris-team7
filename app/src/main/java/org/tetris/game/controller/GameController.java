@@ -170,8 +170,6 @@ public class GameController extends BaseController<GameModel> implements RouterA
 
         setupEventHandlers();
         startGameLoop();
-
-        gameModel.spawnNewBlock();
     }
 
     // PlayerSlot + BoardRender 생성 (PlayerSlot이 렌더러를 가짐)
@@ -610,7 +608,6 @@ public class GameController extends BaseController<GameModel> implements RouterA
         else
             startGameLoop();
 
-        gameModel.spawnNewBlock();
         root.requestFocus();
     }
 

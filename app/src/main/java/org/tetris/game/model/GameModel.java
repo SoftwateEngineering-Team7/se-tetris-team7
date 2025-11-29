@@ -27,14 +27,14 @@ public class GameModel extends BaseModel {
 
     public GameModel() {
         this.board = new Board();
-        this.nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
+        this.nextBlockModel = new NextBlockModel(Difficulty.getBlockProbList(), 5);
         this.scoreModel = new ScoreModel();
         this.totalLinesCleared = 0;
         this.level = 1;
         this.isGameOver = false;
         this.isPaused = false;
         this.nextBlockSeed = System.currentTimeMillis();
-
+        
         // 첫 블럭 설정
         spawnNewBlock();
     }
@@ -45,7 +45,7 @@ public class GameModel extends BaseModel {
 
     public void setNextBlockSeed(long nextBlockSeed) {
         this.nextBlockSeed = nextBlockSeed;
-        this.nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, nextBlockSeed);
+        this.nextBlockModel = new NextBlockModel(Difficulty.getBlockProbList(), 5, nextBlockSeed);
     }
 
     public Board getBoardModel() {
@@ -157,6 +157,8 @@ public class GameModel extends BaseModel {
         level = 1;
         isGameOver = false;
         isPaused = false;
+
+        spawnNewBlock();
     }
 
     // 레벨에 따른 낙하 속도 계산
