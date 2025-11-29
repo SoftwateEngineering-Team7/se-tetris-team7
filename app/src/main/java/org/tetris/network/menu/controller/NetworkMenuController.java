@@ -5,6 +5,7 @@ import org.tetris.game.model.GameMode;
 import org.tetris.network.GameClient;
 import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.comand.ReadyCommand;
+import org.tetris.network.dto.MatchSettings;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -245,10 +246,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     }
 
     @Override
-    public void gameStart() {
+    public void gameStart(MatchSettings settings) {
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
-            router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()));
+            router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings);
         });
     }
 

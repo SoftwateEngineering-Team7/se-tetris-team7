@@ -85,12 +85,14 @@ public final class Router {
         }
     }
 
-    public void showP2PGamePlaceholder(GameMode mode) {
+    public void showP2PGamePlaceholder(GameMode mode, org.tetris.network.dto.MatchSettings settings) {
         setStageSize(1400, 820);
         var controller = show(p2pGameFactory);
         if (controller instanceof P2PGameController gameController) {
             gameController.setUpGameMode(mode);
             gameController.initialize();
+            // Pass MatchSettings to start the game with correct player number
+            gameController.gameStart(settings);
         }
     }
 
