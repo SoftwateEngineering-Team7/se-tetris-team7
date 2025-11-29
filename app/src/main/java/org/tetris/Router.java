@@ -55,6 +55,7 @@ public final class Router {
     /* --------- 공개 API ---------- */
 
     public void showStartMenu() {
+        setStageSize();
         show(startMenuFactory);
     }
 
@@ -75,6 +76,7 @@ public final class Router {
     }
 
     public void showDualGamePlaceholder(GameMode mode) {
+        setStageSize(1400, 820);
         var controller = show(dualGameFactory);
         if (controller instanceof DualGameController gameController) {
             gameController.setUpGameMode(mode);
@@ -83,6 +85,7 @@ public final class Router {
     }
 
     public void showP2PGamePlaceholder(GameMode mode) {
+        setStageSize(1400, 820);
         var controller = show(p2pGameFactory);
         if (controller instanceof P2PGameController gameController) {
             gameController.setUpGameMode(mode);
