@@ -14,8 +14,13 @@ public class P2PGameModel extends DualGameModel {
         return getPlayer2GameModel();
     }
 
-    public void setNextBlockSeed(long p1Seed, long p2Seed) {
-        getPlayer1GameModel().setNextBlockSeed(p1Seed);
-        getPlayer2GameModel().setNextBlockSeed(p2Seed);
+    /**
+     * P2P 게임에서 시드를 설정합니다.
+     * @param mySeed 로컬 플레이어(내 화면)의 시드
+     * @param otherSeed 원격 플레이어(상대방 화면)의 시드
+     */
+    public void setNextBlockSeed(long mySeed, long otherSeed) {
+        getLocalGameModel().setNextBlockSeed(mySeed);
+        getRemoteGameModel().setNextBlockSeed(otherSeed);
     }
 }
