@@ -276,11 +276,12 @@ public class Board extends BaseModel {
     }
 
     public boolean pushUp(int[] newRow) {
+        boolean validPushUp = true;
         // 1. 맨 윗줄 검사 (이미 블럭을 지웠으므로 순수 장애물만 검사됨)
         if (!isRowEmpty(0)) {
             // 공간 부족 시, 지웠던 블럭을 다시 그려주고 게임오버 처리할 수도 있지만,
             // 어차피 게임오버이므로 false 리턴
-            return false;
+            validPushUp = false;
         }
 
         // 2. 전체 보드 shift
@@ -291,7 +292,7 @@ public class Board extends BaseModel {
         // 3. 새 줄 추가
         System.arraycopy(newRow, 0, board[height - 1], 0, width);
 
-        return true;
+        return validPushUp;
     }
     /**
      * 특정 행(rowIndex)의 데이터를 가져와 공격용 라인을 생성합니다.
