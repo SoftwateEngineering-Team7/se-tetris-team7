@@ -104,7 +104,11 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     private static final long FLASH_INTERVAL_NANOS = 100_000_000L; // 100ms
     private static final int MIN_CELL_SIZE = 16;
     private static final double PREVIEW_RATIO = 0.8;
+    
     private boolean isTimeAttackMode = false;
+    private boolean isGameOver = false;
+    private boolean firstTriggered = false; // 게임 초기화 후 첫 프레임 트리거 플래그 -> 블록이 미리 떨어짐을 방지
+    private double playTime = 0.0;
 
     public DualGameController(M model) {
         super(model);
@@ -124,6 +128,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             gameLoop.stop();
         }
 
+        firstTriggered = false;
+
         // Model 초기화
         dualGameModel.getPlayer1GameModel().reset();
         dualGameModel.getPlayer2GameModel().reset();
@@ -132,13 +138,11 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             setupPlayerSlots();
             setupUI();
             root.requestFocus();
+            firstTriggered = true;
         });
 
         setupEventHandlers();
         startGameLoop();
-
-        dualGameModel.getPlayer1GameModel().spawnNewBlock();
-        dualGameModel.getPlayer2GameModel().spawnNewBlock();
     }
 
     // Dual 모드에서도 아이템 모드 / 난이도 설정
@@ -259,7 +263,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             e.consume();
             return;
         }
-        if (player1 == null || player2 == null) {
+
+        // 일시정지 또는 게임 오버 시 입력 무시
+        if (player1.gameModel.isPaused() || player2.gameModel.isPaused()
+            || player1.gameModel.isGameOver() || player2.gameModel.isGameOver()) {
             e.consume();
             return;
         }
@@ -334,7 +341,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         return player1.gameModel.isPaused() || player2.gameModel.isPaused();
     }
 
-    private double playTime = 0.0;
 
     // === 게임 루프 ===
     private void startGameLoop() {
@@ -346,6 +352,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             public void handle(long now) {
                 if (player1 == null || player2 == null)
                     return;
+
+                if(!firstTriggered) {
+                    return;
+                }
 
                 if (lastUpdate == 0L) {
                     lastUpdate = now;
@@ -416,8 +426,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
-    private boolean isGameOver = false;
-
     private void checkGameOverState() {
         isGameOver = false;
 
@@ -461,11 +469,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
         if (winnerLabel != null)
             winnerLabel.setText(result);
-        if (router != null) {
-            // boolean isItemMode 사용
-            boolean isItem = player1.gameModel.isItemMode();
-            router.showScoreBoard(true, isItem, Math.max(p1Score, p2Score));
-        }
     }
 
     // === 블록 고정 및 로직 ===
@@ -473,6 +476,12 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         GameModel gm = player.gameModel;
         List<Integer> fullRows = player.boardModel.findFullRows();
         player.clearingRows.addAll(fullRows);
+
+        // 아이템 제외하고 기본 로직으로 인한 row만 전달
+        if (player.clearingRows.size() >= 2) {
+            sendAttack(player);
+            updateUI(); // 공격 Pane 업데이트
+        }
 
         activeItemTarget = player;
         gm.tryActivateItem(this);
@@ -530,11 +539,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     private void processClears(PlayerSlot player) {
         GameModel gm = player.gameModel;
-
-        if (player.clearingRows.size() >= 1) {
-            sendAttack(player);
-        }
-        player.boardModel.activeBlock = null;
 
         int linesCleared = deleteCompletedRows(player);
         int colsCleared = deleteCompletedCols(player);
@@ -706,9 +710,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         setupUI();
 
         startGameLoop();
-
-        player1.gameModel.spawnNewBlock();
-        player2.gameModel.spawnNewBlock();
 
         root.requestFocus();
     }
