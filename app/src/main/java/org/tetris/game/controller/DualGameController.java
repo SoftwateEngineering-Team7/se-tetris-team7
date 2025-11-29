@@ -3,6 +3,7 @@ package org.tetris.game.controller;
 import java.util.List;
 
 import org.tetris.Router;
+import org.tetris.game.model.AttackModel;
 import org.tetris.game.model.DualGameModel;
 import org.tetris.game.model.GameMode;
 import org.tetris.game.model.GameModel;
@@ -49,6 +50,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     private VBox timeAttackBox1;
     @FXML
     private Label timerLabel1;
+    @FXML
+    private Pane attackPreviewPane1;
 
     // Player 2 (오른쪽)
     @FXML
@@ -65,6 +68,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     private VBox timeAttackBox2;
     @FXML
     private Label timerLabel2;
+    @FXML
+    private Pane attackPreviewPane2;
 
     // 오버레이 & 버튼
     @FXML
@@ -83,6 +88,26 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     private Button pauseMenuButton;
     @FXML
     protected Label winnerLabel;
+
+    // Player 1 Control Labels
+    @FXML
+    private Label moveControlLabel1;
+    @FXML
+    private Label rotateControlLabel1;
+    @FXML
+    private Label softDropControlLabel1;
+    @FXML
+    private Label hardDropControlLabel1;
+
+    // Player 2 Control Labels
+    @FXML
+    private Label moveControlLabel2;
+    @FXML
+    private Label rotateControlLabel2;
+    @FXML
+    private Label softDropControlLabel2;
+    @FXML
+    private Label hardDropControlLabel2;
 
     // === 모델 및 슬롯 ===
     protected final M dualGameModel;
@@ -171,26 +196,25 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         player1 = createPlayerSlot(
                 dualGameModel.getPlayer1GameModel(),
                 dualGameModel.getPlayer1AttackModel(),
-                gameBoard1, nextBlockPane1, boardSize);
+                gameBoard1, nextBlockPane1, attackPreviewPane1, boardSize);
 
         player2 = createPlayerSlot(
                 dualGameModel.getPlayer2GameModel(),
                 dualGameModel.getPlayer2AttackModel(),
-                gameBoard2, nextBlockPane2, boardSize);
+                gameBoard2, nextBlockPane2, attackPreviewPane2, boardSize);
 
         player1.renderer.setupSinglePlayerLayout();
         player2.renderer.setupSinglePlayerLayout();
     }
 
-    private PlayerSlot createPlayerSlot(GameModel gm, org.tetris.game.model.AttackModel am,
-            Pane boardPane, Pane nextPane, Point boardSize) {
+    private PlayerSlot createPlayerSlot(GameModel gm, AttackModel am,
+            Pane boardPane, Pane nextPane, Pane attackPane, Point boardSize) {
 
         int cellSize = calculateCellSize(boardPane, boardSize);
-        int previewSize = Math.max(MIN_CELL_SIZE, (int) Math.round(cellSize * PREVIEW_RATIO));
+        int previewCellSize = Math.max(MIN_CELL_SIZE, (int) Math.round(cellSize * PREVIEW_RATIO));
 
         GameViewRenderer renderer = new GameViewRenderer(
-                boardPane, nextPane, boardSize, cellSize, previewSize);
-
+                boardPane, nextPane, attackPane, boardSize, cellSize, previewCellSize);
         return new PlayerSlot(
                 gm,
                 gm.getBoardModel(),
@@ -226,6 +250,49 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         hidePauseOverlay();
         updateTimeAttackVisibility();
         updateUI();
+        updateControlLabels();
+    }
+
+    private void updateControlLabels() {
+        // Player 1 키 설정
+        KeyCode leftKey1 = KeyLayout.getLeftKey(PlayerId.PLAYER1);
+        KeyCode rightKey1 = KeyLayout.getRightKey(PlayerId.PLAYER1);
+        KeyCode upKey1 = KeyLayout.getUpKey(PlayerId.PLAYER1);
+        KeyCode downKey1 = KeyLayout.getDownKey(PlayerId.PLAYER1);
+        KeyCode hardDropKey1 = KeyLayout.getHardDropKey(PlayerId.PLAYER1);
+
+        if (moveControlLabel1 != null) {
+            moveControlLabel1.setText("Move: " + leftKey1.getName() + " / " + rightKey1.getName());
+        }
+        if (rotateControlLabel1 != null) {
+            rotateControlLabel1.setText("Rotate: " + upKey1.getName());
+        }
+        if (softDropControlLabel1 != null) {
+            softDropControlLabel1.setText("Down: " + downKey1.getName());
+        }
+        if (hardDropControlLabel1 != null) {
+            hardDropControlLabel1.setText("Drop: " + hardDropKey1.getName());
+        }
+
+        // Player 2 키 설정
+        KeyCode leftKey2 = KeyLayout.getLeftKey(PlayerId.PLAYER2);
+        KeyCode rightKey2 = KeyLayout.getRightKey(PlayerId.PLAYER2);
+        KeyCode upKey2 = KeyLayout.getUpKey(PlayerId.PLAYER2);
+        KeyCode downKey2 = KeyLayout.getDownKey(PlayerId.PLAYER2);
+        KeyCode hardDropKey2 = KeyLayout.getHardDropKey(PlayerId.PLAYER2);
+
+        if (moveControlLabel2 != null) {
+            moveControlLabel2.setText("Move: " + leftKey2.getName() + " / " + rightKey2.getName());
+        }
+        if (rotateControlLabel2 != null) {
+            rotateControlLabel2.setText("Rotate: " + upKey2.getName());
+        }
+        if (softDropControlLabel2 != null) {
+            softDropControlLabel2.setText("Down: " + downKey2.getName());
+        }
+        if (hardDropControlLabel2 != null) {
+            hardDropControlLabel2.setText("Drop: " + hardDropKey2.getName());
+        }
     }
 
     private void setupEventHandlers() {
@@ -259,7 +326,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             return;
         }
 
-        if (dualGameModel.getPlayer1GameModel().isPaused() || dualGameModel.getPlayer2GameModel().isPaused()) {
+        if (player1 == null || player2 == null) {
             e.consume();
             return;
         }
@@ -321,11 +388,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
 
         if (updateNeeded) {
-            updateGameBoard(player);
-            if (player1 != null)
-                player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
-            if (player2 != null)
-                player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
+            updateUI();
         }
     }
 
@@ -612,11 +675,13 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             levelLabel1.setText(String.valueOf(player1.gameModel.getLevel()));
             linesLabel1.setText(String.valueOf(player1.gameModel.getTotalLinesCleared()));
             player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
+            player1.renderer.renderAttackBoard(player1.attackModel.getAttacks());
         }
         if (player2 != null) {
             levelLabel2.setText(String.valueOf(player2.gameModel.getLevel()));
             linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
             player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
+            player2.renderer.renderAttackBoard(player2.attackModel.getAttacks());
         }
 
         updateTimeAttackTimer();
@@ -625,6 +690,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     protected void updateGameBoard(PlayerSlot player) {
         if (player == null)
             return;
+
         player.renderer.renderBoard(player.boardModel.getBoard(), player.flashMask, player.isFlashing, player.flashOn);
     }
 
@@ -671,11 +737,11 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // === Pause & Menu ===
     protected void togglePause() {
-        if (isGameOver)
+        if (isGameOver || player1 == null || player2 == null)
             return;
-        boolean paused = !dualGameModel.getPlayer1GameModel().isPaused();
-        dualGameModel.getPlayer1GameModel().setPaused(paused);
-        dualGameModel.getPlayer2GameModel().setPaused(paused);
+        boolean paused = !player1.gameModel.isPaused();
+        player1.gameModel.setPaused(paused);
+        player2.gameModel.setPaused(paused);
 
         if (paused)
             showPauseOverlay();

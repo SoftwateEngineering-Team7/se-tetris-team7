@@ -296,7 +296,6 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     @FXML
     public void onLocalItemGameStart() {
-        router.setStageSize(1400, 820);
         router.showDualGamePlaceholder(GameMode.ITEM);
     }
 
@@ -361,5 +360,11 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
 
     private static double clamp(double v, double min, double max) {
         return Math.max(min, Math.min(max, v));
+    }
+    
+    @Override
+    public void cleanup(){
+        setHighlightedIndex(0);
+        showMainMenu();
     }
 }

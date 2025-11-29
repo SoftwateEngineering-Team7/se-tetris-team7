@@ -20,6 +20,7 @@ public class GameViewRenderer {
     // 레이아웃(위치/크기) 설정은 pane 기준으로 수행
     private final Pane boardPane;
     private final Pane nextBlockPane;
+    private final Pane attackPane;
 
     // 메인 보드용
     private final Canvas boardCanvas;
@@ -29,46 +30,59 @@ public class GameViewRenderer {
     private final Canvas previewCanvas;
     private final GraphicsContext previewGc; // 다음 블록 프리뷰 그래픽 컨텍스트 -> 캔버스에서 펜 역할
 
+    private final Canvas attackCanvas;
+    private final GraphicsContext attackGc;
+        
     private final Point boardSize;
     private final int cellSize;
     private final int previewCellSize;
 
-    public GameViewRenderer(Pane boardPane, Pane nextBlockPane, Point boardSize, int cellSize, int previewCellSize) {
+    public GameViewRenderer(Pane boardPane, Pane nextBlockPane, Pane attackPane, Point boardSize, int cellSize, int previewCellSize) {
         this.boardPane = boardPane;
         this.nextBlockPane = nextBlockPane;
+        this.attackPane = attackPane;
         this.boardSize = boardSize;
         this.cellSize = cellSize;
         this.previewCellSize = previewCellSize;
 
-        // ===== 메인 보드 캔버스 생성 =====
+        // 1. Main Board Canvas
         int canvasWidth = boardSize.c * cellSize;
         int canvasHeight = boardSize.r * cellSize;
-
         this.boardCanvas = new Canvas(canvasWidth, canvasHeight);
         this.boardGc = boardCanvas.getGraphicsContext2D();
-
-        // Pane에 추가 (레이아웃/리스너는 나중에)
         boardPane.getChildren().clear();
         boardPane.getChildren().add(boardCanvas);
 
-        // ===== 다음 블록 프리뷰 캔버스 생성 =====
+        // 2. Next Block Canvas
         if (nextBlockPane != null) {
-            double paneWidth = nextBlockPane.getPrefWidth();
-            double paneHeight = nextBlockPane.getPrefHeight();
-
-            if (paneWidth <= 0)
-                paneWidth = 4 * previewCellSize;
-            if (paneHeight <= 0)
-                paneHeight = 4 * previewCellSize;
-
+            double paneWidth = nextBlockPane.getPrefWidth() > 0 ? nextBlockPane.getPrefWidth() : 4 * previewCellSize;
+            double paneHeight = nextBlockPane.getPrefHeight() > 0 ? nextBlockPane.getPrefHeight() : 4 * previewCellSize;
             this.previewCanvas = new Canvas(paneWidth, paneHeight);
             this.previewGc = previewCanvas.getGraphicsContext2D();
-
             nextBlockPane.getChildren().clear();
             nextBlockPane.getChildren().add(previewCanvas);
         } else {
             this.previewCanvas = null;
             this.previewGc = null;
+        }
+
+        // 3. attackPane
+        if (attackPane != null) {
+            // 초기 크기 설정 - FXML에서 지정한 prefWidth/prefHeight 사용
+            double paneWidth = attackPane.getPrefWidth();
+            double paneHeight = attackPane.getPrefHeight();
+
+            this.attackCanvas = new Canvas(paneWidth, paneHeight);
+            this.attackGc = attackCanvas.getGraphicsContext2D();
+
+            attackCanvas.widthProperty().bind(attackPane.widthProperty());
+            attackCanvas.heightProperty().bind(attackPane.heightProperty());
+
+            attackPane.getChildren().clear();
+            attackPane.getChildren().add(attackCanvas);
+        } else {
+            this.attackCanvas = null;
+            this.attackGc = null;
         }
     }
 
@@ -111,34 +125,53 @@ public class GameViewRenderer {
         }
     }
 
-    public void boardReset() {
-        // 배경 초기화
-        boardGc.setFill(Color.BLACK);
-        boardGc.fillRect(0, 0, boardSize.c * cellSize, boardSize.r * cellSize);
-    }
-
     // ========================
-    // 싱글 플레이어 레이아웃 설정
+    // 공격 보드 렌더링
     // ========================
-    public void setupSinglePlayerLayout() {
-        if (boardPane != null) {
-            // (paneSize - canvasSize) / 2 → 가운데 정렬
-            bindCanvasPosition(
-                    boardPane,
-                    boardCanvas,
-                    (paneW, canvasW) -> (paneW - canvasW) / 2.0, // X
-                    (paneH, canvasH) -> (paneH - canvasH) / 2.0 // Y
-            );
-        }
+    public void renderAttackBoard(List<int[]> attacks) {
+        if (attackGc == null || attackCanvas == null)
+            return;
 
-        if (nextBlockPane != null && previewCanvas != null) {
-            // nextBlockPane 안에서 프리뷰 캔버스를 정중앙에 위치
-            bindCanvasPosition(
-                    nextBlockPane,
-                    previewCanvas,
-                    (paneW, canvasW) -> (paneW - canvasW) / 2.0, // X 중앙
-                    (paneH, canvasH) -> (paneH - canvasH) / 2.0 // Y 중앙
-            );
+        double w = attackCanvas.getWidth();
+        double h = attackCanvas.getHeight();
+
+        // 배경 지우기
+        attackGc.clearRect(0, 0, w, h);
+        attackGc.setFill(Color.BLACK);
+        attackGc.fillRect(0, 0, w, h);
+
+        if (attacks == null || attacks.isEmpty())
+            return;
+
+        // 셀 크기 계산 (가로 기준)
+        double currentAttackCellSize = w / boardSize.c;
+
+        // 쌓이는 블록의 시각적 행 인덱스 (바닥부터 0, 1, 2, ...)
+        int visualRow = 0;
+
+        // 리스트의 끝(가장 최근 공격)부터 처음까지 역순으로 순회
+        for (int i = attacks.size() - 1; i >= 0; i--) {
+            int[] rowData = attacks.get(i);
+
+            double y = h - ((visualRow + 1) * currentAttackCellSize);
+
+            for (int c = 0; c < boardSize.c; c++) {
+                int val = rowData[c];
+                if (val != 0) {
+                    double x = c * currentAttackCellSize;
+
+                    // 회색 블록 그리기
+                    attackGc.setFill(Color.GRAY);
+                    attackGc.fillRect(x, y, currentAttackCellSize - 1, currentAttackCellSize - 1);
+
+                    // 테두리
+                    attackGc.setStroke(Color.DARKGRAY);
+                    attackGc.setLineWidth(1);
+                    attackGc.strokeRect(x, y, currentAttackCellSize - 1, currentAttackCellSize - 1);
+                }
+            }
+            // 다음 블록은 한 칸 위로 쌓음
+            visualRow++;
         }
     }
 
@@ -200,6 +233,39 @@ public class GameViewRenderer {
             }
         }
     }
+
+    public void boardReset() {
+        // 배경 초기화
+        boardGc.setFill(Color.BLACK);
+        boardGc.fillRect(0, 0, boardSize.c * cellSize, boardSize.r * cellSize);
+    }
+
+    // ========================
+    // 싱글 플레이어 레이아웃 설정
+    // ========================
+    public void setupSinglePlayerLayout() {
+        if (boardPane != null) {
+            // (paneSize - canvasSize) / 2 → 가운데 정렬
+            bindCanvasPosition(
+                    boardPane,
+                    boardCanvas,
+                    (paneW, canvasW) -> (paneW - canvasW) / 2.0, // X
+                    (paneH, canvasH) -> (paneH - canvasH) / 2.0 // Y
+            );
+        }
+
+        if (nextBlockPane != null && previewCanvas != null) {
+            // nextBlockPane 안에서 프리뷰 캔버스를 정중앙에 위치
+            bindCanvasPosition(
+                    nextBlockPane,
+                    previewCanvas,
+                    (paneW, canvasW) -> (paneW - canvasW) / 2.0, // X 중앙
+                    (paneH, canvasH) -> (paneH - canvasH) / 2.0 // Y 중앙
+            );
+        }
+    }
+
+    
 
     // ========================
     // 플래시 마스크 생성

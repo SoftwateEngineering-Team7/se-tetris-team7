@@ -143,32 +143,27 @@
                                     <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label text="← →   Move" textFill="white">
+                            <Label fx:id="moveControlLabel" text="← →   Move" textFill="white">
                                 <font>
                                     <Font name="Consolas" size="12.0" />
                                 </font>
                             </Label>
-                            <Label text="↑     Rotate" textFill="white">
+                            <Label fx:id="rotateControlLabel" text="↑     Rotate" textFill="white">
                                 <font>
                                     <Font name="Consolas" size="12.0" />
                                 </font>
                             </Label>
-                            <Label text="↓     Soft Drop" textFill="white">
+                            <Label fx:id="softDropControlLabel" text="↓     Soft Drop" textFill="white">
                                 <font>
                                     <Font name="Consolas" size="12.0" />
                                 </font>
                             </Label>
-                            <Label text="Space Hard Drop" textFill="white">
+                            <Label fx:id="hardDropControlLabel" text="Space Hard Drop" textFill="white">
                                 <font>
                                     <Font name="Consolas" size="12.0" />
                                 </font>
                             </Label>
-                            <Label text="C     Hold" textFill="white">
-                                <font>
-                                    <Font name="Consolas" size="12.0" />
-                                </font>
-                            </Label>
-                            <Label text="P     Pause" textFill="white">
+                            <Label text="Pause: P" textFill="white">
                                 <font>
                                     <Font name="Consolas" size="12.0" />
                                 </font>
