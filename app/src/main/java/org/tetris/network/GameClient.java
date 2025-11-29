@@ -13,7 +13,7 @@ public class GameClient {
     private static GameClient instance;
     private ClientThread clientThread;
 
-    public static GameClient getInstance() {
+    public static synchronized GameClient getInstance() {
         if (instance == null) {
             instance = new GameClient();
             instance.clientThread = new ClientThread();

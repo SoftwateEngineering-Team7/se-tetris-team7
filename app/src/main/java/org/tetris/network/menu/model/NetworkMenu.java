@@ -100,8 +100,12 @@ public class NetworkMenu extends BaseModel {
             throw new RuntimeException("서버 시작에 실패했습니다", e);
         }
 
-        client.connect("localhost", port);
-        this.ipAddress = GameServer.getInstance().getHostIP().getHostAddress();
+        if (client != null) {
+            client.connect("localhost", port);
+            this.ipAddress = GameServer.getInstance().getHostIP().getHostAddress();
+        } else {
+            throw new IllegalStateException("GameClient 인스턴스가 null입니다. 서버에 연결할 수 없습니다.");
+        }
 
         System.out.println("호스트 방 생성 - IP: " + ipAddress + ", 포트: " + port);
     }

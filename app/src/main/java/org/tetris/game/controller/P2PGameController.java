@@ -56,13 +56,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         } else if (code == KeyCode.SPACE) {
             command = new HardDropCommand();
             handleHardDrop(player1);
-            // handleHardDrop already calls lockCurrentBlock and updates score
-            // No need to set updateNeeded as handleHardDrop logic usually triggers updates
-            // or next block
-            // But we should ensure UI is updated.
-            // handleHardDrop calls lockCurrentBlock -> checkLines -> spawnNewBlock ->
-            // renderNextBlock
-            // So it should be fine.
         }
 
         if (updateNeeded) {
