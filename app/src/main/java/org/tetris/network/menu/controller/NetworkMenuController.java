@@ -113,33 +113,25 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
         });
 
-        // 초기값 설정
-        hostRadio.setSelected(false);
-        clientRadio.setSelected(true);
-        ipField.setText(model.getIpAddress());
-        portField.setText(String.valueOf(model.getPort()));
-
         // RadioButton 변경 리스너
         connectionTypeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (newToggle == hostRadio) {
                 model.setIsHost(true);
                 ipField.setDisable(true);
-                createButton.setText("Create");
+                createButton.setText("CREATE");
                 gameModeCombo.setVisible(true);
 
                 addLog("Host 모드로 설정됨");
             } else if (newToggle == clientRadio) {
                 model.setIsHost(false);
                 ipField.setDisable(false);
-                createButton.setText("Join");
+                createButton.setText("JOIN");
                 gameModeCombo.setVisible(false);
 
                 addLog("Client 모드로 설정됨");
             }
         });
-        connectionTypeGroup.selectToggle(clientRadio);
-        readyButton.setDisable(true);
-
+        
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
 
@@ -147,6 +139,18 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         if (client != null) {
             client.setMenuExecutor(this);
         }
+    }
+
+    @Override
+    public void refresh() {
+        model.clear();
+        hostRadio.setDisable(false);
+        clientRadio.setDisable(false);
+        ipField.setText(model.getIpAddress());
+        portField.setText(String.valueOf(model.getPort()));
+        connectionTypeGroup.selectToggle(clientRadio);
+        createButton.setText("JOIN");
+        readyButton.setDisable(true);
     }
 
     @FXML
@@ -198,8 +202,6 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     private void onBackPressed() {
         addLog("메인 메뉴로 돌아갑니다");
         if (router != null) {
-            hostRadio.setDisable(false);
-            clientRadio.setDisable(false);
             model.clear();
             router.showStartMenu();
         } else {

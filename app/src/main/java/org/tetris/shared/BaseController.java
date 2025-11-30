@@ -19,4 +19,7 @@ public abstract class BaseController<M extends BaseModel>  {
     
     /**화면 전환 시 리소스 정리를 위해 호출 */
     public void cleanup() {}
+
+    /**화면이 다시 보여질 때 호출 */
+    public void refresh() {}
 }

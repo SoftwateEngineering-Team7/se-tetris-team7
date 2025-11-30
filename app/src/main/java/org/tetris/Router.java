@@ -65,7 +65,8 @@ public final class Router {
     }
 
     public void showNetworkMenu() {
-        show(networkMenuFactory);
+        BaseController<?> controller = show(networkMenuFactory);
+        controller.refresh();
     }
 
     public void showGamePlaceholder(boolean itemMode) {
