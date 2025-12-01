@@ -3,6 +3,7 @@ package org.tetris.network.menu.controller;
 import org.tetris.Router;
 import org.tetris.game.model.GameMode;
 import org.tetris.network.GameClient;
+import org.tetris.network.GameServer;
 import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.dto.MatchSettings;
@@ -19,8 +20,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 
 /**
- * 
- * TODO: 모드 선택 동기화 - 선택한 모드를 클라이언트에게 전송
+ * 네트워크 게임 메뉴 컨트롤러.
+ * 호스트는 게임 모드와 난이도를 선택하고, 클라이언트는 이를 수신하여 적용합니다.
  */
 public class NetworkMenuController extends BaseController<NetworkMenu>
         implements RouterAware, GameMenuCommandExecutor {
@@ -177,6 +178,13 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
                 model.create();
                 this.ipField.setText(model.getIpAddress());
                 addLog("서버가 시작되었습니다. 클라이언트 접속을 기다리는 중...");
+                
+                // 호스트: 게임 모드와 난이도를 서버에 설정
+                GameMode selectedMode = mapGameModeLabelToGameMode(gameMode);
+                String difficulty = router.getSetting().getDifficulty();
+                GameServer.getInstance().setGameMode(selectedMode);
+                GameServer.getInstance().setDifficulty(difficulty);
+                addLog("난이도: " + difficulty);;
             } else {
                 addLog("서버에 연결 중... IP: " + ip + ", Port: " + port);
                 model.join();
@@ -249,8 +257,33 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     public void gameStart(MatchSettings settings) {
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
-            router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings);
+            
+            // 호스트는 자신이 선택한 모드 사용, 클라이언트는 수신된 모드 사용
+            GameMode modeToUse;
+            if (model.getIsHost()) {
+                modeToUse = mapGameModeLabelToGameMode(gameModeCombo.getValue());
+            } else {
+                modeToUse = settings.getGameMode();
+                // 클라이언트: 수신된 난이도를 Setting에 적용
+                if (router != null && settings.getDifficulty() != null) {
+                    router.getSetting().setDifficulty(settings.getDifficulty());
+                    addLog("호스트 설정 수신: 모드=" + getGameModeDisplayName(modeToUse) + ", 난이도=" + settings.getDifficulty());
+                }
+            }
+            
+            router.showP2PGamePlaceholder(modeToUse, settings);
         });
+    }
+
+    /**
+     * GameMode를 표시용 문자열로 변환합니다.
+     */
+    private String getGameModeDisplayName(GameMode mode) {
+        switch (mode) {
+            case ITEM: return "아이템 모드";
+            case TIME_ATTACK: return "타임어택 모드";
+            default: return "일반 모드";
+        }
     }
 
     @Override
