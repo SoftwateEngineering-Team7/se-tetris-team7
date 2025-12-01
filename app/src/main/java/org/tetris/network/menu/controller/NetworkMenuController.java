@@ -263,6 +263,13 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     public void gameStart(MatchSettings settings) {
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
+                
+            // 이미 게임 화면이 떠 있으면 화면 전환을 건너뜀 (restart의 경우)
+            // gameStart는 P2PGameController의 GameCommandExecutor에서 처리됨
+            if (GameClient.getInstance().hasGameExecutor()) {
+                System.out.println("[CLIENT-ENGINE] Game already running, skipping screen transition (restart)");
+                return;
+            }
             
             // 호스트와 클라이언트 모두 settings에서 모드/난이도를 사용
             GameMode modeToUse = settings.getGameMode();

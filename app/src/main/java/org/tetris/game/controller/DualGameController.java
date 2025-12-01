@@ -75,15 +75,15 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     @FXML
     private HBox gameOverOverlay;
     @FXML
-    private HBox pauseOverlay;
+    protected HBox pauseOverlay;
     @FXML
     private Button pauseButton;
     @FXML
-    private Button restartButton;
+    protected Button restartButton;
     @FXML
     private Button menuButton;
     @FXML
-    private Button resumeButton;
+    protected Button resumeButton;
     @FXML
     private Button pauseMenuButton;
     @FXML
@@ -116,10 +116,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     protected PlayerSlot player2;
     protected PlayerSlot activeItemTarget;
 
-    private Router router;
+    protected Router router;
     private AnimationTimer gameLoop;
 
-    private long lastUpdate = 0L;
+    protected long lastUpdate = 0L;
     private static final long FRAME_TIME = 16_666_667L; // ~60 FPS (나노초)
     private long lastLogTime = 0L;
 
@@ -132,7 +132,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     
     private boolean isTimeAttackMode = false;
     private boolean isGameOver = false;
-    private boolean firstTriggered = false; // 게임 초기화 후 첫 프레임 트리거 플래그 -> 블록이 미리 떨어짐을 방지
+    protected boolean firstTriggered = false; // 게임 초기화 후 첫 프레임 트리거 플래그 -> 블록이 미리 떨어짐을 방지
     private double playTime = 0.0;
 
     public DualGameController(M model) {
@@ -306,9 +306,9 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
 
         pauseButton.setOnAction(e -> togglePause());
-        restartButton.setOnAction(e -> restartGame());
+        restartButton.setOnAction(e -> onRestartButtonClicked());
         menuButton.setOnAction(e -> goToMenu());
-        resumeButton.setOnAction(e -> resumeGame());
+        resumeButton.setOnAction(e -> onResumeButtonClicked());
         pauseMenuButton.setOnAction(e -> goToMenuFromPause());
     }
 
@@ -406,7 +406,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
 
     // === 게임 루프 ===
-    private void startGameLoop() {
+    protected void startGameLoop() {
         gameLoop = new AnimationTimer() {
             double deltaTime = 0.0;
             long previousTime = System.nanoTime();
@@ -759,6 +759,13 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
+    /**
+     * Resume 버튼 클릭 시 호출 - 서브클래스에서 오버라이드 가능
+     */
+    protected void onResumeButtonClicked() {
+        resumeGame();
+    }
+
     private void resumeGame() {
         player1.gameModel.setPaused(false);
         player2.gameModel.setPaused(false);
@@ -778,6 +785,13 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         startGameLoop();
 
         root.requestFocus();
+    }
+    
+    /**
+     * Restart 버튼 클릭 시 호출 - 서브클래스에서 오버라이드 가능
+     */
+    protected void onRestartButtonClicked() {
+        restartGame();
     }
 
     private void goToMenu() {
