@@ -169,4 +169,88 @@ public class ClientThreadTest {
         // 연결 없이 연결 해제
         clientThread.disconnect();
     }
+
+    @Test
+    public void testIsConnectedWhenNotConnected() {
+        // When - 연결하지 않은 상태
+        
+        // Then
+        assertFalse("연결하지 않은 상태에서 isConnected는 false여야 합니다", 
+                    clientThread.isConnected());
+    }
+
+    @Test
+    public void testIsConnectedAfterConnect() throws IOException {
+        // Given - 서버 시작
+        serverAcceptThread = new Thread(() -> {
+            try {
+                Socket socket = mockServerSocket.accept();
+                new ObjectOutputStream(socket.getOutputStream()).flush();
+                new ObjectInputStream(socket.getInputStream());
+                // 연결 유지
+                Thread.sleep(5000);
+            } catch (IOException | InterruptedException e) {
+                // 예상됨
+            }
+        });
+        serverAcceptThread.start();
+
+        // When
+        clientThread.connect("localhost", mockServerSocket.getLocalPort());
+
+        // Then
+        assertTrue("연결 후 isConnected는 true여야 합니다", 
+                   clientThread.isConnected());
+    }
+
+    @Test
+    public void testIsConnectedAfterDisconnect() throws IOException {
+        // Given - 서버 시작 및 연결
+        serverAcceptThread = new Thread(() -> {
+            try {
+                Socket socket = mockServerSocket.accept();
+                new ObjectOutputStream(socket.getOutputStream()).flush();
+                new ObjectInputStream(socket.getInputStream());
+            } catch (IOException e) {
+                // 예상됨
+            }
+        });
+        serverAcceptThread.start();
+        clientThread.connect("localhost", mockServerSocket.getLocalPort());
+
+        // When
+        clientThread.disconnect();
+
+        // Then
+        assertFalse("연결 해제 후 isConnected는 false여야 합니다", 
+                    clientThread.isConnected());
+    }
+
+    @Test
+    public void testHasGameExecutor() {
+        // Given - setUp에서 이미 gameExecutor가 설정됨
+        
+        // Then
+        assertTrue("gameExecutor가 설정된 상태에서 hasGameExecutor는 true여야 합니다", 
+                   clientThread.hasGameExecutor());
+    }
+
+    @Test
+    public void testHasGameExecutorWhenNotSet() {
+        // Given
+        ClientThread newClient = new ClientThread();
+        
+        // Then
+        assertFalse("gameExecutor가 설정되지 않은 상태에서 hasGameExecutor는 false여야 합니다", 
+                    newClient.hasGameExecutor());
+    }
+
+    @Test
+    public void testDisconnectGracefullyWhenNotConnected() {
+        // When - 연결되지 않은 상태에서 graceful disconnect
+        clientThread.disconnectGracefully();
+        
+        // Then - 예외 없이 통과
+        assertFalse(clientThread.isConnected());
+    }
 }
