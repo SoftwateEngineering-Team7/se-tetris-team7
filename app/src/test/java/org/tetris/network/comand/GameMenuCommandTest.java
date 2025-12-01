@@ -1,6 +1,8 @@
 package org.tetris.network.comand;
 
 import org.junit.Test;
+import org.tetris.game.model.GameMode;
+import org.tetris.network.dto.MatchSettings;
 import org.tetris.network.mocks.TestGameMenuCommandExecutor;
 
 import static org.junit.Assert.*;
@@ -12,15 +14,7 @@ public class GameMenuCommandTest {
         TestGameMenuCommandExecutor executor = new TestGameMenuCommandExecutor();
         boolean isReady = true;
 
-        // 익명 클래스로 ReadyCommand 흉내내기 (실제 ReadyCommand가 있다면 그것을 사용)
-        // 하지만 여기서는 GameMenuCommand 인터페이스를 구현하는 방식으로 테스트
-        GameMenuCommand command = new GameMenuCommand() {
-            @Override
-            public void execute(GameMenuCommandExecutor exec) {
-                exec.onReady(isReady);
-            }
-        };
-
+        ReadyCommand command = new ReadyCommand(isReady);
         command.execute(executor);
 
         assertTrue(executor.executedCommands.contains("onReady"));
@@ -28,20 +22,41 @@ public class GameMenuCommandTest {
     }
 
     @Test
+    public void testReadyCommandFalse() {
+        TestGameMenuCommandExecutor executor = new TestGameMenuCommandExecutor();
+
+        ReadyCommand command = new ReadyCommand(false);
+        command.execute(executor);
+
+        assertTrue(executor.executedCommands.contains("onReady"));
+        assertFalse(executor.lastIsReady);
+    }
+
+    @Test
     public void testGameStartCommand() {
         TestGameMenuCommandExecutor executor = new TestGameMenuCommandExecutor();
-        org.tetris.network.dto.MatchSettings settings = new org.tetris.network.dto.MatchSettings(1, 12345L, 67890L);
+        MatchSettings settings = new MatchSettings(1, 12345L, 67890L, GameMode.ITEM, "HARD");
 
-        GameMenuCommand command = new GameMenuCommand() {
-            @Override
-            public void execute(GameMenuCommandExecutor exec) {
-                exec.gameStart(settings);
-            }
-        };
-
+        GameStartCommand command = new GameStartCommand(settings);
         command.execute(executor);
 
         assertTrue(executor.executedCommands.contains("gameStart"));
         assertEquals(settings, executor.lastSettings);
+    }
+
+    @Test
+    public void testGameStartCommandPassesAllSettings() {
+        TestGameMenuCommandExecutor executor = new TestGameMenuCommandExecutor();
+        MatchSettings settings = new MatchSettings(2, 111L, 222L, GameMode.TIME_ATTACK, "NORMAL");
+
+        GameStartCommand command = new GameStartCommand(settings);
+        command.execute(executor);
+
+        assertNotNull(executor.lastSettings);
+        assertEquals(2, executor.lastSettings.getPlayerNumber());
+        assertEquals(111L, executor.lastSettings.getMySeed());
+        assertEquals(222L, executor.lastSettings.getOtherSeed());
+        assertEquals(GameMode.TIME_ATTACK, executor.lastSettings.getGameMode());
+        assertEquals("NORMAL", executor.lastSettings.getDifficulty());
     }
 }
