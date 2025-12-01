@@ -121,4 +121,19 @@ public class NetworkMenuControllerTest extends ApplicationTest {
         verifyThat("#logArea", isNotNull());
         verifyThat("#logArea", isVisible());
     }
+
+    @Test
+    public void testRefreshApplied() {
+        clickOn("#ipField").write("test-ip");
+        clickOn("#portField").write("12345");
+        clickOn("#hostRadio");
+        sleep(500);
+
+        // JavaFX Application Thread에서 refresh() 실행
+        interact(() -> controller.refresh());
+        sleep(500);
+
+        verifyThat("#ipField", TextInputControlMatchers.hasText("")); // 필드가 클리어되었다면
+        verifyThat("#portField", TextInputControlMatchers.hasText("54321")); // 기본값으로 복원되었다면
+    }
 }
