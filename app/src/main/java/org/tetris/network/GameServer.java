@@ -4,16 +4,14 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.tetris.game.model.GameMode;
 import org.tetris.network.comand.Command;
-
 import org.tetris.network.comand.GameStartCommand;
 import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.dto.MatchSettings;
 
 /**
  * 게임 서버의 메인 클래스 (싱글톤 패턴). P2P 대전 모드에서 호스트 역할을 수행하며, 연결된 클라이언트를 관리합니다.
- * 
- * TODO: 모드 선택 동기화 - 선택한 모드를 클라이언트에게 전송
  */
 public class GameServer {
     public static final int PORT = 12345; // 서버 포트
@@ -24,6 +22,10 @@ public class GameServer {
     private ServerSocket serverSocket;
     private Thread serverThread;
     private volatile boolean running = false;
+
+    // 호스트가 설정한 게임 모드 및 난이도
+    private GameMode selectedGameMode = GameMode.NORMAL;
+    private String selectedDifficulty = "EASY";
 
     /**
      * Private 생성자 (싱글톤 패턴)
@@ -102,6 +104,22 @@ public class GameServer {
     private boolean client1Ready = false;
     private boolean client2Ready = false;
 
+    /**
+     * 호스트가 선택한 게임 모드를 설정합니다.
+     * @param mode 게임 모드
+     */
+    public void setGameMode(GameMode mode) {
+        this.selectedGameMode = mode;
+    }
+
+    /**
+     * 호스트가 선택한 난이도를 설정합니다.
+     * @param difficulty 난이도 문자열 (EASY, NORMAL, HARD)
+     */
+    public void setDifficulty(String difficulty) {
+        this.selectedDifficulty = difficulty;
+    }
+
     public void onClientReady(ServerThread client, boolean isReady) {
         if (client == client1) {
             client1Ready = isReady;
@@ -125,14 +143,14 @@ public class GameServer {
         long seed1 = System.currentTimeMillis();
         long seed2 = seed1 + 1000; // Different seed for player 2
 
-        // Send GameStartCommand with (playerNumber, mySeed, otherSeed)
+        // Send GameStartCommand with (playerNumber, mySeed, otherSeed, gameMode, difficulty)
         // For Client 1: playerNumber=1, mySeed = seed1, otherSeed = seed2
         if (client1 != null) {
-            client1.sendCommand(new GameStartCommand(new MatchSettings(1, seed1, seed2)));
+            client1.sendCommand(new GameStartCommand(new MatchSettings(1, seed1, seed2, selectedGameMode, selectedDifficulty)));
         }
         // For Client 2: playerNumber=2, mySeed = seed2, otherSeed = seed1
         if (client2 != null) {
-            client2.sendCommand(new GameStartCommand(new MatchSettings(2, seed2, seed1)));
+            client2.sendCommand(new GameStartCommand(new MatchSettings(2, seed2, seed1, selectedGameMode, selectedDifficulty)));
         }
 
         // Reset readiness for next game?
