@@ -101,6 +101,10 @@ public class ClientThread {
     public void disconnect() {
         connected = false;
         try {
+            if (oos != null)
+                oos.close();
+            if (ois != null)
+                ois.close();
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
@@ -154,18 +158,12 @@ public class ClientThread {
                     System.out.println("[CLIENT-RECEIVER] Received command from server: "
                             + command.getClass().getSimpleName());
                     // 수신된 커맨드를 로컬 게임 엔진에서 실행합니다.
-                    if (command instanceof GameMenuCommand && command instanceof GameCommand) {
+                    if (command instanceof GameMenuCommand) {
                         if (menuExecutor != null) {
                             ((GameMenuCommand) command).execute(menuExecutor);
                         }
-                        if (gameExecutor != null) {
-                            ((GameCommand) command).execute(gameExecutor);
-                        }
-                    } else if (command instanceof GameMenuCommand) {
-                        if (menuExecutor != null) {
-                            ((GameMenuCommand) command).execute(menuExecutor);
-                        }
-                    } else if (command instanceof GameCommand) {
+                    }
+                    if (command instanceof GameCommand) {
                         if (gameExecutor != null) {
                             ((GameCommand) command).execute(gameExecutor);
                         }

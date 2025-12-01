@@ -16,7 +16,7 @@ public class GameStartCommand implements GameCommand, GameMenuCommand {
 
     @Override
     public void execute(GameMenuCommandExecutor executor) {
-        executor.gameStart();
+        executor.gameStart(settings);
     }
 
 }

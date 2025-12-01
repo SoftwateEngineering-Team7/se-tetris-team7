@@ -5,6 +5,7 @@ import org.tetris.game.model.GameMode;
 import org.tetris.network.GameClient;
 import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.comand.ReadyCommand;
+import org.tetris.network.dto.MatchSettings;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
@@ -19,17 +20,7 @@ import javafx.scene.control.ToggleGroup;
 
 /**
  * 
- * TODO: 게임 모드 선택 - 서버(호스트)가 일반/아이템/시간제한 모드 선택
- * 
  * TODO: 모드 선택 동기화 - 선택한 모드를 클라이언트에게 전송
- * 
- * TODO: 연결 상태 메시지 - "연결 중...", "연결 성공" 등 상태 표시
- * 
- * TODO: 대기 상태 화면 - 게임 시작 대기 중 상태 표시
- * 
- * TODO: 연결 실패 처리 잘못된 IP 또는 연결 불가 시 에러 메시지
- * 
- * TODO: 게임 모드 수신 - 서버가 선택한 모드 수신 및 표시
  */
 public class NetworkMenuController extends BaseController<NetworkMenu>
         implements RouterAware, GameMenuCommandExecutor {
@@ -148,7 +139,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         });
         connectionTypeGroup.selectToggle(clientRadio);
         readyButton.setDisable(true);
-        
+
         // 초기 로그 메시지
         addLog("네트워크 게임 초기화 완료");
 
@@ -255,10 +246,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     }
 
     @Override
-    public void gameStart() {
+    public void gameStart(MatchSettings settings) {
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
-            // router.showP2PGamePlaceholder(GameMode.NORMAL);
+            router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings);
         });
     }
 
@@ -291,5 +282,18 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
      */
     public String getSelectedGameMode() {
         return gameModeCombo.getValue();
+    }
+
+    private GameMode mapGameModeLabelToGameMode(String label) {
+        switch (label) {
+            case "일반 모드":
+                return GameMode.NORMAL;
+            case "아이템 모드":
+                return GameMode.ITEM;
+            case "타임어택 모드":
+                return GameMode.TIME_ATTACK;
+            default:
+                return GameMode.NORMAL;
+        }
     }
 }

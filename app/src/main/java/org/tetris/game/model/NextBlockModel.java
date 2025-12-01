@@ -135,6 +135,17 @@ public class NextBlockModel
 		if(nextBlocks.isEmpty())
 			fill();
 
-		((LinkedList<Block>) nextBlocks).set(0,block);
+		((LinkedList<Block>) nextBlocks).set(0, block);
+	}
+
+	/**
+	 * 새로운 시드로 랜덤 생성기를 재설정하고 블록 큐를 다시 채웁니다. P2P 게임에서 두 클라이언트의 블록 순서를 동기화하는 데 사용됩니다.
+	 * 
+	 * @param seed 새로운 시드 값
+	 */
+	public void resetWithSeed(long seed) {
+		this.random = new Random(seed);
+		this.nextBlocks.clear();
+		fill();
 	}
 }

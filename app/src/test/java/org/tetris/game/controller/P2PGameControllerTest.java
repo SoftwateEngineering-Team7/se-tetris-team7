@@ -11,15 +11,19 @@ import org.tetris.game.P2PGameFactory;
 import org.tetris.shared.MvcBundle;
 
 import javafx.stage.Stage;
-import javafx.scene.input.KeyCode;
+import org.util.Point;
+import org.util.KeyLayout;
+import org.util.PlayerId;
 
 public class P2PGameControllerTest extends ApplicationTest {
 
     private final P2PGameFactory gameFactory = new P2PGameFactory();
+    private P2PGameController controller;
 
     @Override
     public void start(Stage stage) throws Exception {
         MvcBundle bundle = gameFactory.create();
+        controller = (P2PGameController) bundle.controller();
         stage.setScene(bundle.view().getScene());
         stage.setTitle("P2P Game Test");
         stage.show();
@@ -42,54 +46,74 @@ public class P2PGameControllerTest extends ApplicationTest {
     @Test
     public void testMovementKeysPlayer1() throws InterruptedException {
         Thread.sleep(1000);
-        // P2PGameController uses arrow keys for Player 1 (local player)
-        // Wait, let's check P2PGameController.handleKeyPress again.
-        // It checks KeyCode.LEFT, RIGHT, UP, DOWN for Player 1.
-        // In DualGameController, Player 1 usually uses WASD and Player 2 uses Arrows.
-        // But P2PGameController overrides handleKeyPress.
-
-        press(KeyCode.LEFT);
+        // P2PGameController uses Player 1 keys (default: arrow keys)
+        press(KeyLayout.getLeftKey(PlayerId.PLAYER1));
         Thread.sleep(200);
-        press(KeyCode.RIGHT);
+        press(KeyLayout.getRightKey(PlayerId.PLAYER1));
         Thread.sleep(200);
-        press(KeyCode.UP);
+        press(KeyLayout.getUpKey(PlayerId.PLAYER1));
         Thread.sleep(200);
-        press(KeyCode.DOWN);
+        press(KeyLayout.getDownKey(PlayerId.PLAYER1));
         Thread.sleep(200);
 
         // Should not crash even if not connected
     }
 
+    /**
+     * P2PGameController는 로컬 플레이어(Player 1)의 키만 처리하고, Player 2 키(WASD)는 무시해야 함을 검증
+     */
     @Test
     public void testPlayer2KeysIgnored() throws InterruptedException {
-        // Player 2 keys (WASD in P2P context? No, P2PGameController only handles local player)
-        // DualGameController handles WASD for Player 1 and Arrows for Player 2 by default.
-        // P2PGameController overrides handleKeyPress to handle Arrows for Player 1 (Local).
-        // And it overrides handlePlayerInput to ignore Player 2.
-
-        // Let's verify WASD doesn't move Player 1 (since P2PGameController uses Arrows for P1?)
-        // Wait, P2PGameController.handleKeyPress:
-        /*
-         * if (code == KeyCode.LEFT) { ... } else if (code == KeyCode.RIGHT) { ... }
-         */
-        // It seems P2PGameController uses ARROW keys for the local player (Player 1).
-
-        // DualGameController.handleKeyPress calls handlePlayerInput for P1 (WASD) and P2 (Arrows).
-        // P2PGameController overrides handleKeyPress and DOES NOT call super.handleKeyPress.
-        // Instead it implements its own logic using LEFT/RIGHT/UP/DOWN for Player 1.
-
-        // So WASD should do nothing.
         Thread.sleep(1000);
-        press(KeyCode.W);
-        Thread.sleep(200);
-        press(KeyCode.A);
-        Thread.sleep(200);
-        press(KeyCode.S);
-        Thread.sleep(200);
-        press(KeyCode.D);
-        Thread.sleep(200);
 
-        // Verify no crash. Hard to verify "no movement" without checking internal state,
-        // but we can verify it doesn't crash.
+        try {
+            // Get player1 and its game model through reflection
+            java.lang.reflect.Field player1Field =
+                    DualGameController.class.getDeclaredField("player1");
+            player1Field.setAccessible(true);
+            Object player1 = player1Field.get(controller);
+
+            java.lang.reflect.Field gameModelField =
+                    player1.getClass().getDeclaredField("gameModel");
+            gameModelField.setAccessible(true);
+            org.tetris.game.model.GameModel gameModel =
+                    (org.tetris.game.model.GameModel) gameModelField.get(player1);
+
+            // Pause the game to prevent auto-drop from interfering
+            gameModel.setPaused(true);
+            Thread.sleep(100);
+
+            java.lang.reflect.Field boardModelField =
+                    player1.getClass().getDeclaredField("boardModel");
+            boardModelField.setAccessible(true);
+            org.tetris.game.model.Board board =
+                    (org.tetris.game.model.Board) boardModelField.get(player1);
+
+            // Record initial position
+            Point initialPos = new Point(board.getCurPos());
+
+            // Press Player 2 keys (WASD by default)
+            press(KeyLayout.getUpKey(PlayerId.PLAYER2));
+            Thread.sleep(200);
+            press(KeyLayout.getLeftKey(PlayerId.PLAYER2));
+            Thread.sleep(200);
+            press(KeyLayout.getDownKey(PlayerId.PLAYER2));
+            Thread.sleep(200);
+            press(KeyLayout.getRightKey(PlayerId.PLAYER2));
+            Thread.sleep(200);
+
+            // Verify position hasn't changed (Player 2 keys were ignored)
+            Point currentPos = board.getCurPos();
+            org.junit.Assert.assertEquals("Block position should not change with Player 2 keys",
+                    initialPos.r, currentPos.r);
+            org.junit.Assert.assertEquals("Block position should not change with Player 2 keys",
+                    initialPos.c, currentPos.c);
+
+            // Unpause for cleanup
+            gameModel.setPaused(false);
+
+        } catch (Exception e) {
+            org.junit.Assert.fail("Failed to verify Player 2 keys are ignored: " + e.getMessage());
+        }
     }
 }

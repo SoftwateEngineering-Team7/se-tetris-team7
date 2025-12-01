@@ -125,14 +125,14 @@ public class GameServer {
         long seed1 = System.currentTimeMillis();
         long seed2 = seed1 + 1000; // Different seed for player 2
 
-        // Send GameStartCommand with (mySeed, otherSeed)
-        // For Client 1: mySeed = seed1, otherSeed = seed2
+        // Send GameStartCommand with (playerNumber, mySeed, otherSeed)
+        // For Client 1: playerNumber=1, mySeed = seed1, otherSeed = seed2
         if (client1 != null) {
-            client1.sendCommand(new GameStartCommand(new MatchSettings(seed1, seed2)));
+            client1.sendCommand(new GameStartCommand(new MatchSettings(1, seed1, seed2)));
         }
-        // For Client 2: mySeed = seed2, otherSeed = seed1
+        // For Client 2: playerNumber=2, mySeed = seed2, otherSeed = seed1
         if (client2 != null) {
-            client2.sendCommand(new GameStartCommand(new MatchSettings(seed2, seed1)));
+            client2.sendCommand(new GameStartCommand(new MatchSettings(2, seed2, seed1)));
         }
 
         // Reset readiness for next game?
