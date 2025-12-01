@@ -182,9 +182,15 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
                 // 호스트: 게임 모드와 난이도를 서버에 설정
                 GameMode selectedMode = mapGameModeLabelToGameMode(gameMode);
                 String difficulty = router.getSetting().getDifficulty();
-                GameServer.getInstance().setGameMode(selectedMode);
-                GameServer.getInstance().setDifficulty(difficulty);
-                addLog("난이도: " + difficulty);;
+
+                GameServer server = GameServer.getInstance();
+                if (server != null) {
+                    server.setGameMode(selectedMode);
+                    server.setDifficulty(difficulty);
+                    addLog("게임 모드: " + gameMode + "\n난이도: " + difficulty + " 설정 완료");
+                } else {
+                    addLog("오류: 서버 인스턴스가 초기화되지 않았습니다. 게임 모드/난이도 설정 실패.");
+                }
             } else {
                 addLog("서버에 연결 중... IP: " + ip + ", Port: " + port);
                 model.join();
@@ -258,16 +264,15 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
             
-            // 호스트는 자신이 선택한 모드 사용, 클라이언트는 수신된 모드 사용
-            GameMode modeToUse;
-            if (model.getIsHost()) {
-                modeToUse = mapGameModeLabelToGameMode(gameModeCombo.getValue());
-            } else {
-                modeToUse = settings.getGameMode();
+            // 호스트와 클라이언트 모두 settings에서 모드/난이도를 사용
+            GameMode modeToUse = settings.getGameMode();
+            String difficultyToUse = settings.getDifficulty();
+
+            if (!model.getIsHost()) {
                 // 클라이언트: 수신된 난이도를 Setting에 적용
-                if (router != null && settings.getDifficulty() != null) {
-                    router.getSetting().setDifficulty(settings.getDifficulty());
-                    addLog("호스트 설정 수신: 모드=" + getGameModeDisplayName(modeToUse) + ", 난이도=" + settings.getDifficulty());
+                if (router != null && difficultyToUse != null) {
+                    router.getSetting().setDifficulty(difficultyToUse);
+                    addLog("호스트 설정 수신: 모드=" + getGameModeDisplayName(modeToUse) + ", 난이도=" + difficultyToUse);
                 }
             }
             
