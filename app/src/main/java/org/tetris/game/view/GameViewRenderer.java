@@ -232,11 +232,11 @@ public class GameViewRenderer {
     }
 
     public void triggerHardDropEffect() {
-        this.shakeIntensity = 20.0;
+        this.shakeIntensity = 5.0;
         // Flash effect on canvas
         javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(javafx.util.Duration.millis(50), boardCanvas);
-        flash.setFromValue(0.5);
-        flash.setToValue(1.0);
+        flash.setFromValue(1.0);
+        flash.setToValue(0.6);
         flash.setCycleCount(2);
         flash.setAutoReverse(true);
         flash.play();
