@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import org.tetris.network.comand.Command;
+import org.tetris.network.comand.DisconnectCommand;
 import org.tetris.network.comand.GameCommand;
 import org.tetris.network.comand.GameCommandExecutor;
 import org.tetris.network.comand.GameMenuCommand;
@@ -16,14 +17,6 @@ import org.tetris.network.comand.PingCommand;
 /**
  * 클라이언트가 서버와 통신하기 위한 핸들러 클래스. 서버 -> 클라이언트를 처리하는 클래스 소켓 연결, 데이터 송수신, 비동기 수신 스레드 관리를 캡슐화하여
  * ServerHandler는 별도의 스레드에서 실행됩니다. 클라이언트의 다른 부분에서는 사용하기 쉬운 API만 노출합니다.
- * 
- * TODO: 네트워크 지연 감지 - 전송 지연 시간 측정 및 "랙 걸린 상태" 표시
- * 
- * TODO: 연결 타임아웃 관리 - 일정 시간 이상 응답 없으면 연결 끊김으로 판단
- * 
- * TODO: 연결 끊김 처리 - 에러 메시지 표시 후 P2P 대전 모드 초기 화면으로 복귀
- * 
- * TODO: 재연결 시도 - 일시적 끊김 시 자동 재연결 시도 (exponential backoff)
  */
 public class ClientThread {
     private Socket socket;
@@ -35,6 +28,9 @@ public class ClientThread {
     private Thread receiverThread;
     private Thread pingThread;
 
+    // 연결 끊김 콜백
+    private Runnable onDisconnectCallback;
+
     public ClientThread() {
         // Executors will be set later
     }
@@ -45,6 +41,21 @@ public class ClientThread {
 
     public void setMenuExecutor(GameMenuCommandExecutor menuExecutor) {
         this.menuExecutor = menuExecutor;
+    }
+
+    /**
+     * gameExecutor가 설정되어 있는지 확인합니다.
+     */
+    public boolean hasGameExecutor() {
+        return this.gameExecutor != null;
+    }
+
+    /**
+     * 연결 끊김 콜백을 설정합니다.
+     * @param callback 연결이 끊어질 때 호출될 콜백
+     */
+    public void setOnDisconnectCallback(Runnable callback) {
+        this.onDisconnectCallback = callback;
     }
 
     /**
@@ -99,6 +110,9 @@ public class ClientThread {
      * 서버와의 연결을 종료합니다.
      */
     public void disconnect() {
+        if (!connected) {
+            return;
+        }
         connected = false;
         try {
             if (oos != null)
@@ -118,6 +132,30 @@ public class ClientThread {
             e.printStackTrace();
         }
         System.out.println("[CLIENT-FACADE] Disconnected.");
+    }
+
+    /**
+     * 연결 상태를 반환합니다.
+     */
+    public boolean isConnected() {
+        return connected;
+    }
+
+    /**
+     * 서버에 연결 끊김을 알리고 연결을 종료합니다.
+     */
+    public void disconnectGracefully() {
+        if (connected) {
+            // 서버에 연결 끊김 알림 전송
+            sendCommand(new DisconnectCommand("플레이어가 게임을 종료했습니다."));
+            // 짧은 지연 후 연결 종료 (메시지 전송 완료 대기)
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            disconnect();
+        }
     }
 
     /**
@@ -165,15 +203,24 @@ public class ClientThread {
                     }
                     if (command instanceof GameCommand) {
                         if (gameExecutor != null) {
+                            System.out.println("[CLIENT-RECEIVER] Executing GameCommand on gameExecutor");
                             ((GameCommand) command).execute(gameExecutor);
+                        } else {
+                            System.out.println("[CLIENT-RECEIVER] WARNING: gameExecutor is null, cannot execute command");
                         }
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
                 if (connected) {
                     System.err.println("[CLIENT-RECEIVER] Connection lost: " + e.getMessage());
-                    // TODO: 자동 재연결 시도 (exponential backoff)
-                    // TODO: 연결 끊김 콜백 구현
+                    // 연결 끊김 시 gameExecutor에 알림
+                    if (gameExecutor != null) {
+                        gameExecutor.onOpponentDisconnect("네트워크 연결이 끊어졌습니다.");
+                    }
+                    // 콜백 호출
+                    if (onDisconnectCallback != null) {
+                        javafx.application.Platform.runLater(onDisconnectCallback);
+                    }
                 }
             } finally {
                 disconnect();

@@ -239,10 +239,22 @@ public class P2PGameIntegrationTest {
             public void onGameResult(boolean isWinner, int score) {}
 
             @Override
+            public void pause() {}
+
+            @Override
+            public void resume() {}
+
+            @Override
+            public void onOpponentDisconnect(String reason) {}
+
+            @Override
             public void updateState(String state) {}
 
             @Override
             public void updatePing(long ping) {}
+
+            @Override
+            public void updateOpponentPing(long ping) {}
         };
 
         // 클라이언트 2 설정
@@ -293,10 +305,22 @@ public class P2PGameIntegrationTest {
             public void onGameResult(boolean isWinner, int score) {}
 
             @Override
+            public void pause() {}
+
+            @Override
+            public void resume() {}
+
+            @Override
+            public void onOpponentDisconnect(String reason) {}
+
+            @Override
             public void updateState(String state) {}
 
             @Override
             public void updatePing(long ping) {}
+
+            @Override
+            public void updateOpponentPing(long ping) {}
         };
 
         // 연결 및 Ready
@@ -429,8 +453,12 @@ public class P2PGameIntegrationTest {
                 // 여기서는 상대방의 게임오버 수신을 테스트하므로 패스
             }
             @Override public void onGameResult(boolean isWinner, int score) {}
+            @Override public void pause() {}
+            @Override public void resume() {}
+            @Override public void onOpponentDisconnect(String reason) {}
             @Override public void updateState(String state) {}
             @Override public void updatePing(long ping) {}
+            @Override public void updateOpponentPing(long ping) {}
         };
 
         // 클라이언트 2 설정 (피해자 & 게임오버 발생자)
@@ -458,8 +486,12 @@ public class P2PGameIntegrationTest {
                 gameOverLatch.countDown();
             }
             @Override public void onGameResult(boolean isWinner, int score) {}
+            @Override public void pause() {}
+            @Override public void resume() {}
+            @Override public void onOpponentDisconnect(String reason) {}
             @Override public void updateState(String state) {}
             @Override public void updatePing(long ping) {}
+            @Override public void updateOpponentPing(long ping) {}
         };
 
         // 연결 및 게임 시작

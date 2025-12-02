@@ -16,6 +16,7 @@ public class ServerThread {
     private final Socket socket;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
+    private volatile boolean running = true;
 
     private final java.util.concurrent.BlockingQueue<Command> sendQueue = new java.util.concurrent.LinkedBlockingQueue<>();
     private Thread senderThread;
@@ -67,6 +68,7 @@ public class ServerThread {
      * 소켓과 스트림을 닫습니다.
      */
     public void close() {
+        running = false;
         try {
             if (senderThread != null)
                 senderThread.interrupt();
@@ -81,6 +83,7 @@ public class ServerThread {
         } catch (IOException ex) {
             System.err.println("[SERVER-THREAD] Error closing resources: " + ex.getMessage());
         }
+        System.out.println("[SERVER-THREAD] Connection closed for client: " + socket.getInetAddress());
     }
 
     /**
@@ -90,7 +93,7 @@ public class ServerThread {
         @Override
         public void run() {
             try {
-                while (!Thread.currentThread().isInterrupted()) {
+                while (running && !Thread.currentThread().isInterrupted()) {
                     Command command = sendQueue.take(); // 큐가 빌 때까지 대기 (Blocking)
                     synchronized (oos) {
                         oos.writeObject(command);
@@ -112,7 +115,7 @@ public class ServerThread {
         @Override
         public void run() {
             try {
-                while (!Thread.currentThread().isInterrupted()) {
+                while (running && !Thread.currentThread().isInterrupted()) {
                     // 클라이언트로부터 커맨드를 읽어옵니다.
                     Command command = (Command) ois.readObject();
 
@@ -128,15 +131,35 @@ public class ServerThread {
                         ReadyCommand readyCmd = (ReadyCommand) command;
                         GameServer.getInstance().onClientReady(ServerThread.this, readyCmd.getIsReady());
                     } else if (command instanceof GameOverCommand) {
-                        // 게임 오버 처리
-                        GameServer.getInstance().broadcast(command); // 일단 모두에게 알림
+                        // 게임 오버 처리 - 게임 종료 상태로 변경
+                        GameServer.getInstance().endGame();
+                        GameServer.getInstance().broadcast(command); // 모두에게 알림
+                    } else if (command instanceof PauseCommand) {
+                        // 일시정지 커맨드는 상대방에게 릴레이
+                        PauseCommand pauseCmd = (PauseCommand) command;
+                        System.out.println("[SERVER-THREAD] PauseCommand received: isPaused=" + pauseCmd.isPaused());
+                        GameServer.getInstance().sendToOtherClient(ServerThread.this, command);
+                    } else if (command instanceof DisconnectCommand) {
+                        // 연결 끊김 알림 - 상대방에게 전달하고 게임 종료
+                        GameServer.getInstance().sendToOtherClient(ServerThread.this, command);
+                        GameServer.getInstance().endGame();
+                    } else if (command instanceof RestartCommand) {
+                        // 재시작 요청 - 호스트만 허용
+                        if (GameServer.getInstance().isHost(ServerThread.this)) {
+                            System.out.println("[SERVER-THREAD] Restart requested by host");
+                            GameServer.getInstance().restartGame();
+                        } else {
+                            System.out.println("[SERVER-THREAD] Restart request ignored - only host can restart");
+                        }
                     } else {
                         // 그 외의 커맨드(이동, 공격 등)는 상대방에게 릴레이
                         GameServer.getInstance().sendToOtherClient(ServerThread.this, command);
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
-                System.out.println("[SERVER-THREAD] Client connection lost: " + e.getMessage());
+                if (running) {
+                    System.out.println("[SERVER-THREAD] Client connection lost: " + e.getMessage());
+                }
             } finally {
                 // 리소스를 정리합니다.
                 close();

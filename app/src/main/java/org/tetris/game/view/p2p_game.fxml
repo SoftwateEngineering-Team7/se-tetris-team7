@@ -20,49 +20,136 @@
                 prefWidth="1000" prefHeight="600"
                 style="-fx-background-color: #1a1a2e;">
 
-        <!-- ============== 중앙: 두 개의 게임 보드 ============== -->
-        <center>
-            <HBox alignment="CENTER" spacing="40">
+        <!-- ============== 상단: Ping 정보 ============== -->
+        <top>
+            <HBox alignment="CENTER" spacing="40"
+                  style="-fx-background-color: #16213e; -fx-padding: 5;">
                 <children>
-                    <Pane fx:id="gameBoard1"
-                          prefWidth="300" prefHeight="600">
-                        <BorderPane.margin>
-                            <Insets top="20.0" bottom="20.0" />
-                        </BorderPane.margin>
-                    </Pane>
+                    <HBox alignment="CENTER" spacing="10">
+                        <children>
+                            <Label text="My Ping:" textFill="#e94560">
+                                <font>
+                                    <Font name="Arial Bold" size="12.0" />
+                                </font>
+                            </Label>
+                            <Label fx:id="myPingLabel" text="-- ms" textFill="white">
+                                <font>
+                                    <Font name="Consolas Bold" size="12.0" />
+                                </font>
+                            </Label>
+                        </children>
+                    </HBox>
+                    <HBox alignment="CENTER" spacing="10">
+                        <children>
+                            <Label text="Opponent Ping:" textFill="#e94560">
+                                <font>
+                                    <Font name="Arial Bold" size="12.0" />
+                                </font>
+                            </Label>
+                            <Label fx:id="opponentPingLabel" text="-- ms" textFill="white">
+                                <font>
+                                    <Font name="Consolas Bold" size="12.0" />
+                                </font>
+                            </Label>
+                        </children>
+                    </HBox>
+                </children>
+            </HBox>
+        </top>
 
-                    <Pane fx:id="gameBoard2"
-                          prefWidth="300" prefHeight="600">
-                        <BorderPane.margin>
-                            <Insets top="20.0" bottom="20.0" />
-                        </BorderPane.margin>
-                    </Pane>
+        <!-- ============== 중앙: 두 개의 게임 보드 + MY CONTROLS ============== -->
+        <center>
+            <HBox alignment="CENTER" spacing="60">
+                <children>
+                    <!-- 상대방 보드 (왼쪽) -->
+                    <VBox alignment="CENTER" spacing="20">
+                        <children>
+                            <Pane fx:id="gameBoard2"
+                                  prefWidth="300" prefHeight="600">
+                                <style>-fx-background-color: black; -fx-border-color: #333; -fx-border-width: 2;</style>
+                            </Pane>
+                            
+                            <!-- 빈 공간 (상대방 보드 아래 - 높이 맞추기용) -->
+                            <VBox alignment="CENTER" spacing="5"
+                                  maxWidth="300"
+                                  visible="false" managed="true"
+                                  style="-fx-padding: 10;">
+                                <children>
+                                    <Label text="OPPONENT CONTROLS" textFill="#e94560">
+                                        <font>
+                                            <Font name="Arial Black" size="14.0" />
+                                        </font>
+                                    </Label>
+                                    <Label fx:id="moveControlLabel2" text="Move: ← / →" textFill="lightgray" />
+                                    <Label fx:id="rotateControlLabel2" text="Rotate: ↑" textFill="lightgray" />
+                                    <Label fx:id="softDropControlLabel2" text="Down: ↓" textFill="lightgray" />
+                                    <Label fx:id="hardDropControlLabel2" text="Drop: Space" textFill="yellow">
+                                        <font>
+                                            <Font name="System Bold" size="12" />
+                                        </font>
+                                    </Label>
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                    <!-- 본인 보드 (오른쪽) + MY CONTROLS -->
+                    <VBox alignment="CENTER" spacing="20">
+                        <children>
+                            <Pane fx:id="gameBoard1"
+                                  prefWidth="300" prefHeight="600">
+                                <style>-fx-background-color: black; -fx-border-color: #333; -fx-border-width: 2;</style>
+                            </Pane>
+
+                            <!-- MY CONTROLS (본인 보드 아래) - 숨김 처리하되 공간 유지 -->
+                            <VBox alignment="CENTER" spacing="5"
+                                  maxWidth="300"
+                                  visible="false" managed="true"
+                                  style="-fx-padding: 10;">
+                                <children>
+                                    <Label text="MY CONTROLS" textFill="#e94560">
+                                        <font>
+                                            <Font name="Arial Black" size="14.0" />
+                                        </font>
+                                    </Label>
+                                    <Label fx:id="moveControlLabel1" text="Move: A / D" textFill="lightgray" />
+                                    <Label fx:id="rotateControlLabel1" text="Rotate: W" textFill="lightgray" />
+                                    <Label fx:id="softDropControlLabel1" text="Down: S" textFill="lightgray" />
+                                    <Label fx:id="hardDropControlLabel1" text="Drop: F" textFill="yellow">
+                                        <font>
+                                            <Font name="System Bold" size="12" />
+                                        </font>
+                                    </Label>
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
                 </children>
             </HBox>
         </center>
 
-        <!-- ============== 왼쪽: Player 1 정보 ============== -->
+        <!-- ============== 왼쪽: 상대방 (Player 2) 정보 ============== -->
         <left>
-            <VBox alignment="TOP_CENTER" spacing="25"
+            <VBox alignment="TOP_CENTER" spacing="15"
                   prefWidth="200"
                   style="-fx-background-color: #16213e;">
                 <children>
-                    <Label text="PLAYER 1" textFill="white">
+                    <Label text="OPPONENT" textFill="white">
                         <font>
                             <Font name="Arial Black" size="20.0" />
                         </font>
                     </Label>
 
-                    <!-- Player 1 NEXT -->
-                    <VBox alignment="CENTER" spacing="10">
+                    <!-- NEXT -->
+                    <VBox alignment="CENTER" spacing="5">
                         <children>
                             <Label text="NEXT" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="18.0" />
+                                    <Font name="Arial Black" size="16.0" />
                                 </font>
                             </Label>
-                            <Pane fx:id="nextBlockPane1"
-                                  prefWidth="120" prefHeight="120"
+                            <Pane fx:id="nextBlockPane2"
+                                  prefWidth="150" prefHeight="100"
                                   style="-fx-background-color: #0f3460; -fx-border-color: #533483; -fx-border-width: 2;">
                                 <effect>
                                     <DropShadow height="10.0" radius="4.5" width="10.0">
@@ -75,65 +162,82 @@
                         </children>
                     </VBox>
 
-                    <!-- Player 1 SCORE -->
+                    <!-- ATTACK -->
                     <VBox alignment="CENTER" spacing="5">
+                        <children>
+                            <Label text="ATTACK" textFill="#e94560">
+                                <font>
+                                    <Font name="Arial Black" size="16.0" />
+                                </font>
+                            </Label>
+                            <Pane fx:id="attackPreviewPane2"
+                                  prefWidth="180" prefHeight="180"
+                                  minWidth="180" maxWidth="180"
+                                  minHeight="180" maxHeight="180"
+                                  style="-fx-background-color: #000000; -fx-border-color: #e94560; -fx-border-width: 1;">
+                            </Pane>
+                        </children>
+                    </VBox>
+
+                    <!-- SCORE -->
+                    <VBox alignment="CENTER" spacing="2">
                         <children>
                             <Label text="SCORE" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="scoreLabel1" text="0" textFill="white">
+                            <Label fx:id="scoreLabel2" text="0" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
                     </VBox>
 
-                    <!-- Player 1 LEVEL -->
-                    <VBox alignment="CENTER" spacing="5">
+                    <!-- LEVEL -->
+                    <VBox alignment="CENTER" spacing="2">
                         <children>
                             <Label text="LEVEL" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="levelLabel1" text="1" textFill="white">
+                            <Label fx:id="levelLabel2" text="1" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
                     </VBox>
 
-                    <!-- Player 1 LINES -->
-                    <VBox alignment="CENTER" spacing="5">
+                    <!-- LINES -->
+                    <VBox alignment="CENTER" spacing="2">
                         <children>
                             <Label text="LINES" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="linesLabel1" text="0" textFill="white">
+                            <Label fx:id="linesLabel2" text="0" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
                     </VBox>
 
-                    <!-- Player 1 TIMER (Time Attack 전용) -->
-                    <VBox fx:id="timeAttackBox1" alignment="CENTER" spacing="5" visible="false" managed="false">
+                    <!-- TIME (Time Attack 전용) -->
+                    <VBox fx:id="timeAttackBox2" alignment="CENTER" spacing="5" visible="false" managed="false">
                         <children>
                             <Label text="TIME" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="timerLabel1" text="03:00" textFill="white">
+                            <Label fx:id="timerLabel2" text="03:00" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
@@ -145,28 +249,28 @@
             </VBox>
         </left>
 
-        <!-- ============== 오른쪽: Player 2 정보 + Pause 버튼 ============== -->
+        <!-- ============== 오른쪽: 본인 (Player 1) 정보 + Pause 버튼 ============== -->
         <right>
-            <VBox alignment="TOP_CENTER" spacing="25"
-                  prefWidth="220"
+            <VBox alignment="TOP_CENTER" spacing="10"
+                  prefWidth="200"
                   style="-fx-background-color: #16213e;">
                 <children>
-                    <Label text="PLAYER 2" textFill="white">
+                    <Label text="ME" textFill="white">
                         <font>
                             <Font name="Arial Black" size="20.0" />
                         </font>
                     </Label>
 
-                    <!-- Player 2 NEXT -->
-                    <VBox alignment="CENTER" spacing="10">
+                    <!-- NEXT -->
+                    <VBox alignment="CENTER" spacing="5">
                         <children>
                             <Label text="NEXT" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="18.0" />
+                                    <Font name="Arial Black" size="16.0" />
                                 </font>
                             </Label>
-                            <Pane fx:id="nextBlockPane2"
-                                  prefWidth="120" prefHeight="120"
+                            <Pane fx:id="nextBlockPane1"
+                                  prefWidth="150" prefHeight="100"
                                   style="-fx-background-color: #0f3460; -fx-border-color: #533483; -fx-border-width: 2;">
                                 <effect>
                                     <DropShadow height="10.0" radius="4.5" width="10.0">
@@ -179,65 +283,82 @@
                         </children>
                     </VBox>
 
-                    <!-- Player 2 SCORE -->
+                    <!-- ATTACK -->
                     <VBox alignment="CENTER" spacing="5">
+                        <children>
+                            <Label text="ATTACK" textFill="#e94560">
+                                <font>
+                                    <Font name="Arial Black" size="16.0" />
+                                </font>
+                            </Label>
+                            <Pane fx:id="attackPreviewPane1"
+                                  prefWidth="180" prefHeight="180"
+                                  minWidth="180" maxWidth="180"
+                                  minHeight="180" maxHeight="180"
+                                  style="-fx-background-color: #000000; -fx-border-color: #e94560; -fx-border-width: 1;">
+                            </Pane>
+                        </children>
+                    </VBox>
+
+                    <!-- SCORE -->
+                    <VBox alignment="CENTER" spacing="2">
                         <children>
                             <Label text="SCORE" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="scoreLabel2" text="0" textFill="white">
+                            <Label fx:id="scoreLabel1" text="0" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
                     </VBox>
 
-                    <!-- Player 2 LEVEL -->
-                    <VBox alignment="CENTER" spacing="5">
+                    <!-- LEVEL -->
+                    <VBox alignment="CENTER" spacing="2">
                         <children>
                             <Label text="LEVEL" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="levelLabel2" text="1" textFill="white">
+                            <Label fx:id="levelLabel1" text="1" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
                     </VBox>
 
-                    <!-- Player 2 LINES -->
-                    <VBox alignment="CENTER" spacing="5">
+                    <!-- LINES -->
+                    <VBox alignment="CENTER" spacing="2">
                         <children>
                             <Label text="LINES" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="linesLabel2" text="0" textFill="white">
+                            <Label fx:id="linesLabel1" text="0" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
                     </VBox>
 
-                    <!-- Player 2 TIMER (Time Attack 전용) -->
-                    <VBox fx:id="timeAttackBox2" alignment="CENTER" spacing="5" visible="false" managed="false">
+                    <!-- TIME (Time Attack 전용) -->
+                    <VBox fx:id="timeAttackBox1" alignment="CENTER" spacing="5" visible="false" managed="false">
                         <children>
                             <Label text="TIME" textFill="#e94560">
                                 <font>
-                                    <Font name="Arial Black" size="16.0" />
+                                    <Font name="Arial Black" size="14.0" />
                                 </font>
                             </Label>
-                            <Label fx:id="timerLabel2" text="03:00" textFill="white">
+                            <Label fx:id="timerLabel1" text="03:00" textFill="white">
                                 <font>
-                                    <Font name="Consolas Bold" size="22.0" />
+                                    <Font name="Consolas Bold" size="20.0" />
                                 </font>
                             </Label>
                         </children>
@@ -245,10 +366,10 @@
 
                     <!-- Pause 버튼 -->
                     <Button fx:id="pauseButton" text="PAUSE"
-                            prefWidth="150" prefHeight="40"
+                            prefWidth="150" prefHeight="30"
                             style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
                         <font>
-                            <Font name="Arial Bold" size="16.0" />
+                            <Font name="Arial Bold" size="12.0" />
                         </font>
                         <effect>
                             <DropShadow height="8.0" radius="3.5" width="8.0">
@@ -257,6 +378,9 @@
                                 </color>
                             </DropShadow>
                         </effect>
+                        <VBox.margin>
+                            <Insets top="10.0" />
+                        </VBox.margin>
                     </Button>
                 </children>
                 <BorderPane.margin>
@@ -287,7 +411,6 @@
                             </DropShadow>
                         </effect>
                     </Label>
-                    <!-- 누가 이겼는지 / 비겼는지 -->
                     <Label fx:id="winnerLabel" text="PLAYER 1 WINS" textFill="white">
                         <font>
                             <Font name="Arial Bold" size="20.0" />
@@ -349,6 +472,55 @@
                     <Button fx:id="pauseMenuButton" text="MAIN MENU"
                             prefWidth="150" prefHeight="40"
                             style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-background-radius: 5;">
+                        <font>
+                            <Font name="Arial Bold" size="16.0" />
+                        </font>
+                        <effect>
+                            <DropShadow height="8.0" radius="3.5" width="8.0">
+                                <color>
+                                    <Color opacity="0.5" />
+                                </color>
+                            </DropShadow>
+                        </effect>
+                    </Button>
+                </children>
+            </VBox>
+        </children>
+    </HBox>
+
+    <!-- ============== 상대방 연결 끊김 오버레이 ============== -->
+    <HBox fx:id="disconnectOverlay" alignment="CENTER"
+          visible="false" managed="false"
+          prefWidth="1000" prefHeight="600"
+          style="-fx-background-color: rgba(0, 0, 0, 0.85);">
+        <children>
+            <VBox alignment="CENTER" spacing="20">
+                <children>
+                    <Label text="연결 끊김" textFill="#e94560">
+                        <font>
+                            <Font name="Arial Black" size="42.0" />
+                        </font>
+                        <effect>
+                            <DropShadow height="15.0" radius="7.0" width="15.0">
+                                <color>
+                                    <Color red="0.91" green="0.27" blue="0.38" opacity="0.8" />
+                                </color>
+                            </DropShadow>
+                        </effect>
+                    </Label>
+                    <Label fx:id="disconnectReasonLabel" text="상대방이 게임을 종료했습니다." textFill="white">
+                        <font>
+                            <Font name="Arial Bold" size="18.0" />
+                        </font>
+                    </Label>
+                    <Label text="승리!" textFill="#4CAF50">
+                        <font>
+                            <Font name="Arial Black" size="28.0" />
+                        </font>
+                    </Label>
+                    <Button fx:id="disconnectMenuButton" text="메인 메뉴로 돌아가기"
+                            prefWidth="200" prefHeight="45"
+                            style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">
                         <font>
                             <Font name="Arial Bold" size="16.0" />
                         </font>
