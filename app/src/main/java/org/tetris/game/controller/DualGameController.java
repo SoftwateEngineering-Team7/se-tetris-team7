@@ -794,7 +794,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         restartGame();
     }
 
-    private void goToMenu() {
+    protected void goToMenu() {
         resetGameController();
         hideGameOverlay();
         if (router != null)
@@ -802,13 +802,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     private void goToMenuFromPause() {
-        resetGameController();
-        hidePauseOverlay();
-        if (router != null)
-            router.showStartMenu();
+        goToMenu();
     }
 
-    private void resetGameController() {
+    protected void resetGameController() {
         playTime = 0.0;
 
         if (gameLoop != null)

@@ -571,6 +571,14 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     }
 
     @Override
+    protected void goToMenu()
+    {
+        resetGameController();
+        hideGameOverlay();
+        if (router != null)
+            router.showNetworkMenu(false);
+    }
+    
     public void pause() {
         System.out.println("[P2P-CONTROLLER] pause() called from network (opponent paused)");
         Platform.runLater(() -> {
