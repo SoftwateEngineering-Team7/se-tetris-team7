@@ -132,6 +132,10 @@ public class GameViewRenderer {
         if (board == null || boardGc == null)
             return;
 
+        // Apply Shake
+        boardCanvas.setTranslateX(shakeX);
+        boardCanvas.setTranslateY(shakeY);
+
         boardReset();
 
         for (int r = 0; r < boardSize.r; r++) {
@@ -227,6 +231,16 @@ public class GameViewRenderer {
         }
     }
 
+    public void triggerHardDropEffect() {
+        this.shakeIntensity = 20.0;
+        // Flash effect on canvas
+        javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(javafx.util.Duration.millis(50), boardCanvas);
+        flash.setFromValue(0.5);
+        flash.setToValue(1.0);
+        flash.setCycleCount(2);
+        flash.setAutoReverse(true);
+        flash.play();
+    }
 
     public void triggerLineClearEffect(int row) {
         lineBursts.add(new LineBurst(row));
