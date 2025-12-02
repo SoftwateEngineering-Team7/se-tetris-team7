@@ -317,6 +317,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
         int dropDistance = player.boardModel.hardDrop();
         player.scoreModel.add(dropDistance * 2); // 하드 드롭 보너스
         lastDropTime = System.nanoTime(); // 하드 드롭 후 타이머 리셋
+        
+        // Trigger Hard Drop Effect
+        player.renderer.triggerHardDropEffect();
+        
         lockCurrentBlock();
     }
 
@@ -357,6 +361,11 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private void updateGameLoop(long now) {
         if (gameModel.isPaused() || gameModel.isGameOver()) {
             return;
+        }
+
+        // Update Effects Animation
+        if (player != null) {
+            player.renderer.updateEffects(now);
         }
 
         if (player != null && player.isFlashing) {
@@ -481,6 +490,8 @@ public class GameController extends BaseController<GameModel> implements RouterA
     private int deleteCompletedRows() {
         for (int r : player.clearingRows) {
             player.boardModel.clearRow(r);
+            // Trigger Line Clear Effect per row
+            player.renderer.triggerLineClearEffect(r);
         }
 
         int count = player.clearingRows.size();

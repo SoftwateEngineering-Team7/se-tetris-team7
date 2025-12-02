@@ -397,6 +397,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         player.scoreModel.add(dropDistance * 2);
 
         player.lastDropTime = System.nanoTime();
+        
+        // Trigger Hard Drop Effect
+        player.renderer.triggerHardDropEffect();
+        
         lockCurrentBlock(player);
     }
 
@@ -457,6 +461,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
         if (player1 == null || player2 == null)
             return;
+
+        // Update Effects Animation
+        player1.renderer.updateEffects(now);
+        player2.renderer.updateEffects(now);
 
         handlePlayerUpdate(player1, now);
         handlePlayerUpdate(player2, now);
@@ -641,8 +649,11 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // === Helper Methods for Cleaning Lists ===
     private int deleteCompletedRows(PlayerSlot player) {
-        for (int r : player.clearingRows)
+        for (int r : player.clearingRows) {
             player.boardModel.clearRow(r);
+            // Trigger Line Clear Effect per row
+            player.renderer.triggerLineClearEffect(r);
+        }
         int count = player.clearingRows.size();
         player.clearingRows.clear();
         return count;
