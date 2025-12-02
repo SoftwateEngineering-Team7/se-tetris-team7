@@ -14,6 +14,8 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     public int lastAttackLines;
     public String lastState;
     public long lastPing;
+    public boolean isPaused;
+    public String lastDisconnectReason;
 
     @Override
     public void moveLeft() {
@@ -60,6 +62,24 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     }
 
     @Override
+    public void pause() {
+        executedCommands.add("pause");
+        this.isPaused = true;
+    }
+
+    @Override
+    public void resume() {
+        executedCommands.add("resume");
+        this.isPaused = false;
+    }
+
+    @Override
+    public void onOpponentDisconnect(String reason) {
+        executedCommands.add("onOpponentDisconnect");
+        this.lastDisconnectReason = reason;
+    }
+
+    @Override
     public void attack(int lines) {
         executedCommands.add("attack");
         this.lastAttackLines = lines;
@@ -74,6 +94,12 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     @Override
     public void updatePing(long ping) {
         executedCommands.add("updatePing");
+        this.lastPing = ping;
+    }
+
+    @Override
+    public void updateOpponentPing(long ping) {
+        executedCommands.add("updateOpponentPing");
         this.lastPing = ping;
     }
 }

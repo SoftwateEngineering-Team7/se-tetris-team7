@@ -25,6 +25,14 @@ public interface GameCommandExecutor {
 
     void onGameResult(boolean isWinner, int score);
 
+    // 일시정지
+    void pause();
+
+    void resume();
+
+    // 연결 끊김 처리
+    void onOpponentDisconnect(String reason);
+
     // 공격
     void attack(int lines);
 
@@ -32,4 +40,6 @@ public interface GameCommandExecutor {
     void updateState(String state);
 
     void updatePing(long ping);
+
+    void updateOpponentPing(long ping);
 }

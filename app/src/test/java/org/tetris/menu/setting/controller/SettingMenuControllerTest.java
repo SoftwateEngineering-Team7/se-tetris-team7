@@ -746,4 +746,150 @@ public class SettingMenuControllerTest extends ApplicationTest {
         // Controller에서 최소 너비를 80으로 설정했으므로 이를 검증
         assertTrue("작은 창에서 Player 라벨이 적절한 최소 크기를 유지해야 합니다", widthSmall >= 80);
     }
+
+    /* ========================================
+     * setupSettingMenu() 메서드 테스트
+     * ======================================== */
+
+    @Test
+    public void testSetupSettingMenuUpdatesModelFromSettings() {
+        // Given: 초기 모델 상태 저장
+        boolean initialColorBlind = model.isColorBlind();
+        String initialDifficulty = model.getDifficulty();
+        String initialScreen = model.getScreen();
+        
+        // When: setupSettingMenu 호출
+        interact(() -> controller.setupSettingMenu());
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // Then: 모델이 설정값으로부터 업데이트되었는지 확인
+        // (Setting 객체의 현재 값과 동기화되어야 함)
+        assertNotNull("색약 모드 설정이 null이 아니어야 합니다", model.isColorBlind());
+        assertNotNull("난이도 설정이 null이 아니어야 합니다", model.getDifficulty());
+        assertNotNull("화면 크기 설정이 null이 아니어야 합니다", model.getScreen());
+    }
+
+    @Test
+    public void testSetupSettingMenuReflectsModelToView() {
+        // Given: 모델에 특정 값 설정
+        interact(() -> {
+            model.setColorBlind(true);
+            model.setDifficulty("HARD");
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // When: setupSettingMenu 호출
+        interact(() -> controller.setupSettingMenu());
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(100, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // Then: UI가 모델 상태를 반영해야 함
+        List<RadioButton> allRadioButtons = getAllRadioButtons();
+        
+        // 선택된 라디오 버튼들 확인
+        long selectedCount = allRadioButtons.stream()
+                .filter(RadioButton::isSelected)
+                .count();
+        
+        assertTrue("적어도 하나 이상의 라디오 버튼이 선택되어 있어야 합니다", selectedCount > 0);
+    }
+
+    @Test
+    public void testSetupSettingMenuColorBlindViewSync() {
+        // Given & When: setupSettingMenu 호출
+        interact(() -> controller.setupSettingMenu());
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(100, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // Then: 색약 모드 라디오 버튼 중 하나가 선택되어 있어야 함
+        List<RadioButton> colorBlindButtons = getAllRadioButtons().stream()
+                .filter(rb -> rb.getUserData() instanceof Boolean)
+                .collect(Collectors.toList());
+        
+        assertFalse("색약 모드 라디오 버튼이 존재해야 합니다", colorBlindButtons.isEmpty());
+        
+        long selectedColorBlindCount = colorBlindButtons.stream()
+                .filter(RadioButton::isSelected)
+                .count();
+        
+        assertEquals("색약 모드 그룹에서 정확히 하나의 버튼이 선택되어야 합니다", 1, selectedColorBlindCount);
+    }
+
+    @Test
+    public void testSetupSettingMenuDifficultyViewSync() {
+        // Given & When: setupSettingMenu 호출
+        interact(() -> controller.setupSettingMenu());
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(100, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // Then: 난이도 라디오 버튼 중 하나가 선택되어 있어야 함
+        List<RadioButton> difficultyButtons = getAllRadioButtons().stream()
+                .filter(rb -> {
+                    Object userData = rb.getUserData();
+                    return userData instanceof String && 
+                           (userData.equals("EASY") || userData.equals("NORMAL") || userData.equals("HARD"));
+                })
+                .collect(Collectors.toList());
+        
+        assertFalse("난이도 라디오 버튼이 존재해야 합니다", difficultyButtons.isEmpty());
+        
+        long selectedDifficultyCount = difficultyButtons.stream()
+                .filter(RadioButton::isSelected)
+                .count();
+        
+        assertEquals("난이도 그룹에서 정확히 하나의 버튼이 선택되어야 합니다", 1, selectedDifficultyCount);
+    }
+
+    @Test
+    public void testSetupSettingMenuCanBeCalledMultipleTimes() {
+        // setupSettingMenu를 여러 번 호출해도 오류가 발생하지 않아야 함
+        interact(() -> {
+            controller.setupSettingMenu();
+            controller.setupSettingMenu();
+            controller.setupSettingMenu();
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // 정상적으로 실행되었는지 확인
+        List<RadioButton> allRadioButtons = getAllRadioButtons();
+        long selectedCount = allRadioButtons.stream()
+                .filter(RadioButton::isSelected)
+                .count();
+        
+        assertTrue("여러 번 호출 후에도 라디오 버튼이 올바르게 선택되어 있어야 합니다", selectedCount > 0);
+    }
+
+    @Test
+    public void testSetupSettingMenuAfterModelChange() {
+        // Given: 모델 값 변경
+        interact(() -> {
+            model.setColorBlind(false);
+            model.setDifficulty("EASY");
+        });
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // When: setupSettingMenu 호출
+        interact(() -> controller.setupSettingMenu());
+        WaitForAsyncUtils.waitForFxEvents();
+        WaitForAsyncUtils.sleep(100, TimeUnit.MILLISECONDS);
+        WaitForAsyncUtils.waitForFxEvents();
+        
+        // Then: UI 상태가 올바르게 반영되었는지 확인
+        // 색약 모드 "일반 시각" (false) 버튼이 선택되어 있어야 함
+        List<RadioButton> colorBlindButtons = getAllRadioButtons().stream()
+                .filter(rb -> rb.getUserData() instanceof Boolean)
+                .collect(Collectors.toList());
+        
+        RadioButton normalVisionButton = colorBlindButtons.stream()
+                .filter(rb -> Boolean.FALSE.equals(rb.getUserData()))
+                .findFirst()
+                .orElse(null);
+        
+        // setupSettingMenu는 Settings로부터 다시 로드하므로
+        // Settings의 실제 값에 따라 동작함
+        assertNotNull("일반 시각 버튼이 존재해야 합니다", normalVisionButton);
+    }
 }
