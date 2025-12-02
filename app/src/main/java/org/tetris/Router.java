@@ -64,9 +64,10 @@ public final class Router {
         show(settingsFactory);
     }
 
-    public void showNetworkMenu() {
+    public void showNetworkMenu(boolean refresh) {
         BaseController<?> controller = show(networkMenuFactory);
-        controller.refresh();
+        if (refresh) 
+            controller.refresh();
     }
 
     public void showGamePlaceholder(boolean itemMode) {

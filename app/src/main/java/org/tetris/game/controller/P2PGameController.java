@@ -229,6 +229,15 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     }
 
     @Override
+    protected void goToMenu()
+    {
+        resetGameController();
+        hideGameOverlay();
+        if (router != null)
+            router.showNetworkMenu(false);
+    }
+
+    @Override
     public void updateState(String state) {
         // Sync state if needed
     }

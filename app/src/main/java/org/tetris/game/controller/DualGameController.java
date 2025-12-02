@@ -116,7 +116,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     protected PlayerSlot player2;
     protected PlayerSlot activeItemTarget;
 
-    private Router router;
+    protected Router router;
     private AnimationTimer gameLoop;
 
     private long lastUpdate = 0L;
@@ -780,7 +780,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         root.requestFocus();
     }
 
-    private void goToMenu() {
+    protected void goToMenu() {
         resetGameController();
         hideGameOverlay();
         if (router != null)
@@ -788,13 +788,10 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     private void goToMenuFromPause() {
-        resetGameController();
-        hidePauseOverlay();
-        if (router != null)
-            router.showStartMenu();
+        goToMenu();
     }
 
-    private void resetGameController() {
+    protected void resetGameController() {
         playTime = 0.0;
 
         if (gameLoop != null)

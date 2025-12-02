@@ -252,6 +252,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         javafx.application.Platform.runLater(() -> {
             System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
             router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings);
+            model.setIsReady(false);
+            readyButton.setText("READY");
         });
     }
 
