@@ -2,10 +2,10 @@ package org.tetris;
 
 import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.SettingMenuFactory;
+import org.tetris.menu.setting.controller.SettingMenuController;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
 import org.tetris.network.menu.NetworkMenuFactory;
-import org.tetris.network.menu.controller.NetworkMenuController;
 import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.P2PGameFactory;
@@ -61,7 +61,10 @@ public final class Router {
     }
 
     public void showSettings() {
-        show(settingsFactory);
+        var controller = show(settingsFactory);
+        if (controller instanceof SettingMenuController settingController) {
+            settingController.setupSettingMenu();
+        }
     }
 
     public void showNetworkMenu(boolean refresh) {

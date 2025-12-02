@@ -120,6 +120,11 @@ public class SettingMenuController extends BaseController<SettingMenuModel> impl
         applyResponsiveSizing(); // 창 크기에 따른 폰트/버튼 크기 등 반응형 조절
     }
 
+    public void setupSettingMenu(){
+        model.updateModelFromSettings(); // 모델에 설정 반영
+        reflectModelToView();
+    }
+
     @Override
     public void setRouter(Router router) {
         this.router = router; // 라우터 주입
