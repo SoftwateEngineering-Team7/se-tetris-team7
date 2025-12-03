@@ -1,5 +1,7 @@
 package org.tetris.game.model.items;
 
+import java.util.Random;
+
 import org.tetris.game.model.Board;
 import org.tetris.game.model.blocks.Block;
 
@@ -14,7 +16,7 @@ public abstract class Item {
         this.itemID = id;
     }
 
-    public abstract Block getItemBlock(Block block);
+    public abstract Block getItemBlock(Block block, Random random);
 
     public abstract void activate(Board board, ItemActivation context);
 
