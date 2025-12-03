@@ -5,6 +5,8 @@ import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.game.model.P2PGameModel;
 import org.tetris.game.model.PlayerSlot;
+import org.tetris.game.model.blocks.Block;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -14,43 +16,38 @@ import javafx.scene.layout.HBox;
 import javafx.application.Platform;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.tetris.network.dto.MatchSettings;
 import org.util.KeyLayout;
 import org.util.PlayerId;
-import java.util.Random;
+import org.util.Point;
 
 public class P2PGameController extends DualGameController<P2PGameModel>
         implements GameCommandExecutor {
 
-    // FXML 바인딩 - 연결 끊김 오버레이
     @FXML
     private HBox disconnectOverlay;
     @FXML
     private Label disconnectReasonLabel;
     @FXML
     private Button disconnectMenuButton;
-    
-    // FXML 바인딩 - Ping 레이블
+
     @FXML
     private Label myPingLabel;
     @FXML
     private Label opponentPingLabel;
 
     private GameClient client;
-    
-    // 상대방 연결 끊김 플래그
     private volatile boolean opponentDisconnected = false;
-    
-    // 일시정지 권한 관리: 누가 일시정지했는지 추적 (0: 없음, 1: 호스트, 2: 클라이언트)
     private volatile int pauseOwner = 0;
-    
-    // 현재 게임 설정 저장 (restart용)
     private MatchSettings currentSettings;
-    
-    // Ping 타임아웃 감지
-    private static final long PING_TIMEOUT_MS = 10000; // 10초 동안 ping 없으면 연결 끊김
+
+    private int localBlockCount = 1;
+    private int remoteBlockCount = 1;
+
+    private static final long PING_TIMEOUT_MS = 10000;
     private volatile long lastPingTime = 0;
     private Timer pingTimeoutTimer;
     private volatile boolean gameStarted = false;
@@ -61,14 +58,9 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         client.setGameExecutor(this);
     }
 
-    /**
-     * P2P 게임은 서버로부터 GameStartCommand를 받을 때까지 일시정지 상태로 시작
-     */
     @Override
     public void initialize() {
         super.initialize();
-        
-        // 연결 끊김 오버레이의 메인 메뉴 버튼 설정
         Platform.runLater(() -> {
             if (disconnectMenuButton != null) {
                 disconnectMenuButton.setOnAction(e -> goToMainMenuFromDisconnect());
@@ -76,52 +68,102 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         });
     }
 
-    /**
-     * 로컬 플레이어 슬롯 반환
-     * 항상 player1 (오른쪽, ME 위치)을 로컬 플레이어로 사용
-     */
+    @Override
+    protected void update(long now) {
+        if (player1 == null || player2 == null)
+            return;
+        if (player1.gameModel.isPaused() || player2.gameModel.isPaused())
+            return;
+
+        if(isGameOver){
+            return;
+        }
+
+        handleLocalPlayerUpdate(getLocalPlayer(), now);
+        handleRemotePlayerUpdate(getRemotePlayer(), now);
+        updateUI();
+    }
+
+    private void handleLocalPlayerUpdate(PlayerSlot player, long now) {
+        if (player.gameModel.isGameOver())
+            return;
+        if (player.isFlashing) {
+            super.handlePlayerUpdate(player, now);
+            return;
+        }
+
+        int dropIntervalFrames = player.gameModel.getDropInterval();
+        long dropIntervalNanos = dropIntervalFrames * 16_666_667L;
+
+        if (now - player.lastDropTime >= dropIntervalNanos) {
+            boolean moved = player.boardModel.moveDown();
+            if (moved) {
+                player.scoreModel.blockDropped();
+            } else {
+                lockCurrentBlock(player);
+            }
+            player.lastDropTime = now;
+        }
+    }
+
+    private void handleRemotePlayerUpdate(PlayerSlot player, long now) {
+        if (player.gameModel.isGameOver())
+            return;
+
+        // [추가된 방어 코드] activeBlock이 null이면(동기화 대기 중) 아무것도 하지 않음
+        if (player.boardModel.activeBlock == null) {
+            return;
+        }
+
+        if (player.isFlashing) {
+            super.handlePlayerUpdate(player, now);
+            return;
+        }
+
+        int dropIntervalFrames = player.gameModel.getDropInterval();
+        long dropIntervalNanos = dropIntervalFrames * 16_666_667L;
+
+        if (now - player.lastDropTime >= dropIntervalNanos) {
+            boolean moved = player.boardModel.moveDown();
+            if (moved) {
+                player.scoreModel.blockDropped();
+            }
+            player.lastDropTime = now;
+        }
+    }
+
     private PlayerSlot getLocalPlayer() {
         return player1;
     }
 
-    /**
-     * 원격 플레이어 슬롯 반환
-     * 항상 player2 (왼쪽, OPPONENT 위치)를 원격 플레이어로 사용
-     */
     private PlayerSlot getRemotePlayer() {
         return player2;
     }
-    
-    /**
-     * 현재 플레이어가 호스트인지 확인
-     */
+
     private boolean isHost() {
         return model.getPlayerNumber() == 1;
     }
 
     @Override
     protected void handleKeyPress(KeyEvent e) {
-        // P2P 모드에서 P 키로 일시정지
         if (e.getCode() == KeyCode.P) {
-            if (isHost()) {
-                // 호스트: 게임을 실제로 일시정지하고 상대방에게 동기화
+            if (isHost())
                 togglePauseAndSync();
-            } else {
-                // 클라이언트: 게임은 멈추지 않고 메뉴만 표시 (나가기 용도)
+            else
                 toggleClientPauseMenu();
-            }
             e.consume();
             return;
         }
 
-        // 로컬 플레이어의 입력만 처리하고 서버로 커맨드 전송
         PlayerSlot localPlayer = getLocalPlayer();
-        if (localPlayer == null || localPlayer.gameModel.isPaused() || localPlayer.gameModel.isGameOver()) {
+        if (localPlayer == null || localPlayer.gameModel.isPaused() || localPlayer.gameModel.isGameOver())
+            return;
+        if (localPlayer.isFlashing) {
+            e.consume();
             return;
         }
-        
-        // 플래시 애니메이션 도중에는 입력 무시
-        if (localPlayer.isFlashing) {
+
+        if(isGameOver){
             e.consume();
             return;
         }
@@ -149,12 +191,11 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             }
             updateNeeded = true;
         } else if (code == KeyLayout.getHardDropKey(PlayerId.PLAYER1)) {
-            command = new HardDropCommand();
+            client.sendCommand(new HardDropCommand());
             handleHardDrop(localPlayer);
+            return;
         }
 
-
-        
         if (updateNeeded) {
             updateGameBoard(localPlayer);
             localPlayer.renderer.renderNextBlock(localPlayer.nextBlockModel.peekNext());
@@ -164,182 +205,284 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             client.sendCommand(command);
         }
     }
-    
+
     /**
-     * PAUSE 버튼 클릭 시 호출되는 메서드 오버라이드
-     * P2P 모드에서는 호스트/클라이언트에 따라 다르게 동작
+     * [FIXED] 안전한 보드 캡처 및 전송 (Local Piercing Fix)
+     * 게임 오버 상태라면, 캡처를 위해 잠깐 지웠던 블록을 다시 복구하지 않습니다.
+     * 이렇게 해야 내 화면에서도 블록이 겹쳐 보이는(뚫리는) 현상이 사라집니다.
      */
-    @Override
-    protected void togglePause() {
-        if (isHost()) {
-            // 호스트: 게임을 실제로 일시정지하고 상대방에게 동기화
-            togglePauseAndSync();
-        } else {
-            // 클라이언트: 게임은 멈추지 않고 메뉴만 표시 (나가기 용도)
-            toggleClientPauseMenu();
+    private void captureAndSendBoard(PlayerSlot player) {
+        if (player != getLocalPlayer() || client == null)
+            return;
+
+        // [핵심 1] 게임 오버가 '아닐 때만' 활성 블록을 지웁니다.
+        // 게임 오버라면(이미 꽉 찼다면) 굳이 지울 필요 없이 그 상태 그대로 캡처하면 됩니다.
+        // (여기서 지우려고 시도하다가 겹쳐있는 기존 블록을 파먹어서 검은색 구멍이 생기는 것임)
+        if (!player.gameModel.isGameOver()) {
+            player.boardModel.removeCurrentBlock();
         }
-    }
-    
-    /**
-     * P2P 모드에서 일시정지 토글 및 상대방에게 동기화
-     * 일시정지를 누른 사람만 해제 가능
-     */
-    private void togglePauseAndSync() {
-        if (player1 == null || player2 == null) {
+        else{
+            int[][] rawBoard = player.boardModel.getBoard();
+            int[][] boardCopy = new int[rawBoard.length][];
+            for (int i = 0; i < rawBoard.length; i++) {
+                boardCopy[i] = java.util.Arrays.copyOf(rawBoard[i], rawBoard[i].length);
+            }
+            // 내가 가지고 있던 공격 데이터도 함께 전송
+            java.util.List<int[]> myPendingAttacks = new java.util.ArrayList<>(player.attackModel.getAttacks());
+            client.sendCommand(new GameOverCommand(player.scoreModel.getScore(), myPendingAttacks));
+            client.sendCommand(new BoardSyncCommand(boardCopy, localBlockCount));
             return;
         }
-        
+
+        // 2. 보드 복사 (이 시점에서 rawBoard는 깨끗하거나, 혹은 꽉 찬 상태)
+        int[][] rawBoard = player.boardModel.getBoard();
+        int[][] boardCopy = new int[rawBoard.length][];
+        for (int i = 0; i < rawBoard.length; i++) {
+            boardCopy[i] = Arrays.copyOf(rawBoard[i], rawBoard[i].length);
+        }
+
+        // [핵심 2] 게임 오버가 '아닐 때만' 다시 복구합니다.
+        // 게임 오버면 복구할 블록이 없거나, 복구하면 뚫림 현상이 생기므로 패스.
+        if (player.boardModel.activeBlock != null && player.boardModel.curPos != null) {
+            player.boardModel.placeBlock(player.boardModel.curPos, player.boardModel.activeBlock);
+        }
+
+        // 3. 전송 (게임 오버라도 '마지막 상태'는 전송됨)
+        client.sendCommand(new BoardSyncCommand(boardCopy, localBlockCount));
+    }
+
+    @Override
+    protected void lockCurrentBlock(PlayerSlot player) {
+        super.lockCurrentBlock(player); // 여기서 GameModel.spawnNewBlock()이 호출됨 -> 실패 시 Game Over 설정됨
+
+        if (player == getLocalPlayer()) {
+            localBlockCount++;
+
+            // 줄 클리어가 없으면 즉시 전송
+            if (client != null && player.clearingRows.isEmpty() && player.clearingCols.isEmpty()
+                    && player.clearingCells.isEmpty()) {
+                captureAndSendBoard(player);
+            }
+        }
+    }
+
+    @Override
+    protected void processClears(PlayerSlot player) {
+        if (player == getRemotePlayer()) {
+            player.clearingRows.clear();
+            player.clearingCols.clear();
+            player.clearingCells.clear();
+            return;
+        }
+        super.processClears(player);
+        if (player == getLocalPlayer() && client != null) {
+            captureAndSendBoard(player);
+        }
+    }
+
+    @Override
+    protected void processIncomingAttacks(PlayerSlot player) {
+        if (player != getLocalPlayer())
+            return;
+        super.processIncomingAttacks(player);
+    }
+
+    @Override
+    protected void checkGameOverState() {
+        PlayerSlot localPlayer = getLocalPlayer();
+        if (localPlayer != null && localPlayer.gameModel.isGameOver() && !isGameOver) {
+            isGameOver = true;
+            if (gameLoop != null)
+                gameLoop.stop();
+            if (client != null) {
+                // 내가 가지고 있던 공격 데이터도 함께 전송
+                java.util.List<int[]> myPendingAttacks = new java.util.ArrayList<>(localPlayer.attackModel.getAttacks());
+                client.sendCommand(new GameOverCommand(localPlayer.scoreModel.getScore(), myPendingAttacks));
+            }
+            showGameOverDialog("Game Over", "You Lost!");
+        }
+    }
+
+    @Override
+    public void attack(List<int[]> attackRows) {
+        Platform.runLater(() -> {
+            PlayerSlot localPlayer = getLocalPlayer();
+            if (localPlayer != null && attackRows != null && !attackRows.isEmpty()) {
+                for (int[] r : attackRows) {
+                    localPlayer.attackModel.push(r);
+                }
+                localPlayer.renderer.renderAttackBoard(localPlayer.attackModel.getAttacks());
+            }
+        });
+    }
+
+    /**
+     * [FIXED] 3가지 경우(뒤쳐짐, 앞서감, 일치함)를 명확히 분리
+     * - activeBlock이 null이 될 수 있는 상황을 고려하여 로직 구성
+     */
+    Block tempSavedBlock = null;
+    @Override
+    public void syncBoard(int[][] boardState, int blockCount) {
+        Platform.runLater(() -> {
+            PlayerSlot remotePlayer = getRemotePlayer();
+            if (remotePlayer != null && boardState != null) {
+
+                if (isGameOver) {
+                    remotePlayer.boardModel.removeCurrentBlock();
+                    remotePlayer.boardModel.setBoard(boardState);
+                    updateGameBoard(remotePlayer);
+                    return;
+                }
+
+                // count가 앞서 있는 경우 같은 개수가 될 때까지 보드만 업데이트
+                if(remoteBlockCount > blockCount && tempSavedBlock != null){
+                    remotePlayer.boardModel.setBoard(boardState);
+                    return;
+                }
+
+                // 1. [Backup] 현재 상태 백업
+                Block savedBlock = remotePlayer.boardModel.activeBlock;
+
+                // 2. [Reset] 화면 청소 및 서버 보드 적용
+                // 일단 현재 블록을 지우고 서버 상태를 적용함 (가장 확실한 방법)
+                remotePlayer.boardModel.removeCurrentBlock();
+                remotePlayer.boardModel.setBoard(boardState);
+
+                // 3. [Sync Logic] 3가지 케이스 분기
+
+                // CASE 1: 로컬이 뒤쳐짐 (Remote < Server) -> Catch-up 수행
+                if (remoteBlockCount < blockCount) {
+                    while (remoteBlockCount < blockCount) {
+                        remotePlayer.gameModel.spawnNewBlock();
+                        remoteBlockCount++;
+                        if(remoteBlockCount != blockCount){
+                            remotePlayer.boardModel.removeCurrentBlock();
+                        }
+                        remotePlayer.lastDropTime = System.nanoTime();
+                    }
+                } else if (remoteBlockCount > blockCount) {
+                    tempSavedBlock = remotePlayer.boardModel.activeBlock;
+                    remotePlayer.boardModel.activeBlock = null;
+                } else {
+                    if(tempSavedBlock != null){
+                        remotePlayer.boardModel.setActiveBlock(tempSavedBlock);
+                        tempSavedBlock = null;
+                    } else {
+                        remotePlayer.boardModel.setActiveBlock(savedBlock);
+                    }
+                }
+
+                // 4. [Final Check] 게임 오버 시 잔상 제거
+                if (remotePlayer.gameModel.isGameOver()) {
+                    remotePlayer.boardModel.activeBlock = null;
+                }
+
+                // 5. UI 갱신
+                while (remotePlayer.attackModel.pop() != null) {
+                }
+                remotePlayer.renderer.renderAttackBoard(remotePlayer.attackModel.getAttacks());
+                updateGameBoard(remotePlayer);
+                remotePlayer.renderer.renderNextBlock(remotePlayer.nextBlockModel.peekNext());
+            }
+        });
+    }
+
+    // --- Other Overrides ---
+    @Override
+    protected void togglePause() {
+        if (isHost())
+            togglePauseAndSync();
+        else
+            toggleClientPauseMenu();
+    }
+
+    private void togglePauseAndSync() {
+        if (player1 == null || player2 == null)
+            return;
         boolean currentlyPaused = player1.gameModel.isPaused();
         int myPlayerNumber = model.getPlayerNumber();
-        
         if (currentlyPaused) {
-            // 일시정지 해제 시도 - 본인이 일시정지한 경우에만 해제 가능
-            if (pauseOwner != myPlayerNumber) {
-                System.out.println("[P2P-CONTROLLER] Cannot resume: pause was initiated by player " + pauseOwner);
+            if (pauseOwner != myPlayerNumber)
                 return;
-            }
-            
-            // 일시정지 해제
             player1.gameModel.setPaused(false);
             player2.gameModel.setPaused(false);
             hidePauseOverlay();
             pauseOwner = 0;
-            
-            // 상대방에게 일시정지 해제 전송
             client.sendCommand(new PauseCommand(false));
-            System.out.println("[P2P-CONTROLLER] Pause released by player " + myPlayerNumber);
         } else {
-            // 일시정지 시작
             player1.gameModel.setPaused(true);
             player2.gameModel.setPaused(true);
             showPauseOverlay();
             pauseOwner = myPlayerNumber;
-            
-            // 상대방에게 일시정지 상태 전송
             client.sendCommand(new PauseCommand(true));
-            System.out.println("[P2P-CONTROLLER] Pause initiated by player " + myPlayerNumber);
         }
     }
-    
-    /**
-     * 클라이언트용 일시정지 메뉴 토글
-     * 게임은 멈추지 않고 메뉴만 표시/숨김 (나가기 용도)
-     */
+
     private void toggleClientPauseMenu() {
-        if (pauseOverlay == null) {
+        if (pauseOverlay == null)
             return;
-        }
-        
-        if (pauseOverlay.isVisible()) {
-            // 메뉴 숨기기
+        if (pauseOverlay.isVisible())
             hidePauseOverlay();
-            System.out.println("[P2P-CONTROLLER] Client pause menu hidden");
-        } else {
-            // 메뉴 표시 (게임은 계속 진행)
+        else
             showPauseOverlay();
-            System.out.println("[P2P-CONTROLLER] Client pause menu shown (game continues)");
-        }
     }
-    
-    /**
-     * 연결 끊김 시 메인 메뉴로 이동
-     */
+
     private void goToMainMenuFromDisconnect() {
-        // 네트워크 리소스 정리
         cleanupNetworkResources();
-        
-        // 오버레이 숨기기
         hideDisconnectOverlay();
-        
-        // 메인 메뉴로 이동
-        if (router != null) {
+        if (router != null)
             router.showStartMenu();
-        }
     }
-    
-    /**
-     * 네트워크 리소스 정리
-     */
+
     private void cleanupNetworkResources() {
         try {
-            // 클라이언트 연결 종료
-            if (client != null) {
+            if (client != null)
                 client.disconnect();
-            }
-            
-            // 호스트인 경우 서버도 중지
-            if (isHost()) {
+            if (isHost())
                 GameServer.getInstance().stop();
-            }
         } catch (Exception e) {
-            System.err.println("[P2P-CONTROLLER] Error cleaning up network resources: " + e.getMessage());
         }
     }
-    
-    /**
-     * 연결 끊김 오버레이 표시
-     */
+
     private void showDisconnectOverlay(String reason) {
         if (disconnectOverlay != null) {
-            if (disconnectReasonLabel != null) {
+            if (disconnectReasonLabel != null)
                 disconnectReasonLabel.setText(reason);
-            }
             disconnectOverlay.setVisible(true);
             disconnectOverlay.setManaged(true);
         }
     }
-    
-    /**
-     * 연결 끊김 오버레이 숨기기
-     */
+
     private void hideDisconnectOverlay() {
         if (disconnectOverlay != null) {
             disconnectOverlay.setVisible(false);
             disconnectOverlay.setManaged(false);
         }
     }
-    
-    /**
-     * Ping 타임아웃 타이머 시작
-     * 주기적으로 마지막 ping 응답 시간을 확인하여 타임아웃 감지
-     */
+
     private void startPingTimeoutTimer() {
-        stopPingTimeoutTimer(); // 기존 타이머 정리
-        lastPingTime = System.currentTimeMillis(); // 초기 시간 설정
-        
+        stopPingTimeoutTimer();
+        lastPingTime = System.currentTimeMillis();
         pingTimeoutTimer = new Timer("PingTimeoutTimer", true);
         pingTimeoutTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if (!gameStarted || opponentDisconnected) {
+                if (!gameStarted || opponentDisconnected)
                     return;
-                }
-                
-                long currentTime = System.currentTimeMillis();
-                long timeSinceLastPing = currentTime - lastPingTime;
-                
-                if (timeSinceLastPing > PING_TIMEOUT_MS) {
-                    System.out.println("[P2P-CONTROLLER] Ping timeout detected! No response for " + 
-                                       timeSinceLastPing + "ms");
+                long timeSinceLastPing = System.currentTimeMillis() - lastPingTime;
+                if (timeSinceLastPing > PING_TIMEOUT_MS)
                     onOpponentDisconnect("상대방과의 연결이 끊겼습니다.\n(응답 시간 초과)");
-                }
             }
-        }, 2000, 2000); // 2초마다 체크
+        }, 2000, 2000);
     }
-    
-    /**
-     * Ping 타임아웃 타이머 정지
-     */
+
     private void stopPingTimeoutTimer() {
         if (pingTimeoutTimer != null) {
             pingTimeoutTimer.cancel();
             pingTimeoutTimer = null;
         }
     }
-    
-    /**
-     * 게임 정리 (화면 전환 시 호출)
-     */
+
     @Override
     public void cleanup() {
         super.cleanup();
@@ -347,69 +490,36 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         gameStarted = false;
         cleanupNetworkResources();
     }
-    
-    /**
-     * P2P 모드에서 Resume 버튼 클릭 처리
-     * 호스트: 게임 resume 및 상대방에게 동기화
-     * 클라이언트: 메뉴만 닫기 (게임은 계속 진행 중)
-     */
+
     @Override
     protected void onResumeButtonClicked() {
-        if (player1 == null || player2 == null) {
+        if (player1 == null || player2 == null)
             return;
-        }
-        
         if (!isHost()) {
-            // 클라이언트: 메뉴만 닫기 (게임 상태는 변경하지 않음)
             hidePauseOverlay();
-            System.out.println("[P2P-CONTROLLER] Client resume button clicked - hiding menu only");
             return;
         }
-        
-        int myPlayerNumber = model.getPlayerNumber();
-        
-        // 호스트: 본인이 일시정지한 경우에만 해제 가능
-        if (pauseOwner != myPlayerNumber) {
-            System.out.println("[P2P-CONTROLLER] Cannot resume via button: pause was initiated by player " + pauseOwner);
+        if (pauseOwner != model.getPlayerNumber())
             return;
-        }
-        
-        // 일시정지 해제
         player1.gameModel.setPaused(false);
         player2.gameModel.setPaused(false);
         hidePauseOverlay();
         pauseOwner = 0;
-        
-        // 상대방에게 일시정지 해제 전송
         client.sendCommand(new PauseCommand(false));
-        System.out.println("[P2P-CONTROLLER] Resume button clicked - pause released by player " + myPlayerNumber);
-    }
-    
-    /**
-     * P2P 모드에서 Restart 버튼 클릭 처리
-     * 서버에 RestartCommand를 전송하여 새 seed로 게임 재시작
-     */
-    @Override
-    protected void onRestartButtonClicked() {
-        System.out.println("[P2P-CONTROLLER] Restart requested - sending RestartCommand to server");
-        
-        // 게임 오버 오버레이 숨기기
-        hideGameOverlay();
-        
-        // 서버에 재시작 요청 전송
-        client.sendCommand(new RestartCommand());
     }
 
-    // --- GameCommandExecutor Implementation (Remote Player Updates) ---
+    @Override
+    protected void onRestartButtonClicked() {
+        hideGameOverlay();
+        client.sendCommand(new RestartCommand());
+    }
 
     @Override
     public void moveLeft() {
         Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            System.out.println("[P2P-CONTROLLER] moveLeft() - playerNumber=" + model.getPlayerNumber() + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
-            if (remotePlayer != null) {
-                remotePlayer.boardModel.moveLeft();
-                updateGameBoard(remotePlayer);
+            if (getRemotePlayer() != null) {
+                getRemotePlayer().boardModel.moveLeft();
+                updateGameBoard(getRemotePlayer());
             }
         });
     }
@@ -417,11 +527,9 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void moveRight() {
         Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            System.out.println("[P2P-CONTROLLER] moveRight() - playerNumber=" + model.getPlayerNumber() + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
-            if (remotePlayer != null) {
-                remotePlayer.boardModel.moveRight();
-                updateGameBoard(remotePlayer);
+            if (getRemotePlayer() != null) {
+                getRemotePlayer().boardModel.moveRight();
+                updateGameBoard(getRemotePlayer());
             }
         });
     }
@@ -429,10 +537,9 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void rotate() {
         Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            if (remotePlayer != null) {
-                remotePlayer.boardModel.rotate();
-                updateGameBoard(remotePlayer);
+            if (getRemotePlayer() != null) {
+                getRemotePlayer().boardModel.rotate();
+                updateGameBoard(getRemotePlayer());
             }
         });
     }
@@ -440,12 +547,10 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void softDrop() {
         Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            if (remotePlayer != null) {
-                if (remotePlayer.boardModel.moveDown()) {
-                    remotePlayer.scoreModel.softDrop(1);
-                }
-                updateGameBoard(remotePlayer);
+            if (getRemotePlayer() != null) {
+                if (getRemotePlayer().boardModel.moveDown())
+                    getRemotePlayer().scoreModel.softDrop(1);
+                updateGameBoard(getRemotePlayer());
             }
         });
     }
@@ -453,111 +558,92 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void hardDrop() {
         Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            System.out.println("[P2P-CONTROLLER] hardDrop() - playerNumber=" + model.getPlayerNumber() + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
-            if (remotePlayer != null) {
-                handleHardDrop(remotePlayer);
+            if (getRemotePlayer() != null) {
+                int d = getRemotePlayer().boardModel.hardDrop();
+                getRemotePlayer().scoreModel.add(d * 2);
+                updateGameBoard(getRemotePlayer());
             }
         });
     }
 
     @Override
-    public void attack(int lines) {
-        Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            if (remotePlayer != null) {
-                Random rand = new Random();
-                for (int i = 0; i < lines; i++) {
-                    int[] garbageRow = new int[10]; // Assuming width 10
-                    Arrays.fill(garbageRow, 8); // 8 = Gray
-                    garbageRow[rand.nextInt(10)] = 0; // Hole
-                    remotePlayer.attackModel.push(garbageRow);
+    protected void sendAttack(PlayerSlot attacker) {
+        if (attacker == getLocalPlayer() && client != null) {
+            int lines = attacker.clearingRows.size();
+            if (lines >= 2) {
+                java.util.List<int[]> attackRows = new java.util.ArrayList<>();
+                for (int r : attacker.clearingRows)
+                    attackRows.add(attacker.boardModel.getRowForAttack(r));
+                client.sendCommand(new AttackCommand(attackRows));
+                if (getRemotePlayer() != null) {
+                    for (int[] r : attackRows)
+                        getRemotePlayer().attackModel.push(r);
+                    getRemotePlayer().renderer.renderAttackBoard(getRemotePlayer().attackModel.getAttacks());
                 }
             }
-        });
+        }
     }
 
     @Override
     public void gameStart(MatchSettings settings) {
         Platform.runLater(() -> {
             if (player1 != null && player2 != null) {
-                System.out.println("[P2P-CONTROLLER] gameStart() received");
-                
-                // 현재 설정 저장 (restart용)
-                this.currentSettings = settings;
-                
-                // Set player number to determine local/remote mapping
+                currentSettings = settings;
                 model.setPlayerNumber(settings.getPlayerNumber());
-                
-                System.out.println("[P2P-CONTROLLER] I am Player " + settings.getPlayerNumber());
-                System.out.println("[P2P-CONTROLLER] My seed: " + settings.getMySeed() + 
-                                   ", Other seed: " + settings.getOtherSeed());
-                
-                // 클라이언트인 경우 restart, resume 버튼 숨기기
                 if (settings.getPlayerNumber() == 2) {
-                    if (restartButton != null) {
+                    if (restartButton != null)
                         restartButton.setVisible(false);
-                        restartButton.setManaged(false);
-                    }
-                    if (resumeButton != null) {
+                    if (resumeButton != null)
                         resumeButton.setVisible(false);
-                        resumeButton.setManaged(false);
-                    }
                 }
-                
-                // 기존 게임 루프 정리
-                stopGame();;
-                
-                // 게임 루프 변수 리셋
+                stopGame();
+                isGameOver = false;
                 lastUpdate = 0L;
                 firstTriggered = false;
-                
-                // Initialize seeds for both players
-                // player1은 항상 로컬(ME), player2는 항상 원격(OPPONENT)
-                // 따라서 mySeed는 player1에, otherSeed는 player2에 설정
+
                 model.getPlayer1GameModel().setNextBlockSeed(settings.getMySeed());
                 model.getPlayer2GameModel().setNextBlockSeed(settings.getOtherSeed());
-                
-                // Reset both game models to apply new seeds
+
                 model.getPlayer1GameModel().reset();
                 model.getPlayer2GameModel().reset();
-                
-                // Reset player slots
                 player1.reset();
                 player2.reset();
-                
-                // 일시정지 소유자 초기화
+                localBlockCount = 1;
+                remoteBlockCount = 1;
                 pauseOwner = 0;
                 opponentDisconnected = false;
-                
-                // Unpause the game to start playing
                 player1.gameModel.setPaused(false);
                 player2.gameModel.setPaused(false);
-                
-                // 오버레이 숨기기
                 hideGameOverlay();
                 hidePauseOverlay();
                 hideDisconnectOverlay();
-                
-                // firstTriggered 설정 후 게임 루프 재시작
                 firstTriggered = true;
                 gameStarted = true;
                 startGameLoop();
-                
-                // Ping 타임아웃 타이머 시작
                 startPingTimeoutTimer();
-                
-                System.out.println("[P2P-CONTROLLER] Game started! Local player controls " + 
-                                   (settings.getPlayerNumber() == 1 ? "left" : "right") + " screen.");
             }
         });
     }
 
     @Override
-    public void gameOver(int score) {
+    public void gameOver(int score, java.util.List<int[]> pendingAttacks) {
         Platform.runLater(() -> {
-            stopGame();
-            showGameOverDialog("Game Over", "Winner: Player 1\nScore: " + score);
+            if (!isGameOver) {
+                isGameOver = true;
+                
+                // 상대방이 가지고 있던 공격 데이터를 내 attackModel에 추가
+                PlayerSlot remotePlayer = getRemotePlayer();
+                if (remotePlayer != null && pendingAttacks != null) {
+                    remotePlayer.attackModel.reset();
+                    for (int[] attack : pendingAttacks) {
+                        remotePlayer.attackModel.push(attack);
+                    }
+                    remotePlayer.renderer.renderAttackBoard(remotePlayer.attackModel.getAttacks());
+                }
+                
+                stopGame();
+                showGameOverDialog("Game Over", "You Won!\nOpponent Score: " + score);
+            }
         });
     }
 
@@ -565,127 +651,87 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     public void onGameResult(boolean isWinner, int score) {
         Platform.runLater(() -> {
             stopGame();
-            showGameOverDialog(isWinner ? "Victory!" : "Defeat",
-                    (isWinner ? "You Won!" : "You Lost") + "\nScore: " + score);
+            showGameOverDialog("Game Over",
+                    (isWinner ? (isHost() ? "Host Win!" : "Guest Win!") : (isHost() ? "Guest Win!" : "Host Win!"))
+                            + "\nYour Score: " + score);
         });
     }
 
     @Override
-    protected void goToMenu()
-    {
+    protected void goToMenu() {
+        if (client != null)
+            client.disconnectGracefully();
+        cleanupNetworkResources();
         resetGameController();
         hideGameOverlay();
         if (router != null)
             router.showNetworkMenu(false);
     }
-    
+
     public void pause() {
-        System.out.println("[P2P-CONTROLLER] pause() called from network (opponent paused)");
         Platform.runLater(() -> {
-            if (player1 != null && player2 != null) {
-                // P2P에서는 상대방이 pause해도 내 게임은 멈추지 않음
-                // 단, UI는 표시하여 상대방이 일시정지했음을 알림
+            if (player1 != null) {
                 player1.gameModel.setPaused(true);
                 player2.gameModel.setPaused(true);
                 showPauseOverlay();
-                
-                // 상대방이 일시정지함 - pauseOwner는 상대방의 playerNumber
-                int opponentPlayerNumber = model.getPlayerNumber() == 1 ? 2 : 1;
-                pauseOwner = opponentPlayerNumber;
-                
-                System.out.println("[P2P-CONTROLLER] Paused by opponent (player " + opponentPlayerNumber + ")");
-            } else {
-                System.out.println("[P2P-CONTROLLER] pause() failed: player1=" + player1 + ", player2=" + player2);
+                pauseOwner = (model.getPlayerNumber() == 1 ? 2 : 1);
             }
         });
     }
 
     @Override
     public void resume() {
-        System.out.println("[P2P-CONTROLLER] resume() called from network");
         Platform.runLater(() -> {
-            if (player1 != null && player2 != null) {
+            if (player1 != null) {
                 player1.gameModel.setPaused(false);
                 player2.gameModel.setPaused(false);
                 hidePauseOverlay();
                 pauseOwner = 0;
-                System.out.println("[P2P-CONTROLLER] Resumed by opponent");
-            } else {
-                System.out.println("[P2P-CONTROLLER] resume() failed: player1=" + player1 + ", player2=" + player2);
             }
         });
     }
 
     @Override
-    public void onOpponentDisconnect(String reason) {
-        if (opponentDisconnected) {
-            return; // 중복 처리 방지
+    public void onOpponentDisconnect(String r) {
+        if (!opponentDisconnected) {
+            opponentDisconnected = true;
+            Platform.runLater(() -> {
+                stopGame();
+                showDisconnectOverlay(r);
+            });
         }
-        opponentDisconnected = true;
-        
-        Platform.runLater(() -> {
-            System.out.println("[P2P-CONTROLLER] Opponent disconnected: " + reason);
-            stopGame();
-            
-            // 상대방 연결 끊김 전용 오버레이 표시
-            showDisconnectOverlay(reason);
-        });
     }
 
     @Override
-    public void updateState(String state) {
-        // Sync state if needed
+    public void updateState(String s) {
     }
 
     @Override
-    public void updatePing(long ping) {
-        // 마지막 ping 시간 갱신
+    public void updatePing(long p) {
         lastPingTime = System.currentTimeMillis();
-        
         Platform.runLater(() -> {
             if (myPingLabel != null) {
-                myPingLabel.setText(ping + " ms");
-                // 색상 변경: 좋음(녹색), 보통(노랑), 나쁨(빨강)
-                if (ping < 50) {
-                    myPingLabel.setStyle("-fx-text-fill: #4CAF50;"); // 녹색
-                } else if (ping < 100) {
-                    myPingLabel.setStyle("-fx-text-fill: #FFC107;"); // 노랑
-                } else {
-                    myPingLabel.setStyle("-fx-text-fill: #F44336;"); // 빨강
-                }
+                myPingLabel.setText(p + " ms");
+                myPingLabel.setStyle("-fx-text-fill: " + (p < 50 ? "#4CAF50" : p < 100 ? "#FFC107" : "#F44336"));
             }
         });
-        
-        // 상대방에게 내 ping 값 공유
-        if (client != null) {
-            client.sendCommand(new PingInfoCommand(ping));
-        }
+        if (client != null)
+            client.sendCommand(new PingInfoCommand(p));
     }
-    
-    /**
-     * 상대방 ping 업데이트
-     */
+
     @Override
-    public void updateOpponentPing(long ping) {
+    public void updateOpponentPing(long p) {
         Platform.runLater(() -> {
             if (opponentPingLabel != null) {
-                opponentPingLabel.setText(ping + " ms");
-                // 색상 변경
-                if (ping < 50) {
-                    opponentPingLabel.setStyle("-fx-text-fill: #4CAF50;");
-                } else if (ping < 100) {
-                    opponentPingLabel.setStyle("-fx-text-fill: #FFC107;");
-                } else {
-                    opponentPingLabel.setStyle("-fx-text-fill: #F44336;");
-                }
+                opponentPingLabel.setText(p + " ms");
+                opponentPingLabel.setStyle("-fx-text-fill: " + (p < 50 ? "#4CAF50" : p < 100 ? "#FFC107" : "#F44336"));
             }
         });
     }
 
-    private void showGameOverDialog(String title, String message) {
-        if (winnerLabel != null) {
-            winnerLabel.setText(message);
-        }
+    private void showGameOverDialog(String t, String m) {
+        if (winnerLabel != null)
+            winnerLabel.setText(m);
         showGameOverlay();
     }
 }
