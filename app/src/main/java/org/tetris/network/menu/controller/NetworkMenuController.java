@@ -25,7 +25,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     private Router router;
     private final GameClient client;
-    private boolean isHost = true;
+    private boolean isHost;  // 기본값 제거 - Model에서 동기화
     private boolean shouldReleaseResources;
 
     @FXML
@@ -76,6 +76,9 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         setupGameModeCombo();
         setupModelListeners();
         resetUi();
+
+        // Model에서 isHost 상태 복원 (게임 오버 후 돌아올 때 중요)
+        this.isHost = model.getIsHost();
 
         if (client != null) {
             client.setMenuExecutor(this);
