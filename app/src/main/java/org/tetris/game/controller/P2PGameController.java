@@ -547,7 +547,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         resetGameController();
         hideGameOverlay();
         if (router != null)
-            router.showNetworkMenu(true);
+            router.showStartMenu();
     }
 
     public void pause() {
