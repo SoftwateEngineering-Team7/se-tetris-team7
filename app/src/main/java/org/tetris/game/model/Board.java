@@ -279,22 +279,27 @@ public class Board extends BaseModel {
         }
     }
 
-    public boolean pushUp(int[] newRow) {
+    public boolean pushUp(List<int[]> newRows) {        
+        if(newRows.size() == 0) {
+            return true; // No rows to push, consider it successful
+        }
+
         boolean validPushUp = true;
-        // 1. 맨 윗줄 검사 (이미 블럭을 지웠으므로 순수 장애물만 검사됨)
-        if (!isRowEmpty(0)) {
-            // 공간 부족 시, 지웠던 블럭을 다시 그려주고 게임오버 처리할 수도 있지만,
-            // 어차피 게임오버이므로 false 리턴
-            validPushUp = false;
-        }
+        while(newRows.size() != 0){
+            int[] newRow = newRows.remove(0);
+            // 1. 맨 윗줄 검사 (이미 블럭을 지웠으므로 순수 장애물만 검사됨)
+            if (!validPushUp || !isRowEmpty(0)) {
+                validPushUp = false;
+            }
+            
+            // 2. 전체 보드 shift
+            for (int r = 0; r < height - 1; r++) {
+                System.arraycopy(board[r + 1], 0, board[r], 0, width);
+            }
 
-        // 2. 전체 보드 shift
-        for (int r = 0; r < height - 1; r++) {
-            System.arraycopy(board[r + 1], 0, board[r], 0, width);
+            // 3. 새 줄 추가
+            System.arraycopy(newRow, 0, board[height - 1], 0, width);
         }
-
-        // 3. 새 줄 추가
-        System.arraycopy(newRow, 0, board[height - 1], 0, width);
 
         return validPushUp;
     }

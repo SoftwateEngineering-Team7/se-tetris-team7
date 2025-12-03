@@ -581,7 +581,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
 
         processIncomingAttacks(player);
-        updateGameBoard(player);
+        updateUI();
         
         gm.spawnNewBlock();
         checkGameOverState();
@@ -648,16 +648,14 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     private void processIncomingAttacks(PlayerSlot player) {
-        while (true) {
-            int[] attackLine = player.attackModel.pop();
-            if (attackLine == null)
-                break;
-
-            boolean success = player.boardModel.pushUp(attackLine);
-            if (!success) {
-                player.gameModel.setGameOver(true);
-                break;
-            }
+        var attackRows = player.attackModel.popAttacks();
+        if(attackRows.isEmpty()){
+            return;
+        }
+        
+        boolean success = player.boardModel.pushUp(attackRows);
+        if(!success){
+            player.gameModel.setGameOver(true);
         }
     }
 
