@@ -32,6 +32,8 @@ public class DualGameControllerTest extends ApplicationTest {
         MvcBundle bundle = gameFactory.create();
         dualGameModel = (DualGameModel) bundle.model();
         stage.setScene(bundle.view().getScene());
+        stage.setWidth(1400);
+        stage.setHeight(820);
         stage.setTitle("Dual Game Test");
         stage.show();
     }

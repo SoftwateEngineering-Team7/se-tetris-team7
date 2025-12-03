@@ -28,6 +28,8 @@ public class GameControllerTest extends ApplicationTest {
         gameModel = (GameModel) bundle.model();
         stage.setScene(bundle.view().getScene());
         stage.setTitle("Game Test");
+        stage.setWidth(800);
+        stage.setHeight(800);
         stage.show();
     }
 

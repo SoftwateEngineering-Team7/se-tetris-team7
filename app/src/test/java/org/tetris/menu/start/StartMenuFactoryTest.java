@@ -84,10 +84,8 @@ public class StartMenuFactoryTest {
                 assertEquals("네 번 이동 후 인덱스가 4이어야 합니다", 4, model.getSelectedIndex());
                 
                 model.move(1);
-                assertEquals("다섯 번 이동 후 인덱스가 5이어야 합니다", 5, model.getSelectedIndex());
+                assertEquals("다섯 번 이동 후 인덱스가 0이어야 합니다", 0, model.getSelectedIndex());
 
-                model.move(1);
-                assertEquals("여섯 번 이동 후 인덱스가 0으로 순환되어야 합니다", 0, model.getSelectedIndex());
             }
         } catch (RuntimeException e) {
             // FXML 파일 문제로 인한 예외는 예상됨
