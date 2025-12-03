@@ -130,10 +130,6 @@ public class ServerThread {
                     } else if (command instanceof ReadyCommand) {
                         ReadyCommand readyCmd = (ReadyCommand) command;
                         GameServer.getInstance().onClientReady(ServerThread.this, readyCmd.getIsReady());
-                    } else if (command instanceof GameOverCommand) {
-                        // 게임 오버 처리 - 게임 종료 상태로 변경
-                        GameServer.getInstance().endGame();
-                        GameServer.getInstance().broadcast(command); // 모두에게 알림
                     } else if (command instanceof PauseCommand) {
                         // 일시정지 커맨드는 상대방에게 릴레이
                         PauseCommand pauseCmd = (PauseCommand) command;
@@ -161,6 +157,10 @@ public class ServerThread {
                         System.out.println("[SERVER-THREAD] Broadcasting snapshot at globalSeq=" +
                                 snapshot.getAuthoritativeSeq());
                         GameServer.getInstance().broadcast(snapshot);
+                    } else if (command instanceof RequestSyncCommand) {
+                        // Ready 상태 동기화 요청 - 상대방의 현재 Ready 상태를 응답
+                        System.out.println("[SERVER-THREAD] RequestSyncCommand received");
+                        GameServer.getInstance().syncReadyState(ServerThread.this);
                     } else {
                         // 그 외의 커맨드(이동, 공격 등)는 상대방에게 릴레이
                         GameServer.getInstance().sendToOtherClient(ServerThread.this, command);

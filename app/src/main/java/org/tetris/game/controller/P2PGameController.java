@@ -62,7 +62,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void initialize() {
         super.initialize();
-
+        updateTimeAttackVisibility();
         // 연결 끊김 오버레이의 메인 메뉴 버튼 설정
         Platform.runLater(() -> {
             if (disconnectMenuButton != null) {
@@ -91,6 +91,27 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         return player2;
     }
 
+    private void updateControlLabels() {
+        KeyCode leftKey = KeyLayout.getLeftKey(PlayerId.PLAYER1);
+        KeyCode rightKey = KeyLayout.getRightKey(PlayerId.PLAYER1);
+        KeyCode upKey = KeyLayout.getUpKey(PlayerId.PLAYER1);
+        KeyCode downKey = KeyLayout.getDownKey(PlayerId.PLAYER1);
+        KeyCode hardDropKey = KeyLayout.getHardDropKey(PlayerId.PLAYER1);
+
+        if (moveControlLabel1 != null) {
+            moveControlLabel1.setText("Move: " + leftKey.getName() + " / " + rightKey.getName());
+        }
+        if (rotateControlLabel1 != null) {
+            rotateControlLabel1.setText("Rotate: " + upKey.getName());
+        }
+        if (softDropControlLabel1 != null) {
+            softDropControlLabel1.setText("Down: " + downKey.getName());
+        }
+        if (hardDropControlLabel1 != null) {
+            hardDropControlLabel1.setText("Drop: " + hardDropKey.getName());
+        }
+    }
+
     /**
      * 현재 플레이어가 호스트인지 확인
      */
@@ -101,6 +122,13 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     protected void handleKeyPress(KeyEvent e) {
         // P2P 모드에서 P 키로 일시정지
+        PlayerSlot localPlayer = getLocalPlayer();
+
+        if(localPlayer == null || localPlayer.gameModel.isGameOver()){
+            e.consume();
+            return;
+        }
+
         if (e.getCode() == KeyCode.P) {
             if (isHost()) {
                 // 호스트: 게임을 실제로 일시정지하고 상대방에게 동기화
@@ -114,9 +142,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         }
 
         // 로컬 플레이어의 입력만 처리하고 서버로 커맨드 전송
-        PlayerSlot localPlayer = getLocalPlayer();
-        if (localPlayer == null || localPlayer.gameModel.isPaused() || 
-            localPlayer.gameModel.isGameOver()) {
+        if (localPlayer.gameModel.isPaused()) {
             return;
         }
 
@@ -451,7 +477,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                     + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
             if (remotePlayer != null) {
                 remotePlayer.boardModel.moveLeft();
-                updateGameBoard(remotePlayer);
+                updateUI();
             }
         });
     }
@@ -464,7 +490,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                     + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
             if (remotePlayer != null) {
                 remotePlayer.boardModel.moveRight();
-                updateGameBoard(remotePlayer);
+                updateUI();
             }
         });
     }
@@ -475,7 +501,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             PlayerSlot remotePlayer = getRemotePlayer();
             if (remotePlayer != null) {
                 remotePlayer.boardModel.rotate();
-                updateGameBoard(remotePlayer);
+                updateUI();
             }
         });
     }
@@ -488,14 +514,14 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                 if (remotePlayer.boardModel.moveDown()) {
                     remotePlayer.scoreModel.softDrop(1);
                 }
-                updateGameBoard(remotePlayer);
+                updateUI();
             }
         });
     }
 
     @Override
     public void hardDrop() {
-        
+
     }
 
     @Override
@@ -561,7 +587,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
                 // 기존 게임 루프 정리
                 stopGame();
-                ;
 
                 // 게임 루프 변수 리셋
                 lastUpdate = 0L;
@@ -580,6 +605,10 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                 // Reset player slots
                 player1.reset();
                 player2.reset();
+
+                // 게임 모드 설정 (TIME_ATTACK, ITEM 등)
+                setUpGameMode(settings.getGameMode());
+                System.out.println("[P2P-CONTROLLER] GameMode set to: " + settings.getGameMode());
 
                 // 일시정지 소유자 초기화
                 pauseOwner = 0;
@@ -609,7 +638,17 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         Platform.runLater(() -> {
             stopGame();
             // 로컬 플레이어(나)의 게임이 끝났으므로 패배(Defeat) 메시지 표시
-            showGameOverDialog("Defeat", "You Lost\nMy Score: " + score);
+            PlayerSlot localPlayer = getLocalPlayer();
+            PlayerSlot remotePlayer = getRemotePlayer();
+
+            if(localPlayer == null || remotePlayer == null){
+                return;
+            }
+
+            localPlayer.gameModel.setGameOver(true);
+            remotePlayer.gameModel.setGameOver(true);
+
+            showGameOverDialog("Defeat", "You Lost\nMy Score: " + score + "\nOpponent Score: " + remotePlayer.scoreModel.getScore());
         });
     }
 
@@ -625,8 +664,18 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             createReplayData(isWinner);
             
             // 서버 결과에 따라 메시지 분기
+            PlayerSlot localPlayer = getLocalPlayer();
+            PlayerSlot remotePlayer = getRemotePlayer();
+
+            if (localPlayer == null || remotePlayer == null) {
+                return;
+            }
+
+            localPlayer.gameModel.setGameOver(true);
+            remotePlayer.gameModel.setGameOver(true);
+
             String title = isWinner ? "Victory!" : "Defeat";
-            String message = (isWinner ? "You Won!" : "You Lost") + "\nOpponent Score: " + score;
+            String message = (isWinner ? "You Won!" : "You Lost") +"\nMy Score: " + localPlayer.scoreModel.getScore() + "\nOpponent Score: " + score;
 
             showGameOverDialog(title, message);
         });
@@ -637,7 +686,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         resetGameController();
         hideGameOverlay();
         if (router != null)
-            router.showNetworkMenu(getLocalPlayer() == player1); // 호스트 여부 전달
+            router.showNetworkMenu(isHost(), true); // 호스트 여부 전달
     }
 
     @Override
@@ -646,7 +695,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         resetGameController();
         hideGameOverlay();
         if (router != null)
-            router.showNetworkMenu(true);
+            router.showStartMenu();
     }
 
     public void pause() {
