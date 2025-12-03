@@ -423,6 +423,13 @@
                             <Font name="Arial Bold" size="16.0" />
                         </font>
                     </Button>
+                    <Button fx:id="replayButton" text="REPLAY"
+                            prefWidth="150" prefHeight="40"
+                            style="-fx-background-color: #FFA500; -fx-text-fill: white; -fx-background-radius: 5;">
+                        <font>
+                            <Font name="Arial Bold" size="16.0" />
+                        </font>
+                    </Button>
                     <Button fx:id="menuButton" text="MENU"
                             prefWidth="150" prefHeight="40"
                             style="-fx-background-color: #533483; -fx-text-fill: white; -fx-background-radius: 5;">

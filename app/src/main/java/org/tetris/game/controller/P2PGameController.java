@@ -39,6 +39,9 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @FXML
     private Label opponentPingLabel;
 
+    @FXML
+    private Button replayButton;
+
     private GameClient client;
 
     // 상대방 연결 끊김 플래그
@@ -64,6 +67,10 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         Platform.runLater(() -> {
             if (disconnectMenuButton != null) {
                 disconnectMenuButton.setOnAction(e -> goToMainMenuFromDisconnect());
+            }
+            if (replayButton != null) {
+                replayButton.setOnAction(e -> onReplayButtonClicked());
+                replayButton.setVisible(false); // 초기에는 숨김
             }
         });
     }
@@ -125,18 +132,24 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         if (action != null) {
             // 1. 로컬 시퀀스 부여
             long localSeq = ++localSeqCounter;
-            InputCommand cmd = new InputCommand(model.getPlayerNumber(), localSeq, action);
+            InputCommand cmd = new InputCommand(model.getPlayerNumber(), localSeq, action, gameStartTime);
 
             // 2. 서버에 전송
             client.sendCommand(cmd);
 
-            // 3. 입력 로그에 저장
+            // 3. 입력 로그에 저장 (네트워크 동기화용)
             inputLog.addLast(cmd);
             if (inputLog.size() > INPUT_LOG_SIZE) {
                 inputLog.removeFirst();
             }
+            
+            // 4. Replay용 로그에도 저장
+            player1InputLog.addLast(cmd);
+            if (player1InputLog.size() > INPUT_LOG_SIZE) {
+                player1InputLog.removeFirst();
+            }
 
-            // 4. 낙관적 로컬 적용 (즉시 반영)
+            // 5. 낙관적 로컬 적용 (즉시 반영)
             applyInputLocally(localPlayer, action);
 
             e.consume();
@@ -282,6 +295,54 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      */
     private void cleanupNetworkResources() {
         try {
+            // 게임 오버 상태일 때만 리플레이 데이터 생성
+            if (isGameOver) {
+                if (gameLoop != null) {
+                    gameLoop.stop();
+                }
+                hideGameOverlay(); // 게임 오버 오버레이가 표시되어 있다면 숨김
+
+                // Replay 데이터 생성
+                if (player1 != null && player2 != null) {
+                    long gameDuration = System.currentTimeMillis() - gameStartTime;
+
+                    // 승자 판정: player1은 로컬(ME), player2는 상대(OPPONENT)
+                    boolean iLost = player1.gameModel.isGameOver();
+                    boolean opponentLost = player2.gameModel.isGameOver();
+                    boolean meWon;
+                    
+                    if (iLost && !opponentLost) {
+                        meWon = false; // 내가 졌음
+                    } else if (!iLost && opponentLost) {
+                        meWon = true; // 내가 이김
+                    } else {
+                        // 둘 다 게임오버 -> 점수 비교
+                        meWon = player1.scoreModel.getScore() > player2.scoreModel.getScore();
+                    }
+
+                    // Replay 데이터 생성 (currentSettings는 gameStart에서 저장한 것)
+                    if (currentSettings != null) {
+                        int myScore = player1.scoreModel.getScore();
+                        int opponentScore = player2.scoreModel.getScore();
+                        
+                        lastReplayData = new org.tetris.game.model.ReplayData(
+                                currentSettings,
+                                new java.util.ArrayList<>(player1InputLog),  // 내 입력
+                                new java.util.ArrayList<>(player2InputLog),  // 상대 입력
+                                gameDuration,
+                                myScore,          // 내 최종 점수
+                                opponentScore,    // 상대 최종 점수
+                                meWon             // 내가 이겼는지
+                        );
+
+                        System.out.println("[REPLAY] Captured - myInputs: " + player1InputLog.size() +
+                                ", opponentInputs: " + player2InputLog.size() +
+                                ", myScore: " + myScore + ", opponentScore: " + opponentScore +
+                                ", meWon: " + meWon);
+                    }
+                }
+            }
+
             // 클라이언트 연결 종료
             if (client != null) {
                 client.disconnect();
@@ -380,15 +441,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         client.sendCommand(new RestartCommand());
     }
 
-    @Override
-    protected void checkGameOverState() {
-        super.checkGameOverState();
-        if (player1 != null && player2 != null) {
-            if (player1.gameModel.isGameOver())
-                client.sendCommand(new GameResultCommand(true, player1.scoreModel.getScore()));
-        }
-    }
-
     // --- GameCommandExecutor Implementation (Remote Player Updates) ---
 
     @Override
@@ -465,6 +517,26 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void gameStart(MatchSettings settings) {
         Platform.runLater(() -> {
+            // 게임 시작 시 상태 초기화
+            isGameOver = false;
+            if (player1 != null) player1.gameModel.setPaused(false);
+            if (player2 != null) player2.gameModel.setPaused(false);
+            pauseOwner = 0;
+            opponentDisconnected = false;
+
+            // 시퀀스 초기화
+            localSeqCounter = 0;
+            lastConfirmedGlobalSeq = 0;
+            inputLog.clear();
+            lastSnapshot = null;
+
+            // Replay 데이터 초기화
+            player1InputLog.clear();
+            player2InputLog.clear();
+            gameStartTime = System.currentTimeMillis();
+            lastReplayData = null;
+            currentSettings = settings;
+
             if (player1 != null && player2 != null) {
                 System.out.println("[P2P-CONTROLLER] gameStart() received");
 
@@ -751,6 +823,56 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         }
     }
 
+    @Override
+    protected void checkGameOverState() {
+        super.checkGameOverState();
+
+        if (isGameOver && lastReplayData == null) {
+            // Replay 데이터 생성
+            if (player1 != null && player2 != null && currentSettings != null) {
+                long gameDuration = System.currentTimeMillis() - gameStartTime;
+                
+                // 승자 판정: player1은 로컬(ME), player2는 상대(OPPONENT)
+                // 내가 이긴 경우: 상대가 게임오버 & 내가 게임오버 아님
+                boolean iLost = player1.gameModel.isGameOver();
+                boolean opponentLost = player2.gameModel.isGameOver();
+                boolean meWon = !iLost && opponentLost;
+                
+                // 내 점수와 상대 점수
+                int myScore = player1.scoreModel.getScore();
+                int opponentScore = player2.scoreModel.getScore();
+                
+                lastReplayData = new org.tetris.game.model.ReplayData(
+                        currentSettings,
+                        new java.util.ArrayList<>(player1InputLog),  // 내 입력
+                        new java.util.ArrayList<>(player2InputLog),  // 상대 입력
+                        gameDuration,
+                        myScore,          // 내 최종 점수
+                        opponentScore,    // 상대 최종 점수
+                        meWon             // 내가 이겼는지
+                );
+                System.out.println("[REPLAY] Captured - myInputs: " + player1InputLog.size() +
+                                   ", opponentInputs: " + player2InputLog.size() +
+                                   ", myScore: " + myScore + ", opponentScore: " + opponentScore +
+                                   ", meWon: " + meWon);
+                                   
+                // Replay 버튼 활성화
+                Platform.runLater(() -> {
+                    if (replayButton != null) {
+                        replayButton.setVisible(true);
+                        replayButton.setManaged(true);
+                    }
+                });
+            }
+        }
+    }
+
+    private void onReplayButtonClicked() {
+        if (lastReplayData != null && router != null) {
+            router.showReplay(lastReplayData);
+        }
+    }
+
     /**
      * 상대방 ping 업데이트
      */
@@ -782,8 +904,8 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     private long localSeqCounter = 0; // 내가 보낸 입력의 로컬 시퀀스
     private long lastConfirmedGlobalSeq = 0; // 마지막으로 확인된 전역 시퀀스
 
-    // 입력 로그 (최근 200개 유지)
-    private static final int INPUT_LOG_SIZE = 200;
+    // 입력 로그 (최근 1000개 유지)
+    private static final int INPUT_LOG_SIZE = 1000;
     private final java.util.Deque<InputCommand> inputLog = new java.util.ArrayDeque<>(INPUT_LOG_SIZE);
 
     // 스냅샷 캐시 (가장 최근 것만 유지)
@@ -791,6 +913,13 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     // 블록 고정 카운터 (호스트만 사용)
     private int localBlockCount = 0;
+
+    // ===== Replay System Fields =====
+    private long gameStartTime;
+    private final java.util.Deque<InputCommand> player1InputLog = new java.util.ArrayDeque<>();
+    private final java.util.Deque<InputCommand> player2InputLog = new java.util.ArrayDeque<>();
+    private org.tetris.game.model.ReplayData lastReplayData;
+    private MatchSettings currentSettings; // 게임 시작 시 설정 저장
 
     /**
      * GameCommandExecutor.executeInput() 구현
@@ -811,7 +940,8 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             if (cmd.getPlayerNumber() == model.getPlayerNumber()) {
                 System.out.println("[P2P] My input confirmed: globalSeq=" + cmd.getGlobalSeq());
                 // 입력 로그에서 globalSeq 업데이트
-                updateInputLogWithGlobalSeq(cmd);
+                updateInputLogWithGlobalSeq(cmd, inputLog); // 기존 inputLog 업데이트
+                updateInputLogWithGlobalSeq(cmd, player1InputLog); // Replay용 로그 업데이트
                 return;
             }
 
@@ -819,6 +949,11 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             PlayerSlot remotePlayer = getRemotePlayer();
             if (remotePlayer != null) {
                 applyInputToPlayer(remotePlayer, cmd.getAction());
+                // 상대방 입력은 player2 로그에 저장
+                player2InputLog.addLast(cmd);
+                if (player2InputLog.size() > INPUT_LOG_SIZE) {
+                    player2InputLog.removeFirst();
+                }
             }
         });
     }
@@ -826,8 +961,8 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     /**
      * 입력 로그에서 해당 로컬 시퀀스를 찾아 globalSeq 업데이트
      */
-    private void updateInputLogWithGlobalSeq(InputCommand confirmedCmd) {
-        for (InputCommand logged : inputLog) {
+    private void updateInputLogWithGlobalSeq(InputCommand confirmedCmd, java.util.Deque<InputCommand> log) {
+        for (InputCommand logged : log) {
             if (logged.getPlayerNumber() == confirmedCmd.getPlayerNumber() &&
                     logged.getLocalSeq() == confirmedCmd.getLocalSeq()) {
                 logged.setGlobalSeq(confirmedCmd.getGlobalSeq());
