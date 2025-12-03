@@ -9,7 +9,7 @@ import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.items.*;
 
 public class ItemController {
-    private static final int ITEM_LINE_THRESHOLD = 5;
+    private static final int ITEM_LINE_THRESHOLD = 1;
 
     private Item currentItem;
     private int lineClearedCount;
@@ -59,7 +59,7 @@ public class ItemController {
 
         resetCurrentItem();
 
-        Block itemBlock = currentItem.getItemBlock(block);
+        Block itemBlock = currentItem.getItemBlock(block, random);
         itemBlock.setIsItemBlock(true);
 
         return itemBlock;
