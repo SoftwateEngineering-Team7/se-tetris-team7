@@ -2,10 +2,18 @@ package org.tetris;
 
 import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.SettingMenuFactory;
+import org.tetris.menu.setting.controller.SettingMenuController;
 import org.tetris.menu.start.StartMenuFactory;
 import org.tetris.scoreboard.ScoreBoardFactory;
+import org.tetris.network.menu.NetworkMenuFactory;
+import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
+import org.tetris.game.P2PGameFactory;
+import org.tetris.network.menu.controller.NetworkMenuController;
+import org.tetris.game.controller.DualGameController;
 import org.tetris.game.controller.GameController;
+import org.tetris.game.controller.P2PGameController;
+import org.tetris.game.model.GameMode;
 import org.tetris.scoreboard.controller.ScoreBoardController;
 import org.tetris.scoreboard.model.ScoreBoard;
 import org.tetris.shared.*;
@@ -22,7 +30,10 @@ public final class Router {
     private final Setting setting; // 전역 Setting 객체
     private final MvcFactory<?, ?> settingsFactory;
     private final MvcFactory<?, ?> gameFactory;
+    private final MvcFactory<?, ?> dualGameFactory;
     private final MvcFactory<ScoreBoard, ScoreBoardController> scoreBoardFactory;
+    private final MvcFactory<?, ?> networkMenuFactory;
+    private final MvcFactory<?, ?> p2pGameFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -34,6 +45,9 @@ public final class Router {
         this.settingsFactory = new SettingMenuFactory(setting);
         this.gameFactory = new GameFactory();
         this.scoreBoardFactory = new ScoreBoardFactory();
+        this.networkMenuFactory = new NetworkMenuFactory();
+        this.dualGameFactory = new DualGameFactory();
+        this.p2pGameFactory = new P2PGameFactory();
 
         setStageSize();
         stage.setTitle("Tetris");
@@ -43,11 +57,31 @@ public final class Router {
     /* --------- 공개 API ---------- */
 
     public void showStartMenu() {
+        setStageSize();
         show(startMenuFactory);
     }
 
     public void showSettings() {
-        show(settingsFactory);
+        var controller = show(settingsFactory);
+        if (controller instanceof SettingMenuController settingController) {
+            settingController.setupSettingMenu();
+        }
+    }
+
+    public void showNetworkMenu(boolean isHost) {
+        setStageSize();
+        var controller = show(networkMenuFactory);
+        if (controller instanceof NetworkMenuController networkMenuController) {
+            networkMenuController.configureRole(isHost, false);
+        }
+    }
+
+    public void showNetworkMenu(boolean isHost, boolean preserveConnection) {
+        setStageSize();
+        var controller = show(networkMenuFactory);
+        if (controller instanceof NetworkMenuController networkMenuController) {
+            networkMenuController.configureRole(isHost, preserveConnection);
+        }
     }
 
     public void showGamePlaceholder(boolean itemMode) {
@@ -58,10 +92,30 @@ public final class Router {
         }
     }
 
+    public void showDualGamePlaceholder(GameMode mode) {
+        setStageSize(1400, 820);
+        var controller = show(dualGameFactory);
+        if (controller instanceof DualGameController gameController) {
+            gameController.setUpGameMode(mode);
+            gameController.initialize();
+        }
+    }
+
+    public void showP2PGamePlaceholder(GameMode mode, org.tetris.network.dto.MatchSettings settings) {
+        setStageSize(1400, 820);
+        var controller = show(p2pGameFactory);
+        if (controller instanceof P2PGameController gameController) {
+            gameController.setUpGameMode(mode);
+            gameController.initialize();
+            // Pass MatchSettings to start the game with correct player number
+            gameController.gameStart(settings);
+        }
+    }
+
     public void showScoreBoard(boolean fromGame, boolean itemMode, int score) {
         var bundle = scoreBoardFactory.create();
         var controller = bundle.controller();
-        
+
         if (controller instanceof ScoreBoardController sbc) {
             sbc.setFromGame(fromGame, score);
             sbc.setItemMode(itemMode);
@@ -90,10 +144,15 @@ public final class Router {
         stage.centerOnScreen();
     }
 
+    public void setStageSize(int width, int height) {
+        stage.setWidth(width);
+        stage.setHeight(height);
+        stage.centerOnScreen();
+    }
+
     /* --------- 화면 전환 로직 ---------- */
 
-    private <M extends BaseModel, C extends BaseController<M>>
-    C show(MvcFactory<M, C> factory) {
+    private <M extends BaseModel, C extends BaseController<M>> C show(MvcFactory<M, C> factory) {
         // 이전 화면 정리
         if (current != null) {
             current.controller().cleanup();
@@ -115,8 +174,7 @@ public final class Router {
         return bundle.controller();
     }
 
-    private <M extends BaseModel, C extends BaseController<M>>
-    C showPopup(MvcFactory<M, C> factory, String title) {
+    private <M extends BaseModel, C extends BaseController<M>> C showPopup(MvcFactory<M, C> factory, String title) {
         // 새 화면 생성 + 연결
         MvcBundle<M, ViewWrap, C> bundle = factory.create();
 
@@ -129,12 +187,12 @@ public final class Router {
         Stage popupStage = new Stage();
         popupStage.setTitle(title);
         popupStage.setScene(bundle.view().getScene());
-        
+
         // 팝업 설정
         popupStage.initModality(Modality.APPLICATION_MODAL); // 모달 팝업
         popupStage.initOwner(stage); // 부모 창 설정
         popupStage.setResizable(false);
-        
+
         // 팝업 크기 설정 (필요에 따라 조정)
         popupStage.setWidth(600);
         popupStage.setHeight(440);

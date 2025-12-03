@@ -1,5 +1,6 @@
 package org.tetris.game.model;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class Board extends BaseModel {
         board = new int[height][width];
         activeBlock = null;
 
-        initialPos = new Point(-1, width / 2);
+        initialPos = new Point(0, width / 2);
         curPos = new Point(initialPos);
     }
 
@@ -42,87 +43,56 @@ public class Board extends BaseModel {
 
     // 블럭 배치
     public void placeBlock(Point pos, Block block) {
-        for (int r = 0; r < block.height(); r++) {
-            for (int c = 0; c < block.width(); c++) {
-                if (block.getCell(r, c) != 0) {
-                    int row = pos.r - block.pivot.r + r;
-                    int col = pos.c - block.pivot.c + c;
-
-                    if (isInBound(row, col))
-                        board[row][col] = block.getCell(r, c);
-                }
-            }
+        for (Point p : block.getBlockPoints()) {
+            Point blockPoint = pos.add(block.toPivot(p));
+            if (isInBound(blockPoint))
+                board[blockPoint.r][blockPoint.c] = block.getCell(p);
         }
     }
 
     public void removeBlock(Point pos, Block block) {
-        for (int r = 0; r < block.height(); r++) {
-            for (int c = 0; c < block.width(); c++) {
-                if (block.getCell(r, c) != 0) {
-                    int row = pos.r - block.pivot.r + r;
-                    int col = pos.c - block.pivot.c + c;
-
-                    if (isInBound(row, col))
-                        board[row][col] = 0;
-                }
-            }
+        for (Point p : block.getBlockPoints()) {
+            Point blockPoint = pos.add(block.toPivot(p));
+            if (isInBound(blockPoint))
+                board[blockPoint.r][blockPoint.c] = 0;
         }
+    }
+
+    public void removeCurrentBlock() {
+        removeBlock(curPos, activeBlock);
     }
 
     // 블럭이 해당 위치에 배치 가능한지 확인
-    public boolean isValidPos(Point pos, Block activeBlock) {
-        for (int r = 0; r < activeBlock.height(); r++) {
-            for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getCell(r, c) == 0)
-                    continue;
+    public boolean isValidPos(Point pos, Block block, boolean force) {
+        for (Point bp : block.getBlockPoints()) {
+            Point blockPoint = pos.add(block.toPivot(bp));
 
-                int row = pos.r + (r - activeBlock.pivot.r); // pos == pivot 좌표 전제
-                int col = pos.c + (c - activeBlock.pivot.c);
+            if (isOutBound(blockPoint))
+                return false;
 
-                // 1) 좌우 경계는 항상 강제
-                if (col < 0 || col >= width)
-                    return false;
+            if (blockPoint.r < 0)
+                continue;
 
-                // 2) 위쪽은 스킵, 아래쪽은 차단
-                if (row < 0)
-                    continue;
-                if (row >= height)
-                    return false;
-
-                // 3) 충돌
-                if (board[row][col] != 0)
-                    return false;
-            }
+            if (!force && hasBlock(blockPoint))
+                return false;
         }
         return true;
     }
 
-    public boolean isInBound(Point pos, Block activeBlock) {
-        for (int r = 0; r < activeBlock.height(); r++) {
-            for (int c = 0; c < activeBlock.width(); c++) {
-                if (activeBlock.getCell(r, c) == 0)
-                    continue;
-
-                int row = pos.r + (r - activeBlock.pivot.r); // pos == pivot 좌표 전제
-                int col = pos.c + (c - activeBlock.pivot.c);
-
-                // 1) 좌우 경계는 항상 강제
-                if (col < 0 || col >= width)
-                    return false;
-
-                // 2) 위쪽은 스킵, 아래쪽은 차단
-                if (row < 0)
-                    continue;
-                if (row >= height)
-                    return false;
-            }
-        }
-        return true;
+    public boolean isValidPos(Point pos, Block block) {
+        return isValidPos(pos, block, false);
     }
 
-    // 보드 크기 에 있는지 확인
-    public boolean isInBound(int row, int col) {
-        return row >= 0 && row < height && col >= 0 && col < width;
+    private boolean isInBound(Point pos) {
+        return pos.r >= 0 && pos.r < height && pos.c >= 0 && pos.c < width;
+    }
+
+    private boolean isOutBound(Point pos) {
+        return pos.c < 0 || pos.c >= width || pos.r >= height;
+    }
+
+    private boolean hasBlock(Point pos) {
+        return board[pos.r][pos.c] != 0;
     }
 
     // 새로운 블럭을 활성 블럭으로 설정 (배치 가능 여부 반환)
@@ -144,114 +114,81 @@ public class Board extends BaseModel {
         return curPos;
     }
 
+    public void setCurPos(Point currentPos) {
+        this.curPos = currentPos;
+    }
+
+    public boolean getIsForceDown() {
+        return activeBlock.isForceDown();
+    }
+
     // -------------------- 이동 관련 함수들 --------------------
     // (이동할 좌표 p'을 생성하고 기존 블럭은 제거, p'에 배치가 가능하다면 curPos에 p'을 할당, 마지막으로 curPos에 블럭 배치
     // 후 이동 여부 반환)
 
-    // 아래로 한칸 이동 함수
-    public boolean moveDown() {
-        if (activeBlock.getCanMove() == false)
-            return false;
-
-        boolean isMoved = false;
-        Point downPos = curPos.down();
+    private boolean tryMove(Point newPos, boolean force) {
         removeBlock(curPos, activeBlock);
 
-        if (isValidPos(downPos, activeBlock)) {
-            curPos = downPos;
-            isMoved = true;
+        if (isValidPos(newPos, activeBlock, force)) {
+            curPos = newPos;
+            placeBlock(curPos, activeBlock);
+            return true;
         }
 
         placeBlock(curPos, activeBlock);
-        return isMoved;
-    }
-
-    private boolean isForceDown;
-
-    public boolean getIsForceDown() {
-        return isForceDown;
-    }
-
-    public void setIsForceDown(boolean isForceDown) {
-        this.isForceDown = isForceDown;
-    }
-
-    public boolean moveDownForce() {
-        if (!isForceDown)
-            return false;
-
-        isForceDown = false;
-        Point downPos = curPos.down();
-        removeBlock(curPos, activeBlock);
-
-        if (isInBound(downPos, activeBlock)) {
-            isForceDown = true;
-            curPos = downPos;
-            placeBlock(curPos, activeBlock);
-
-            return true;
-
-        }
         return false;
+    }
+
+    // 아래로 한칸 이동 함수
+    public boolean moveDown() {
+
+        return tryMove(curPos.down(), false);
+    }
+
+    public boolean moveDown(boolean force) {
+
+        return tryMove(curPos.down(), force);
+    }
+
+    public boolean autoDown() {
+        return moveDown(activeBlock.isForceDown());
     }
 
     // 오른쪽 한칸 이동 함수
     public boolean moveRight() {
-        if (activeBlock.getCanMove() == false)
+        if (!activeBlock.getCanMove())
             return false;
 
-        boolean isMoved = false;
-        Point rightPos = curPos.right();
-        removeBlock(curPos, activeBlock);
-
-        if (isValidPos(rightPos, activeBlock)) {
-            curPos = rightPos;
-            isMoved = true;
-        }
-
-        placeBlock(curPos, activeBlock);
-        return isMoved;
+        return tryMove(curPos.right(), false);
     }
 
     // 왼쪽 한칸 이동 함수
     public boolean moveLeft() {
-        if (activeBlock.getCanMove() == false)
+        if (!activeBlock.getCanMove())
             return false;
 
-        boolean isMoved = false;
-        Point leftPos = curPos.left();
-        removeBlock(curPos, activeBlock);
-
-        if (isValidPos(leftPos, activeBlock)) {
-            curPos = leftPos;
-            isMoved = true;
-        }
-
-        placeBlock(curPos, activeBlock);
-        return isMoved;
+        return tryMove(curPos.left(), false);
     }
 
     public int hardDrop() {
-        if (activeBlock.getCanMove() == false)
-            return 0;
 
-        removeBlock(curPos, activeBlock);
         int dropDistance = 0;
-        while (isValidPos(curPos.down(), activeBlock)) {
-            curPos = curPos.down();
+        while (tryMove(curPos.down(), getIsForceDown())) {
             dropDistance++;
         }
-        placeBlock(curPos, activeBlock);
+
+        // placeBlock(curPos, activeBlock); // 중복 호출 제거됨
         return dropDistance;
     }
 
     // 시계방향 90도 회전 함수
     public boolean rotate() {
-        if (activeBlock.getCanRotate() == false)
+        if (!activeBlock.getCanRotate())
             return false;
 
         boolean isMoved = false;
         removeBlock(curPos, activeBlock);
+
         activeBlock.rotateCW();
 
         if (isValidPos(curPos, activeBlock)) {
@@ -295,26 +232,22 @@ public class Board extends BaseModel {
         }
     }
 
-    public java.util.List<Point> clearBomb(Point center) {
-        java.util.List<Point> targets = new java.util.ArrayList<>(9);
-
-        int r0 = center.r;
-        int c0 = center.c;
+    public List<Point> clearBomb(Point center) {
+        List<Point> targets = new ArrayList<>(9);
 
         for (int dr = -1; dr <= 1; dr++) {
             for (int dc = -1; dc <= 1; dc++) {
-                int r = r0 + dr;
-                int c = c0 + dc;
 
-                if (!isInBound(r, c))
+                Point dp = new Point(dr, dc).add(center);
+                if (!isInBound(dp))
                     continue;
 
                 // 비어있는 칸(0)은 굳이 추가하지 않으면 불필요한 작업을 줄일 수 있습니다.
                 // 만약 빈칸도 플래시하고 싶다면 아래 조건을 제거하세요.
-                if (board[r][c] == 0)
+                if (board[dp.r][dp.c] == 0)
                     continue;
 
-                targets.add(new Point(r, c));
+                targets.add(dp);
             }
         }
 
@@ -346,7 +279,66 @@ public class Board extends BaseModel {
         }
     }
 
-    // 보드 초기화
+    public boolean pushUp(List<int[]> newRows) {        
+        if(newRows.size() == 0) {
+            return true; // No rows to push, consider it successful
+        }
+
+        boolean validPushUp = true;
+        while(newRows.size() != 0){
+            int[] newRow = newRows.remove(0);
+            // 1. 맨 윗줄 검사 (이미 블럭을 지웠으므로 순수 장애물만 검사됨)
+            if (!validPushUp || !isRowEmpty(0)) {
+                validPushUp = false;
+            }
+            
+            // 2. 전체 보드 shift
+            for (int r = 0; r < height - 1; r++) {
+                System.arraycopy(board[r + 1], 0, board[r], 0, width);
+            }
+
+            // 3. 새 줄 추가
+            System.arraycopy(newRow, 0, board[height - 1], 0, width);
+        }
+
+        return validPushUp;
+    }
+    /**
+     * 특정 행(rowIndex)의 데이터를 가져와 공격용 라인을 생성합니다.
+     * 1. 블록이 채워져 있던 칸은 모두 회색(8)으로 변환합니다. [cite: 54]
+     * 2. 현재 활성 블럭(activeBlock)이 있던 위치는 빈칸(0)으로 구멍을 뚫습니다. [cite: 23]
+     */
+    public int[] getRowForAttack(int rowIndex) {
+        int[] originalRow = board[rowIndex];
+        int[] attackRow = new int[width];
+
+        // 1. 해당 줄의 데이터를 복사하되, 블럭이 있는 곳은 회색(8)으로 변환
+        for (int c = 0; c < width; c++) {
+            if (originalRow[c] != 0) {
+                attackRow[c] = 8; // 8 = Garbage Block Color (Gray)
+            } else {
+                attackRow[c] = 0; // 원래 빈 칸은 그대로 빈 칸
+            }
+        }
+
+        // 2. 현재 활성 블럭(이번에 줄을 지운 블럭)이 위치한 곳은 0으로 구멍 뚫기
+        if (activeBlock != null) {
+            for (Point p : activeBlock.getBlockPoints()) {
+                // 블럭의 로컬 좌표를 보드 전체 좌표로 변환
+                Point globalP = curPos.add(activeBlock.toPivot(p));
+
+                // 해당 블럭 조각이 지금 처리 중인 행(rowIndex)에 있다면 구멍(0) 처리
+                if (globalP.r == rowIndex && isInBound(globalP)) {
+                    attackRow[globalP.c] = 0;
+                }
+            }
+        }
+        return attackRow;
+    }
+
+    /**
+     * 보드를 초기 상태로 재설정합니다.
+     */
     public void reset() {
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {
@@ -360,9 +352,10 @@ public class Board extends BaseModel {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        int[][] boardCopy = getBoard();
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {
-                sb.append(board[r][c]).append(" ");
+                sb.append(boardCopy[r][c]).append(" ");
             }
             sb.append("\n");
         }

@@ -21,7 +21,7 @@ public class NextBlockModelTest {
             else if (block instanceof TBlock) counts[5]++;
             else if (block instanceof ZBlock) counts[6]++;
         }
-        
+
         return counts;
     }
 
@@ -69,64 +69,77 @@ public class NextBlockModelTest {
 
     @Test
     public void testPeekNext() {
-        NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
-        
-        // peekNext는 큐에서 블록을 제거하지 않아야 함
-        Block firstPeek = model.peekNext();
-        assertNotNull("첫 번째 peekNext는 null이 아니어야 합니다", firstPeek);
-        
-        Block secondPeek = model.peekNext();
-        assertNotNull("두 번째 peekNext는 null이 아니어야 합니다", secondPeek);
-        
-        // peekNext는 같은 블록을 반환해야 함 (타입만 비교)
-        assertEquals("peekNext는 같은 타입의 블록을 반환해야 합니다", 
-                    firstPeek.getClass(), secondPeek.getClass());
-    }
-
-    @Test
-    public void testPeekNextDoesNotRemove() {
-        NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
-        
-        // peekNext로 블록 확인
-        Block peeked = model.peekNext();
-        assertNotNull("peekNext는 블록을 반환해야 합니다", peeked);
-        
-        // getBlock으로 실제 블록 가져오기
-        Block gotten = model.getBlock();
-        assertNotNull("getBlock은 블록을 반환해야 합니다", gotten);
-        
-        // peekNext로 본 블록과 getBlock으로 가져온 블록의 타입이 같아야 함
-        assertEquals("peekNext와 getBlock은 같은 타입의 블록을 반환해야 합니다",
-                    peeked.getClass(), gotten.getClass());
-    }
-
-    @Test
-    public void testPeekNextWithEmptyQueue() {
-        // fillCount가 0이면 큐가 비어있고, peekNext가 자동으로 채워야 함
         NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 1);
         
-        // 큐를 비우기
+        // peekNext는 null이 아닌 Block을 반환해야 함
+        Block peeked = model.peekNext();
+        assertNotNull("peekNext는 null이 아니어야 합니다", peeked);
+        assertTrue("peekNext는 Block 인스턴스를 반환해야 합니다", peeked instanceof Block);
+        
         model.getBlock();
         
-        // peekNext는 자동으로 큐를 채워야 함
-        Block peeked = model.peekNext();
-        assertNotNull("peekNext는 빈 큐를 자동으로 채워야 합니다", peeked);
-        assertTrue("peekNext는 Block 인스턴스를 반환해야 합니다", peeked instanceof Block);
+        // peekNext는 자동으로 채워짐
+        Block firstPeeked = model.peekNext();
+        assertNotNull("peekNext는 null이 아니어야 합니다", firstPeeked);
+        assertTrue("peekNext는 Block 인스턴스를 반환해야 합니다", firstPeeked instanceof Block);
+
+        // peekNext는 여러 번 호출해도 같은 블록을 반환해야 함
+        Block secondPeek = model.peekNext();
+        assertEquals("peekNext를 여러 번 호출해도 같은 블록을 반환해야 합니다",
+                    firstPeeked.getClass(), secondPeek.getClass());
+
+        // peekNext 후 getBlock으로 가져온 블록이 같아야 함 (큐에서 제거되지 않았음을 확인)
+        Block gotten = model.getBlock();
+        assertEquals("peekNext와 getBlock은 같은 블록을 반환해야 합니다",
+                    firstPeeked.getClass(), gotten.getClass());
     }
 
     @Test
-    public void testPeekNextMultipleTimes() {
+    public void testSwapNext()
+    {
         NextBlockModel model = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
         
-        // 여러 번 peekNext 호출
-        Block peek1 = model.peekNext();
-        Block peek2 = model.peekNext();
-        Block peek3 = model.peekNext();
+        // 원래 다음 블록 확인
+        Block originalNext = model.peekNext();
+        assertNotNull("원래 다음 블록이 null이 아니어야 합니다", originalNext);
         
-        // 모두 같은 타입이어야 함
-        assertEquals("여러 번 peekNext를 호출해도 같은 블록을 반환해야 합니다",
-                    peek1.getClass(), peek2.getClass());
-        assertEquals("여러 번 peekNext를 호출해도 같은 블록을 반환해야 합니다",
-                    peek2.getClass(), peek3.getClass());
+        // 새로운 블록으로 교체
+        Block newBlock = new IBlock();
+        model.swapNext(newBlock);
+        
+        // 교체된 블록이 peekNext로 반환되는지 확인
+        Block swappedNext = model.peekNext();
+        assertEquals("swapNext 후 peekNext는 교체된 블록을 반환해야 합니다", 
+                    newBlock.getClass(), swappedNext.getClass());
+        
+        // getBlock으로도 교체된 블록이 반환되는지 확인
+        Block gotten = model.getBlock();
+        assertEquals("swapNext 후 getBlock은 교체된 블록을 반환해야 합니다",
+                    newBlock.getClass(), gotten.getClass());
+        
+        // 빈 큐에서 swapNext 테스트
+        NextBlockModel emptyModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 1);
+        emptyModel.getBlock();
+        
+        Block testBlock = new TBlock();
+        emptyModel.swapNext(testBlock); // 빈 큐에서도 정상 동작해야 함
+        
+        Block result = emptyModel.peekNext();
+        assertEquals("빈 큐에서 swapNext 후 peekNext는 교체된 블록을 반환해야 합니다", testBlock.getClass(),
+                result.getClass());
+    }
+
+    @Test
+    public void testConstructorWithSeed() {
+        long seed = 12345L;
+        NextBlockModel model1 = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, seed);
+        NextBlockModel model2 = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5, seed);
+
+        for (int i = 0; i < 10; i++) {
+            Block b1 = model1.getBlock();
+            Block b2 = model2.getBlock();
+            assertEquals("같은 시드로 생성된 모델은 같은 블록 순서를 가져야 합니다 (" + i + "번째)", b1.getClass(),
+                    b2.getClass());
+        }
     }
 }

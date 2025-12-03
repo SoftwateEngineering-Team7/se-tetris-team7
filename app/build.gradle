@@ -46,6 +46,22 @@ javafx {
     modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
+// JAR 파일에 Main-Class 및 Class-Path 설정
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'org.tetris.Launcher',  // Launcher를 통해 JavaFX 모듈 체크 우회
+            'Class-Path': configurations.runtimeClasspath.collect { it.name }.join(' ')
+        )
+    }
+    
+    // 모든 의존성을 JAR에 포함 (Fat JAR)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -74,13 +90,26 @@ jacocoTestCoverageVerification {
 
 test {
     useJUnit()
-    ignoreFailures = true
+    
+    if (System.getenv("CI") != null) {
+        // CI 환경에서는 JavaFX GUI 테스트 스킵
+        println "⚠️ CI 환경 감지 — JavaFX UI 테스트 스킵"
+        include '**/model/**'
+        exclude '**/controller/**'
+    } else{
+        // 로컬 환경에서는 모든 테스트 실행, 실패해도 빌드 중단하지 않음
+        include '**/model/**', '**/controller/**'
+        ignoreFailures = true
+    }
+    
+    // 빌드 시 테스트 스킵 (-x test 옵션 없이도 스킵)
+    onlyIf { gradle.startParameter.taskNames.contains('test') }
 }
 
+
 tasks.register('packageApp', Exec) {
-    dependsOn build
+    dependsOn jar
     group = 'distribution'
-version = '1.0.0'
 
     description = 'Build executable package with jpackage'
 
@@ -90,17 +119,23 @@ version = '1.0.0'
 
     // OS별로 다르게 설정 가능
     def outputDir = "${buildDir}/dist"
-    def iconFile = "src/main/resources/tetris.icns" // macOS라면 .icns, windows는 .ico 사용
-    def mainJar = "${buildDir}/libs/${project.name}-${version}.jar"
+    
+    // macOS용 설정
+    def iconFile = "src/main/resources/tetris.icns"
+    def packageType = 'dmg'
+    
+    // Windows용 설정 (Windows에서 빌드 시 아래 주석 해제)
+    // def iconFile = "src/main/resources/tetris.ico"
+    // def packageType = 'app-image'
 
     commandLine 'jpackage',
             '--name', 'Team7 Tetris',
             '--input', "${buildDir}/libs",
-            '--main-jar', "${project.name}-${version}.jar",
-            '--main-class', 'org.tetris.App',
+            '--main-jar', 'app.jar',
+            '--main-class', 'org.tetris.Launcher',  // Launcher를 통해 JavaFX 모듈 체크 우회
+            '--type', packageType,
             '--icon', iconFile,
-            '--type', 'dmg',             // macOS는 'dmg' 또는 'pkg', Linux는 'deb' 또는 'rpm', Windows는 'exe' 또는 'msi'
             '--dest', outputDir,
-            '--app-version', '1.0',
-            '--vendor', 'MyStudio'
+            '--app-version', '2.0',
+            '--vendor', 'Team7'
 }

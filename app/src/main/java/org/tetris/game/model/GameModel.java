@@ -2,35 +2,33 @@ package org.tetris.game.model;
 
 import org.tetris.shared.BaseModel;
 import org.util.Difficulty;
+import org.tetris.game.controller.ItemController;
 import org.tetris.game.model.blocks.*;
-import org.tetris.game.model.items.*;
+import org.tetris.game.model.items.ItemActivation;
 
 public class GameModel extends BaseModel {
-
-    private final static int ITEM_MODE_LINE_THRESHOLD = 10;
 
     public final static int MAX_DROP_INTERVAL = 60; // 최대 낙하 간격 (레벨 1)
     public final static int MIN_DROP_INTERVAL = 10; // 드롭 간격 감소량
 
-    private final NextBlockModel nextBlockModel;
+    private NextBlockModel nextBlockModel;
     private final Board board;
     private ScoreModel scoreModel;
 
     private int totalLinesCleared;
-    private int localLineCleared = 0;
     private int level;
 
     private boolean isItemMode = false;
-    private boolean isItemUsed = true;
-    private Item activeItem = Item.getRandomItem();
-
+    private ItemController itemController = new ItemController();
+    private long nextBlockSeed;
     // 게임 상태
     private boolean isGameOver;
     private boolean isPaused;
 
     public GameModel() {
         this.board = new Board();
-        this.nextBlockModel = new NextBlockModel(NextBlockModel.DEFAULT_BLOCK_PROB_LIST, 5);
+        this.nextBlockSeed = System.currentTimeMillis();
+        this.nextBlockModel = new NextBlockModel(Difficulty.getBlockProbList(), 5, nextBlockSeed);
         this.scoreModel = new ScoreModel();
         this.totalLinesCleared = 0;
         this.level = 1;
@@ -39,6 +37,17 @@ public class GameModel extends BaseModel {
 
         // 첫 블럭 설정
         spawnNewBlock();
+    }
+
+    public long getNextBlockSeed() {
+        return nextBlockSeed;
+    }
+
+    public void setNextBlockSeed(long nextBlockSeed) {
+        this.nextBlockSeed = nextBlockSeed;
+        // 기존 NextBlockModel의 시드를 재설정 (새로 생성하지 않음)
+        this.nextBlockModel.resetWithSeed(nextBlockSeed);
+        this.itemController.resetWithSeed(nextBlockSeed);
     }
 
     public Board getBoardModel() {
@@ -94,41 +103,45 @@ public class GameModel extends BaseModel {
     public void spawnNewBlock() {
         Block newBlock = nextBlockModel.getBlock();
 
-        if (isItemMode && !isItemUsed) {
-            newBlock = activeItem.GetItemBlock(newBlock);
-        }
-
         boolean spawned = board.setActiveBlock(newBlock);
         if (!spawned) {
             isGameOver = true; // Model이 게임 오버 상태 관리
         }
-    }
 
-    public boolean autoDown() {
-        boolean moved;
-        if (board.getIsForceDown()) {
-            moved = board.moveDownForce();
-        } else {
-            moved = board.moveDown();
+        // 아이템 모드이고 아이템 생성 가능하면 다음 블록에 아이템 적용
+        if (isItemMode && itemController.canSpawnItem()) {
+            Block targetBlock = nextBlockModel.peekNext();
+            targetBlock = itemController.spawnItem(targetBlock);
+            nextBlockModel.swapNext(targetBlock);
         }
-
-        return moved;
     }
 
     public void updateModels(int linesCleared) {
 
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
-            localLineCleared += linesCleared;
             board.collapse();
 
             scoreModel.lineCleared(linesCleared);
 
             updateLevel();
-            updateItemMode();
+
+            if (!isItemMode)
+                return; // ITEM_MODE
+            itemController.onLineCleared(linesCleared);
         }
 
         return;
+    }
+
+    public boolean tryActivateItem(ItemActivation context) {
+        if (!isItemMode)
+            return false;
+        if (!board.activeBlock.isItemBlock())
+            return false;
+
+        itemController.activateItem(board, context);
+        return true;
     }
 
     // 레벨 업데이트 (10줄마다 레벨 증가)
@@ -136,33 +149,18 @@ public class GameModel extends BaseModel {
         level = (totalLinesCleared / 10) + 1;
     }
 
-    public void updateItemMode() {
-        if (!isItemMode)
-            return;
-
-        if (localLineCleared >= ITEM_MODE_LINE_THRESHOLD) {
-            localLineCleared = 0;
-            activeItem = Item.getRandomItem();
-            isItemUsed = false;
-        }
-    }
-
-    public void activateItem() {
-        if (isItemMode && !isItemUsed) {
-            isItemUsed = true;
-            activeItem.Activate(board);
-            scoreModel.itemActivated();
-        }
-    }
-
     // 게임 리셋
     public void reset() {
         board.reset();
         scoreModel.reset();
+        setDifficulty();
+
         totalLinesCleared = 0;
         level = 1;
         isGameOver = false;
         isPaused = false;
+        nextBlockSeed = System.currentTimeMillis();
+
         spawnNewBlock();
     }
 
@@ -170,9 +168,9 @@ public class GameModel extends BaseModel {
     public int getDropInterval() {
         float difficultyMul = Difficulty.getSpeedMultiplier();
         int dropInterval = MAX_DROP_INTERVAL - Math.round((level - 1) * 5 * difficultyMul);
-        
+
         scoreModel.setGravityMultiplier(dropInterval);
-        
+
         return Math.max(MIN_DROP_INTERVAL, dropInterval);
     }
 }

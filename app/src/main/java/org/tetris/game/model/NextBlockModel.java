@@ -38,9 +38,12 @@ public class NextBlockModel
 	 * @param blockProbList 블럭별 출현 확률 리스트 (I, J, L, O, S, T, Z 순서)
 	 * @param fillCount 블럭 큐를 채울 블럭의 수
 	 */
-	public NextBlockModel(int[] blockProbList, int fillCount)
-	{
-		this.random = new Random();
+	public NextBlockModel(int[] blockProbList, int fillCount) {
+		this(blockProbList, fillCount, System.currentTimeMillis());
+	}
+
+	public NextBlockModel(int[] blockProbList, int fillCount, long seed) {
+		this.random = new Random(seed);
 		this.nextBlocks = new LinkedList<Block>();
 		this.fillCount = fillCount;
 
@@ -119,5 +122,30 @@ public class NextBlockModel
 			fill();
 
 		return nextBlocks.peek();
+	}
+
+	/**
+	 * 큐의 맨 앞 블록을 새로운 블록으로 교체합니다.
+	 * 큐가 비어있는 경우 자동으로 새로운 랜덤 블록들로 채운 후 교체합니다.
+	 * 
+	 * @param block 교체할 새로운 블록
+	 */
+	public void swapNext(Block block)
+	{
+		if(nextBlocks.isEmpty())
+			fill();
+
+		((LinkedList<Block>) nextBlocks).set(0, block);
+	}
+
+	/**
+	 * 새로운 시드로 랜덤 생성기를 재설정하고 블록 큐를 다시 채웁니다. P2P 게임에서 두 클라이언트의 블록 순서를 동기화하는 데 사용됩니다.
+	 * 
+	 * @param seed 새로운 시드 값
+	 */
+	public void resetWithSeed(long seed) {
+		this.random = new Random(seed);
+		this.nextBlocks.clear();
+		fill();
 	}
 }
