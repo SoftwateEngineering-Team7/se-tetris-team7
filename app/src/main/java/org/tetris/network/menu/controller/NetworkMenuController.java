@@ -97,16 +97,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             joinButton.setManaged(!isHost);
             joinButton.setVisible(!isHost);
             ipHintLabel.setText(isHost ? "내 IP를 공유하세요." : "호스트 IP를 입력해 접속하세요.");
-
-            if (preserveConnection) {
-                model.setConnected(true);
-                readyButton.setDisable(false);
-                readyButton.setText(model.isReady() ? "CANCEL" : "READY");
-                setMessage("연결을 유지했습니다. READY를 다시 눌러주세요.", false);
-            }
-
-            setMessage(isHost ? "호스트 세션을 준비 중..." : "접속할 호스트 IP를 입력하세요.", false);
-            if (isHost) {
+            messageLabel.setText(isHost ? "호스트 세션을 준비 중..." : "접속할 호스트 IP를 입력하세요.");
+            if (isHost && !preserveConnection) {
                 autoCreateHost();
             } else {
                 readyButton.setDisable(true);
