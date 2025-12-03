@@ -133,7 +133,8 @@ public class ServerThread {
                     } else if (command instanceof GameOverCommand) {
                         // 게임 오버 처리 - 게임 종료 상태로 변경
                         GameServer.getInstance().endGame();
-                        GameServer.getInstance().broadcast(command); // 모두에게 알림
+                        // 상대방에게만 전송 (보낸 사람은 이미 처리함)
+                        GameServer.getInstance().sendToOtherClient(ServerThread.this, command);
                     } else if (command instanceof PauseCommand) {
                         // 일시정지 커맨드는 상대방에게 릴레이
                         PauseCommand pauseCmd = (PauseCommand) command;
