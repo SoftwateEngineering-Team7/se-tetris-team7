@@ -215,13 +215,24 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
         GameViewRenderer renderer = new GameViewRenderer(
                 boardPane, nextPane, attackPane, boardSize, cellSize, previewCellSize);
-        return new PlayerSlot(
+        PlayerSlot slot = new PlayerSlot(
                 gm,
                 gm.getBoardModel(),
                 gm.getNextBlockModel(),
                 gm.getScoreModel(),
                 am,
                 renderer);
+        boardPane.layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
+            if (newBounds.getWidth() <= 0 || newBounds.getHeight() <= 0) {
+                return;
+            }
+            int newCellSize = calculateCellSize(boardPane, boardSize);
+            if (renderer.getCellSize() != newCellSize) {
+                int newPreviewSize = Math.max(MIN_CELL_SIZE, (int) Math.round(newCellSize * PREVIEW_RATIO));
+                renderer.updateCellSize(newCellSize, newPreviewSize);
+            }
+        });
+        return slot;
     }
 
     private int calculateCellSize(Pane boardPane, Point boardSize) {

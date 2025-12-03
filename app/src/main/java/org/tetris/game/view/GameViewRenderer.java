@@ -32,10 +32,10 @@ public class GameViewRenderer {
 
     private final Canvas attackCanvas;
     private final GraphicsContext attackGc;
-        
+
     private final Point boardSize;
-    private final int cellSize;
-    private final int previewCellSize;
+    private int cellSize;
+    private int previewCellSize;
 
     // Effects
     private double shakeX = 0;
@@ -65,6 +65,29 @@ public class GameViewRenderer {
         }
     }
 
+    public int getCellSize() {
+        return cellSize;
+    }
+
+    public void updateCellSize(int cellSize, int previewCellSize) {
+        this.cellSize = cellSize;
+        this.previewCellSize = previewCellSize;
+
+        int canvasWidth = boardSize.c * cellSize;
+        int canvasHeight = boardSize.r * cellSize;
+        boardCanvas.setWidth(canvasWidth);
+        boardCanvas.setHeight(canvasHeight);
+
+        if (previewCanvas != null && nextBlockPane != null) {
+            double paneWidth = nextBlockPane.getPrefWidth() > 0 ? nextBlockPane.getPrefWidth() : 4 * previewCellSize;
+            double paneHeight = nextBlockPane.getPrefHeight() > 0 ? nextBlockPane.getPrefHeight() : 4 * previewCellSize;
+            previewCanvas.setWidth(paneWidth);
+            previewCanvas.setHeight(paneHeight);
+        }
+
+        boardReset();
+    }
+
     private static class LineBurst {
         int row;
         double life; // 1.0 to 0.0
@@ -75,7 +98,8 @@ public class GameViewRenderer {
         }
     }
 
-    public GameViewRenderer(Pane boardPane, Pane nextBlockPane, Pane attackPane, Point boardSize, int cellSize, int previewCellSize) {
+    public GameViewRenderer(Pane boardPane, Pane nextBlockPane, Pane attackPane, Point boardSize, int cellSize,
+            int previewCellSize) {
         this.boardPane = boardPane;
         this.nextBlockPane = nextBlockPane;
         this.attackPane = attackPane;
@@ -181,7 +205,7 @@ public class GameViewRenderer {
                 boardGc.setFill(Color.rgb(255, 255, 255, opacity * 0.5));
                 double y = burst.row * cellSize;
                 boardGc.fillRect(0, y, boardCanvas.getWidth(), cellSize);
-                
+
                 // Center bright line
                 boardGc.setFill(Color.rgb(255, 255, 200, opacity));
                 boardGc.fillRect(0, y + cellSize * 0.4, boardCanvas.getWidth(), cellSize * 0.2);
@@ -241,7 +265,8 @@ public class GameViewRenderer {
     public void triggerHardDropEffect() {
         this.shakeIntensity = 5.0;
         // Flash effect on canvas
-        javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(javafx.util.Duration.millis(50), boardCanvas);
+        javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(javafx.util.Duration.millis(50),
+                boardCanvas);
         flash.setFromValue(1.0);
         flash.setToValue(0.6);
         flash.setCycleCount(2);
@@ -251,7 +276,7 @@ public class GameViewRenderer {
 
     public void triggerLineClearEffect(int row) {
         lineBursts.add(new LineBurst(row));
-        
+
         // Spawn particles across the row
         for (int i = 0; i < 20; i++) {
             double x = Math.random() * boardCanvas.getWidth();
@@ -400,8 +425,6 @@ public class GameViewRenderer {
             );
         }
     }
-
-    
 
     // ========================
     // 플래시 마스크 생성
