@@ -151,6 +151,16 @@ public class ServerThread {
                         } else {
                             System.out.println("[SERVER-THREAD] Restart request ignored - only host can restart");
                         }
+                    } else if (command instanceof InputCommand) {
+                        // ★ 새로운 처리: 서버가 시퀀스 부여
+                        InputCommand inputCmd = (InputCommand) command;
+                        GameServer.getInstance().processInputCommand(ServerThread.this, inputCmd);
+                    } else if (command instanceof SnapshotCommand) {
+                        // 호스트가 보낸 스냅샷을 모든 클라이언트에게 브로드캐스트
+                        SnapshotCommand snapshot = (SnapshotCommand) command;
+                        System.out.println("[SERVER-THREAD] Broadcasting snapshot at globalSeq=" +
+                                snapshot.getAuthoritativeSeq());
+                        GameServer.getInstance().broadcast(snapshot);
                     } else {
                         // 그 외의 커맨드(이동, 공격 등)는 상대방에게 릴레이
                         GameServer.getInstance().sendToOtherClient(ServerThread.this, command);

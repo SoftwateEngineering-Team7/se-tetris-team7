@@ -13,6 +13,7 @@ import org.tetris.network.comand.Command;
 import org.tetris.network.comand.DisconnectCommand;
 import org.tetris.network.comand.GameResultCommand;
 import org.tetris.network.comand.GameStartCommand;
+import org.tetris.network.comand.InputCommand;
 import org.tetris.network.comand.PlayerConnectionCommand;
 import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.dto.MatchSettings;
@@ -36,6 +37,15 @@ public class GameServer {
 
     // 게임 진행 상태 추적
     private volatile boolean gameInProgress = false;
+
+    // ===== 시퀀싱 시스템 =====
+    // 전역 시퀀스 카운터 (thread-safe)
+    private final java.util.concurrent.atomic.AtomicLong globalSeqCounter =
+            new java.util.concurrent.atomic.AtomicLong(0);
+
+    // 스냅샷 전송 주기 (블록 고정 횟수)
+    private static final int SNAPSHOT_INTERVAL = 10; // 10블록마다
+    private volatile int blockLockCount = 0;
 
     /**
      * Private 생성자 (싱글톤 패턴)
@@ -362,6 +372,38 @@ public class GameServer {
      */
     public void endGame() {
         gameInProgress = false;
+    }
+
+    // ===== 시퀀싱 시스템 메서드 =====
+
+    /**
+     * InputCommand에 전역 시퀀스를 부여하고 브로드캐스트
+     * @param sender 입력을 보낸 클라이언트
+     * @param cmd 입력 커맨드
+     */
+    public synchronized void processInputCommand(ServerThread sender, InputCommand cmd) {
+        // 1. 전역 시퀀스 부여
+        long globalSeq = globalSeqCounter.incrementAndGet();
+        cmd.setGlobalSeq(globalSeq);
+
+        System.out.println("[SERVER] Assigned globalSeq=" + globalSeq +
+                " to " + cmd.getAction() + " from player " + cmd.getPlayerNumber());
+
+        // 2. 모든 클라이언트에게 브로드캐스트 (순서 보장)
+        broadcast(cmd);
+    }
+
+    /**
+     * 블록 고정 시 호출 - 스냅샷 전송 시점 판단
+     * 참고: 실제 스냅샷은 호스트 클라이언트가 생성하여 전송합니다.
+     * 서버는 받은 스냅샷을 모든 클라이언트에게 브로드캐스트만 합니다.
+     */
+    public synchronized void onBlockLocked() {
+        blockLockCount++;
+        if (blockLockCount % SNAPSHOT_INTERVAL == 0) {
+            System.out.println("[SERVER] Block lock count: " + blockLockCount +
+                    " (Snapshot will be sent by host client)");
+        }
     }
 
     public static void main(String[] args) {
