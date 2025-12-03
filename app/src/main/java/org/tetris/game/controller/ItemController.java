@@ -27,6 +27,17 @@ public class ItemController {
         resetCurrentItem();
     }
 
+    /**
+     * 테스트용 생성자
+     * @param item 고정 아이템
+     * @param seed 시드
+     */
+    public ItemController(Item item, long seed) {
+        this.lineClearedCount = 0;
+        this.random = new Random(seed);
+        this.currentItem = item;
+    }
+
     public void resetWithSeed(long seed) {
 		this.random = new Random(seed);
         resetCurrentItem();
