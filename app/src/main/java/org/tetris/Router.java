@@ -9,6 +9,7 @@ import org.tetris.network.menu.NetworkMenuFactory;
 import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.P2PGameFactory;
+import org.tetris.network.menu.controller.NetworkMenuController;
 import org.tetris.game.controller.DualGameController;
 import org.tetris.game.controller.GameController;
 import org.tetris.game.controller.P2PGameController;
@@ -67,10 +68,15 @@ public final class Router {
         }
     }
 
-    public void showNetworkMenu(boolean refresh) {
-        BaseController<?> controller = show(networkMenuFactory);
-        if (refresh) 
-            controller.refresh();
+    public void showNetworkMenu() {
+        showNetworkMenu(true);
+    }
+
+    public void showNetworkMenu(boolean isHost) {
+        var controller = show(networkMenuFactory);
+        if (controller instanceof NetworkMenuController networkMenuController) {
+            networkMenuController.configureRole(isHost);
+        }
     }
 
     public void showGamePlaceholder(boolean itemMode) {

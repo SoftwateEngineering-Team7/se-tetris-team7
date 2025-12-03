@@ -11,47 +11,54 @@ import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
 import org.tetris.shared.RouterAware;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.VBox;
 
-/**
- * 네트워크 게임 메뉴 컨트롤러.
- * 호스트는 게임 모드와 난이도를 선택하고, 클라이언트는 이를 수신하여 적용합니다.
- */
 public class NetworkMenuController extends BaseController<NetworkMenu>
         implements RouterAware, GameMenuCommandExecutor {
 
     private Router router;
+    private final GameClient client;
+    private boolean isHost = true;
+    private boolean shouldReleaseResources;
 
     @FXML
-    private ToggleGroup connectionTypeGroup;
+    private Label roleLabel;
     @FXML
-    private RadioButton hostRadio;
+    private Label ipHintLabel;
     @FXML
-    private RadioButton clientRadio;
+    private Label messageLabel;
+    @FXML
+    private Label pingLabel;
     @FXML
     private TextField ipField;
     @FXML
-    private TextField portField;
-    @FXML
     private ComboBox<String> gameModeCombo;
     @FXML
-    private Button createButton;
+    private Button joinButton;
     @FXML
-    private TextArea logArea;
+    private Button startButton;
+    @FXML
+    private Button readyButton;
     @FXML
     private Button backButton;
     @FXML
-    private Button clearLogButton;
+    private Label selfStatusLabel;
     @FXML
-    private Button readyButton;
-
-    GameClient client;
+    private Label opponentStatusLabel;
+    @FXML
+    private Label selfReadyBadge;
+    @FXML
+    private Label opponentReadyBadge;
+    @FXML
+    private VBox opponentCard;
+    @FXML
+    private VBox selfCard;
 
     public NetworkMenuController(NetworkMenu networkMenu) {
         super(networkMenu);
@@ -65,42 +72,74 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     @Override
     public void initialize() {
-        // 모델에 컨트롤러 등록 (Ping 업데이트를 위해)
+        setupGameModeCombo();
+        setupModelListeners();
+        resetUi();
+
+        if (client != null) {
+            client.setMenuExecutor(this);
+        }
+    }
+
+    public void configureRole(boolean isHost) {
+        this.isHost = isHost;
+        shouldReleaseResources = false;
+        model.clear();
+        Platform.runLater(() -> {
+            resetUi();
+            model.setIsHost(isHost);
+            model.resetReadyStates();
+            roleLabel.setText(isHost ? "HOST MODE" : "CLIENT MODE");
+            ipField.setEditable(!isHost);
+            gameModeCombo.setDisable(!isHost);
+            startButton.setManaged(isHost);
+            startButton.setVisible(isHost);
+            joinButton.setManaged(!isHost);
+            joinButton.setVisible(!isHost);
+            ipHintLabel.setText(isHost ? "내 IP를 공유하세요." : "호스트 IP를 입력해 접속하세요.");
+            messageLabel.setText(isHost ? "호스트 세션을 준비 중..." : "접속할 호스트 IP를 입력하세요.");
+            if (isHost) {
+                autoCreateHost();
+            } else {
+                readyButton.setDisable(true);
+                ipField.clear();
+            }
+        });
+    }
+
+    private void setupModelListeners() {
         model.pingProperty().addListener((observable, oldValue, newValue) -> {
-            addLog("Ping: " + newValue + "ms");
+            updatePingLabel(newValue.longValue());
         });
 
         model.otherIsReadyProperty().addListener((observable, oldValue, newValue) -> {
-            addLog("다른 플레이어가 " + (newValue ? "준비" : "준비 취소") + "했습니다.");
+            updateOpponentReady(newValue);
         });
 
-        // ComboBox 초기화
+        model.connectedProperty().addListener((obs, oldVal, newVal) -> updateConnectionState());
+        model.opponentConnectedProperty().addListener((obs, oldVal, newVal) -> updateOpponentPresence(newVal));
+    }
+
+    private void setupGameModeCombo() {
         gameModeCombo.getItems().addAll("일반 모드", "아이템 모드", "타임어택 모드");
         gameModeCombo.setValue("일반 모드");
-
-        // ComboBox 스타일 강제 적용 (흰색 텍스트)
         gameModeCombo.setStyle(
-                "-fx-background-color: #0f3460; -fx-text-fill: white; -fx-border-color: #533483; -fx-border-radius: 5; -fx-background-radius: 5;");
+                "-fx-background-color: #0b2451; -fx-text-fill: white; -fx-border-color: #274690; -fx-border-radius: 10; -fx-background-radius: 10; -fx-prompt-text-fill: white;");
 
-        // ComboBox 버튼 셀과 리스트 셀의 텍스트 색상을 흰색으로 설정
-        gameModeCombo.setCellFactory(listView -> {
-            return new javafx.scene.control.ListCell<String>() {
-                @Override
-                protected void updateItem(String item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText(null);
-                    } else {
-                        setText(item);
-                        setStyle("-fx-text-fill: white; -fx-background-color: #0f3460;");
-                    }
+        gameModeCombo.setCellFactory(listView -> new javafx.scene.control.ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item);
+                    setStyle("-fx-text-fill: white; -fx-background-color: #0b2451;");
                 }
-            };
+            }
         });
 
-        // 선택된 항목을 보여주는 버튼 셀도 흰색으로 설정
         gameModeCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
-
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -111,239 +150,224 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
                     setStyle("-fx-text-fill: white;");
                 }
             }
-
         });
+    }
 
-        // RadioButton 변경 리스너
-        connectionTypeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (newToggle == hostRadio) {
-                model.setIsHost(true);
-                ipField.setDisable(true);
-                createButton.setText("CREATE");
-                gameModeCombo.setVisible(true);
-
-                addLog("Host 모드로 설정됨");
-            } else if (newToggle == clientRadio) {
-                model.setIsHost(false);
-                ipField.setDisable(false);
-                createButton.setText("JOIN");
-                gameModeCombo.setVisible(false);
-
-                addLog("Client 모드로 설정됨");
-            }
-        });
-        
-        // 초기 로그 메시지
-        addLog("네트워크 게임 초기화 완료");
-
-        // Register as Menu Executor
-        if (client != null) {
-            client.setMenuExecutor(this);
+    private void autoCreateHost() {
+        try {
+            model.create();
+            ipField.setText(model.getIpAddress());
+            readyButton.setDisable(false);
+            startButton.setDisable(true);
+            selfStatusLabel.setText("서버 온라인");
+            setMessage("서버를 열었습니다. 상대를 기다리는 중...", false);
+            updateConnectionState();
+        } catch (Exception e) {
+            setMessage("호스트 생성 실패: " + e.getMessage(), true);
+            readyButton.setDisable(true);
+            startButton.setDisable(true);
         }
     }
 
-    @Override
-    public void refresh() {
-        model.clear();
-        hostRadio.setDisable(false);
-        clientRadio.setDisable(false);
-        ipField.setText(model.getIpAddress());
-        portField.setText(String.valueOf(model.getPort()));
-        connectionTypeGroup.selectToggle(clientRadio);
-        createButton.setText("JOIN");
-        readyButton.setDisable(true);
+    @FXML
+    private void onJoinPressed() {
+        String ip = ipField.getText().trim();
+        if (ip.isEmpty()) {
+            setMessage("IP를 입력해주세요.", true);
+            return;
+        }
+
+        try {
+            model.setIsHost(false);
+            model.isValidIP(ip);
+            model.setIpAddress(ip);
+            model.join();
+
+            readyButton.setDisable(false);
+            joinButton.setDisable(true);
+            ipField.setEditable(false);
+            selfStatusLabel.setText("연결됨");
+            opponentStatusLabel.setText("호스트 확인됨");
+            setMessage("서버에 연결되었습니다.", false);
+            updateConnectionState();
+        } catch (Exception e) {
+            setMessage("입장 실패: " + e.getMessage(), true);
+            joinButton.setDisable(false);
+            ipField.setEditable(true);
+        }
     }
 
     @FXML
-    private void onCreatePressed() {
-        try {
-            String ip = ipField.getText().trim();
-            String portText = portField.getText().trim();
-            int port = Integer.parseInt(portText);
+    private void onReadyPressed() {
+        if (!model.isConnected()) {
+            setMessage("연결 후 READY를 눌러주세요.", true);
+            return;
+        }
 
-            String gameMode = gameModeCombo.getValue();
+        model.setIsReady(!model.isReady());
+        boolean ready = model.isReady();
+        readyButton.setText(ready ? "CANCEL" : "READY");
+        selfReadyBadge.setVisible(ready);
+        setMessage(ready ? "준비 완료" : "준비 취소", false);
+        updateStartButtonState();
+        client.sendCommand(new ReadyCommand(ready));
+    }
 
-            try {
-                model.isValidIP(ip);
-                model.isValidPort(port);
-            } catch (Exception e) {
-                addLog("오류: " + e.getMessage());
-                return;
-            }
+    @FXML
+    private void onStartPressed() {
+        if (!isHost) {
+            return;
+        }
 
-            // 모델 업데이트
-            model.setIpAddress(ip);
-            model.setPort(port);
+        if (!model.isReady() || !model.getOtherIsReady()) {
+            setMessage("양쪽 모두 READY 상태여야 시작할 수 있습니다.", true);
+            return;
+        }
 
-            boolean isHost = model.getIsHost();
-            if (isHost) {
-                addLog("서버 생성 중... IP: " + ip + ", Port: " + port);
-                addLog("게임 모드: " + gameMode);
-                model.create();
-                this.ipField.setText(model.getIpAddress());
-                addLog("서버가 시작되었습니다. 클라이언트 접속을 기다리는 중...");
-                
-                // 호스트: 게임 모드와 난이도를 서버에 설정
-                GameMode selectedMode = mapGameModeLabelToGameMode(gameMode);
-                String difficulty = router.getSetting().getDifficulty();
-
-                GameServer server = GameServer.getInstance();
-                if (server != null) {
-                    server.setGameMode(selectedMode);
-                    server.setDifficulty(difficulty);
-                    addLog("게임 모드: " + gameMode + "\n난이도: " + difficulty + " 설정 완료");
-                } else {
-                    addLog("오류: 서버 인스턴스가 초기화되지 않았습니다. 게임 모드/난이도 설정 실패.");
-                }
-            } else {
-                addLog("서버에 연결 중... IP: " + ip + ", Port: " + port);
-                model.join();
-                addLog("서버에 성공적으로 연결되었습니다.");
-            }
-
-            hostRadio.setDisable(true);
-            clientRadio.setDisable(true);
-            readyButton.setDisable(false);
-
-        } catch (NumberFormatException e) {
-            addLog("오류: 포트는 숫자여야 합니다");
-        } catch (Exception e) {
-            addLog("오류: " + e.getMessage());
+        boolean started = GameServer.getInstance().startGameIfReady();
+        if (!started) {
+            setMessage("두 플레이어가 모두 연결되어 있는지 확인해주세요.", true);
+        } else {
+            setMessage("게임을 시작합니다...", false);
         }
     }
 
     @FXML
     private void onBackPressed() {
-        addLog("메인 메뉴로 돌아갑니다");
+        shouldReleaseResources = true;
         if (router != null) {
-            model.clear();
             router.showStartMenu();
-        } else {
-            addLog("오류: Router가 초기화되지 않았습니다. 메인 메뉴로 이동할 수 없습니다.");
         }
-    }
-
-    @FXML
-    private void onClearLogPressed() {
-        logArea.clear();
-        addLog("로그가 초기화되었습니다");
-    }
-
-    @FXML
-    private void onReadyPressed() {
-        model.setIsReady(!model.isReady());
-        if (model.isReady()) {
-            addLog("준비 완료");
-            readyButton.setText("CANCEL");
-        } else {
-            addLog("준비 취소");
-            readyButton.setText("READY");
-        }
-        client.sendCommand(new ReadyCommand(model.isReady()));
     }
 
     @Override
     public void onReady(boolean others) {
-        javafx.application.Platform.runLater(() -> {
-            if (model == null) {
-                System.out.println("[CLIENT-ENGINE] NetworkMenu is not set. Ignoring onReady.");
-                return;
-            }
-
+        Platform.runLater(() -> {
             model.setOtherIsReady(others);
-            if (others) {
-                addLog("상대방 준비 완료");
-                System.out.println("[CLIENT-ENGINE] Other Player is ready.");
-            } else {
-                addLog("상대방 준비 취소");
-                System.out.println("[CLIENT-ENGINE] Other Player is not ready.");
+            updateOpponentReady(others);
+            updateStartButtonState();
+            setMessage(others ? "상대가 READY 상태입니다." : "상대가 READY를 해제했습니다.", false);
+        });
+    }
+
+    @Override
+    public void onPlayerConnectionChanged(boolean opponentConnected) {
+        Platform.runLater(() -> {
+            model.setOpponentConnected(opponentConnected);
+            updateOpponentPresence(opponentConnected);
+            if (!opponentConnected) {
+                model.setOtherIsReady(false);
+                updateOpponentReady(false);
             }
+            updateStartButtonState();
         });
     }
 
     @Override
     public void gameStart(MatchSettings settings) {
-        javafx.application.Platform.runLater(() -> {
-            System.out.println("[CLIENT-ENGINE] Both players are ready. Starting game...");
-            
-            model.setIsReady(false);
-            readyButton.setText("READY");
-                
-            // 이미 게임 화면이 떠 있으면 화면 전환을 건너뜀 (restart의 경우)
-            // gameStart는 P2PGameController의 GameCommandExecutor에서 처리됨
-            if (GameClient.getInstance().hasGameExecutor()) {
-                System.out.println("[CLIENT-ENGINE] Game already running, skipping screen transition (restart)");
-                return;
-            }
-            
-            // 호스트와 클라이언트 모두 settings에서 모드/난이도를 사용
-            GameMode modeToUse = settings.getGameMode();
-            String difficultyToUse = settings.getDifficulty();
-
-            if (!model.getIsHost()) {
-                // 클라이언트: 수신된 난이도를 Setting에 적용
-                if (router != null && difficultyToUse != null) {
-                    router.getSetting().setDifficulty(difficultyToUse);
-                    addLog("호스트 설정 수신: 모드=" + getGameModeDisplayName(modeToUse) + ", 난이도=" + difficultyToUse);
-                }
-            }
-            
-            router.showP2PGamePlaceholder(modeToUse, settings);
+        Platform.runLater(() -> {
+            router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings);
         });
-    }
-
-    /**
-     * GameMode를 표시용 문자열로 변환합니다.
-     */
-    private String getGameModeDisplayName(GameMode mode) {
-        switch (mode) {
-            case ITEM: return "아이템 모드";
-            case TIME_ATTACK: return "타임어택 모드";
-            default: return "일반 모드";
-        }
     }
 
     @Override
     public synchronized void updatePing(long ping) {
-        System.out.println("[CLIENT-ENGINE] Ping: " + ping + "ms");
         if (model != null) {
             model.setPing(ping);
         }
     }
 
-    /**
-     * 로그 메시지를 추가합니다.
-     * 
-     * @param message 추가할 로그 메시지
-     */
-    public void addLog(String message) {
-        String timestamp = java.time.LocalTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
-        logArea.appendText("[" + timestamp + "] " + message + "\n");
-
-        // 스크롤을 맨 아래로 이동
-        logArea.setScrollTop(Double.MAX_VALUE);
+    @Override
+    public void cleanup() {
+        resetUi();
+        if (shouldReleaseResources) {
+            model.clear();
+            shouldReleaseResources = false;
+        }
     }
 
-    /**
-     * 현재 선택된 게임 모드를 반환합니다.
-     * 
-     * @return 선택된 게임 모드
-     */
-    public String getSelectedGameMode() {
-        return gameModeCombo.getValue();
+    private void updateOpponentReady(boolean ready) {
+        opponentReadyBadge.setVisible(ready);
+        opponentStatusLabel.setText(ready ? "READY" : (model.isOpponentConnected() ? "접속됨" : "대기 중"));
+    }
+
+    private void updateConnectionState() {
+        boolean connected = model.isConnected();
+        selfStatusLabel.setText(connected ? "연결됨" : "연결 대기");
+        readyButton.setDisable(!connected);
+        if (!connected) {
+            readyButton.setText("READY");
+            selfReadyBadge.setVisible(false);
+        }
+        updateStartButtonState();
+    }
+
+    private void updateOpponentPresence(boolean connected) {
+        opponentCard.setOpacity(connected ? 1.0 : 0.6);
+        opponentStatusLabel.setText(connected ? "접속됨" : "대기 중");
+        if (!connected) {
+            opponentReadyBadge.setVisible(false);
+        }
+    }
+
+    private void updateStartButtonState() {
+        boolean readyToStart = isHost && model.isConnected() && model.isOpponentConnected()
+                && model.isReady() && model.getOtherIsReady();
+        startButton.setDisable(!readyToStart);
+    }
+
+    private void updatePingLabel(long ping) {
+        if (pingLabel != null) {
+            pingLabel.setText("Ping: " + ping + " ms");
+        }
+    }
+
+    private void resetUi() {
+        if (messageLabel != null) {
+            messageLabel.setText("역할을 선택하세요.");
+            messageLabel.setStyle("-fx-text-fill: #e4e9ff;");
+        }
+        if (pingLabel != null) {
+            pingLabel.setText("Ping: -- ms");
+        }
+        if (selfReadyBadge != null) {
+            selfReadyBadge.setVisible(false);
+        }
+        if (opponentReadyBadge != null) {
+            opponentReadyBadge.setVisible(false);
+        }
+        if (readyButton != null) {
+            readyButton.setText("READY");
+            readyButton.setDisable(true);
+        }
+        if (startButton != null) {
+            startButton.setDisable(true);
+        }
+        if (joinButton != null) {
+            joinButton.setDisable(false);
+            joinButton.setVisible(true);
+            joinButton.setManaged(true);
+        }
+        if (ipField != null) {
+            ipField.clear();
+            ipField.setEditable(true);
+        }
+        updateOpponentPresence(false);
+        updateConnectionState();
+    }
+
+    private void setMessage(String text, boolean isError) {
+        if (messageLabel != null) {
+            messageLabel.setText(text);
+            messageLabel.setStyle(isError ? "-fx-text-fill: #ff8080;" : "-fx-text-fill: #e4e9ff;");
+        }
     }
 
     private GameMode mapGameModeLabelToGameMode(String label) {
-        switch (label) {
-            case "일반 모드":
-                return GameMode.NORMAL;
-            case "아이템 모드":
-                return GameMode.ITEM;
-            case "타임어택 모드":
-                return GameMode.TIME_ATTACK;
-            default:
-                return GameMode.NORMAL;
-        }
+        return switch (label) {
+            case "아이템 모드" -> GameMode.ITEM;
+            case "타임어택 모드" -> GameMode.TIME_ATTACK;
+            default -> GameMode.NORMAL;
+        };
     }
 }
