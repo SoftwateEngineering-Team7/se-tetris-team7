@@ -73,7 +73,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // 오버레이 & 버튼
     @FXML
-    private HBox gameOverOverlay;
+    protected HBox gameOverOverlay;
     @FXML
     protected HBox pauseOverlay;
     @FXML
@@ -689,7 +689,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     // === UI 업데이트 통합 ===
-    private void updateUI() {
+    protected void updateUI() {
         updateGameBoard(player1);
         updateGameBoard(player2);
         updateScoreDisplay();
