@@ -162,21 +162,10 @@ public class GameController extends BaseController<GameModel> implements RouterA
         lastUpdate = 0;
         lastDropTime = 0;
 
-        // 레이아웃이 완료된 후 PlayerSlot + UI 세팅 (크기가 0인 문제 해결)
-        root.layoutBoundsProperty().addListener(new javafx.beans.value.ChangeListener<>() {
-            private boolean initialized = false;
-
-            @Override
-            public void changed(javafx.beans.value.ObservableValue<? extends javafx.geometry.Bounds> obs,
-                               javafx.geometry.Bounds oldVal, javafx.geometry.Bounds newVal) {
-                if (!initialized && newVal.getWidth() > 0 && newVal.getHeight() > 0) {
-                    initialized = true;
-                    Platform.runLater(() -> {
-                        setupPlayerSlot();
-                        setupUI();
-                    });
-                }
-            }
+        // Stage 크기가 잡힌 후 PlayerSlot + UI 세팅
+        Platform.runLater(() -> {
+            setupPlayerSlot();
+            setupUI();
         });
 
         setupEventHandlers();

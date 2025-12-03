@@ -68,19 +68,15 @@ public final class Router {
         }
     }
 
-    public void showNetworkMenu(boolean isHost) {
+    public void showNetworkMenu() {
         setStageSize();
-        var controller = show(networkMenuFactory);
-        if (controller instanceof NetworkMenuController networkMenuController) {
-            networkMenuController.configureRole(isHost, false);
-        }
+        showNetworkMenu(true);
     }
 
-    public void showNetworkMenu(boolean isHost, boolean preserveConnection) {
-        setStageSize();
+    public void showNetworkMenu(boolean isHost) {
         var controller = show(networkMenuFactory);
         if (controller instanceof NetworkMenuController networkMenuController) {
-            networkMenuController.configureRole(isHost, preserveConnection);
+            networkMenuController.configureRole(isHost);
         }
     }
 
@@ -105,10 +101,10 @@ public final class Router {
         setStageSize(1400, 820);
         var controller = show(p2pGameFactory);
         if (controller instanceof P2PGameController gameController) {
-            // playerNumber를 먼저 설정하여 isHost() 판단이 올바르게 되도록 함
-            gameController.gameStart(settings);
             gameController.setUpGameMode(mode);
             gameController.initialize();
+            // Pass MatchSettings to start the game with correct player number
+            gameController.gameStart(settings);
         }
     }
 

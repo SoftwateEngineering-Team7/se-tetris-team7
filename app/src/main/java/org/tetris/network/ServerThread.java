@@ -151,10 +151,6 @@ public class ServerThread {
                         } else {
                             System.out.println("[SERVER-THREAD] Restart request ignored - only host can restart");
                         }
-                    } else if (command instanceof RequestSyncCommand) {
-                        // Ready 상태 동기화 요청 - 상대방의 현재 Ready 상태를 응답
-                        System.out.println("[SERVER-THREAD] RequestSyncCommand received");
-                        GameServer.getInstance().syncReadyState(ServerThread.this);
                     } else {
                         // 그 외의 커맨드(이동, 공격 등)는 상대방에게 릴레이
                         GameServer.getInstance().sendToOtherClient(ServerThread.this, command);

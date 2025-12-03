@@ -159,23 +159,11 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         dualGameModel.getPlayer1GameModel().reset();
         dualGameModel.getPlayer2GameModel().reset();
 
-        // 레이아웃이 완료된 후 PlayerSlot 설정 (크기가 0인 문제 해결)
-        root.layoutBoundsProperty().addListener(new javafx.beans.value.ChangeListener<>() {
-            private boolean initialized = false;
-
-            @Override
-            public void changed(javafx.beans.value.ObservableValue<? extends javafx.geometry.Bounds> obs,
-                               javafx.geometry.Bounds oldVal, javafx.geometry.Bounds newVal) {
-                if (!initialized && newVal.getWidth() > 0 && newVal.getHeight() > 0) {
-                    initialized = true;
-                    Platform.runLater(() -> {
-                        setupPlayerSlots();
-                        setupUI();
-                        root.requestFocus();
-                        firstTriggered = true;
-                    });
-                }
-            }
+        Platform.runLater(() -> {
+            setupPlayerSlots();
+            setupUI();
+            root.requestFocus();
+            firstTriggered = true;
         });
 
         setupEventHandlers();
@@ -237,38 +225,21 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     private int calculateCellSize(Pane boardPane, Point boardSize) {
-        // 레이아웃 강제 실행
-        boardPane.applyCss();
-        boardPane.layout();
-
         double paneWidth = boardPane.getWidth();
         double paneHeight = boardPane.getHeight();
 
-        // 여전히 0이면 바운드 사용
-        if (paneWidth <= 0) {
-            paneWidth = boardPane.getBoundsInParent().getWidth();
-        }
-        if (paneHeight <= 0) {
-            paneHeight = boardPane.getBoundsInParent().getHeight();
-        }
-
-        // 그래도 0이면 prefWidth/prefHeight 사용
         if (paneWidth <= 0)
             paneWidth = boardPane.getPrefWidth();
         if (paneHeight <= 0)
             paneHeight = boardPane.getPrefHeight();
 
-        // 최종 fallback: 창 크기 기반
         if ((paneWidth <= 0 || paneHeight <= 0) && root.getScene() != null && root.getScene().getWindow() != null) {
-            paneWidth = Math.max(paneWidth, root.getScene().getWindow().getWidth() * 0.35);
-            paneHeight = Math.max(paneHeight, root.getScene().getWindow().getHeight() * 0.8);
+            paneWidth = Math.max(paneWidth, root.getScene().getWindow().getWidth() / 2.0);
+            paneHeight = Math.max(paneHeight, root.getScene().getWindow().getHeight() / 1.2);
         }
 
         double computed = Math.min(paneWidth / boardSize.c, paneHeight / boardSize.r);
         int cellSize = (int) Math.round(computed);
-
-        System.out.println("[DEBUG] calculateCellSize: paneW=" + paneWidth + ", paneH=" + paneHeight
-                + ", computed=" + computed + ", final=" + Math.max(MIN_CELL_SIZE, cellSize));
 
         return Math.max(MIN_CELL_SIZE, (cellSize <= 0) ? MIN_CELL_SIZE * 2 : cellSize);
     }
