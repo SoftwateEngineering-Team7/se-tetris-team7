@@ -41,7 +41,6 @@ public class GameViewRenderer {
     private double shakeX = 0;
     private double shakeY = 0;
     private double shakeIntensity = 0;
-    private long lastEffectUpdate = 0;
 
     private final java.util.List<Particle> particles = new java.util.ArrayList<>();
     private final java.util.List<LineBurst> lineBursts = new java.util.ArrayList<>();
@@ -168,31 +167,39 @@ public class GameViewRenderer {
         }
 
         // Render Effects (Particles & Bursts)
-        renderEffects();
+        if (!particles.isEmpty() || !lineBursts.isEmpty()) {
+            renderEffects();
+        }
     }
 
     private void renderEffects() {
         // Draw Line Bursts
         boardGc.setGlobalBlendMode(javafx.scene.effect.BlendMode.ADD);
-        for (LineBurst burst : lineBursts) {
-            double opacity = burst.life;
-            boardGc.setFill(Color.rgb(255, 255, 255, opacity * 0.5));
-            double y = burst.row * cellSize;
-            boardGc.fillRect(0, y, boardCanvas.getWidth(), cellSize);
-            
-            // Center bright line
-            boardGc.setFill(Color.rgb(255, 255, 200, opacity));
-            boardGc.fillRect(0, y + cellSize * 0.4, boardCanvas.getWidth(), cellSize * 0.2);
+        try {
+            for (LineBurst burst : lineBursts) {
+                double opacity = burst.life;
+                boardGc.setFill(Color.rgb(255, 255, 255, opacity * 0.5));
+                double y = burst.row * cellSize;
+                boardGc.fillRect(0, y, boardCanvas.getWidth(), cellSize);
+                
+                // Center bright line
+                boardGc.setFill(Color.rgb(255, 255, 200, opacity));
+                boardGc.fillRect(0, y + cellSize * 0.4, boardCanvas.getWidth(), cellSize * 0.2);
+            }
+        } finally {
+            boardGc.setGlobalBlendMode(javafx.scene.effect.BlendMode.SRC_OVER);
         }
-        boardGc.setGlobalBlendMode(javafx.scene.effect.BlendMode.SRC_OVER);
 
         // Draw Particles
-        for (Particle p : particles) {
-            boardGc.setGlobalAlpha(p.life);
-            boardGc.setFill(p.color);
-            boardGc.fillOval(p.x, p.y, p.size, p.size);
+        try {
+            for (Particle p : particles) {
+                boardGc.setGlobalAlpha(p.life);
+                boardGc.setFill(p.color);
+                boardGc.fillOval(p.x, p.y, p.size, p.size);
+            }
+        } finally {
+            boardGc.setGlobalAlpha(1.0);
         }
-        boardGc.setGlobalAlpha(1.0);
     }
 
     public void updateEffects(long now) {
