@@ -13,10 +13,29 @@ public class ItemTest {
     @Test
     public void testGetRandomItem() {
         Block block = new ZBlock();
-        Item item = ItemController.getRandomItem();
+        ItemController itemController = new ItemController();
+        Item item = itemController.getRandomItem();
 
         assertNotNull(item);
         System.out.println("Randomly selected item ID\n" + item.getItemBlock(block));
+    }
+
+    @Test
+    public void testGetRandomItemWithSeed() {
+        Block block = new ZBlock();
+        long seed = 12345L;
+        ItemController itemController1 = new ItemController(seed);
+        ItemController itemController2 = new ItemController();
+        itemController2.resetWithSeed(seed);
+
+        Item item1 = itemController1.getRandomItem();
+        Item item2 = itemController2.getRandomItem();
+
+        assertNotNull(item1);
+        assertNotNull(item2);
+        assertEquals(item1.getClass(), item2.getClass());
+
+        System.out.println("Randomly selected item ID with seed\n" + item1.getItemBlock(block));
     }
 
     @Test
