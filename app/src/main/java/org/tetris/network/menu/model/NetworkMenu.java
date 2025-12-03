@@ -166,13 +166,10 @@ public class NetworkMenu extends BaseModel {
 
     public void clear(boolean preserveConnection) {
         if (!preserveConnection) {
-            clearConnections();
+            clear();
+            return;
         }
-        this.isHost = true;
-        this.ipAddress = "";
-        this.port = DEFAULT_PORT;
         this.isReady = false;
-        this.ping.set(0);
     }
 
     public LongProperty pingProperty() {
