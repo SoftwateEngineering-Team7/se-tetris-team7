@@ -44,4 +44,17 @@ public interface GameCommandExecutor {
     void updatePing(long ping);
 
     void updateOpponentPing(long ping);
+
+    // 시퀀스 기반 입력 처리
+    /**
+     * 시퀀스가 포함된 입력 커맨드를 실행합니다.
+     * @param cmd globalSeq가 설정된 InputCommand
+     */
+    void executeInput(InputCommand cmd);
+
+    /**
+     * 스냅샷으로 상태를 복원하고, 이후 입력들을 재적용합니다.
+     * @param snapshot 서버에서 받은 스냅샷
+     */
+    void restoreSnapshot(SnapshotCommand snapshot);
 }
