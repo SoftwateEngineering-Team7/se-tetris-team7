@@ -37,6 +37,44 @@ public class GameViewRenderer {
     private final int cellSize;
     private final int previewCellSize;
 
+    // Effects
+    private double shakeX = 0;
+    private double shakeY = 0;
+    private double shakeIntensity = 0;
+
+    private final java.util.List<Particle> particles = new java.util.ArrayList<>();
+    private final java.util.List<LineBurst> lineBursts = new java.util.ArrayList<>();
+
+    private static class Particle {
+        double x, y;
+        double vx, vy;
+        double life; // 1.0 to 0.0
+        Color color;
+        double size;
+
+        Particle(double x, double y, Color color) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.life = 1.0;
+            double angle = Math.random() * Math.PI * 2;
+            double speed = Math.random() * 5 + 2;
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+            this.size = Math.random() * 5 + 3;
+        }
+    }
+
+    private static class LineBurst {
+        int row;
+        double life; // 1.0 to 0.0
+
+        LineBurst(int row) {
+            this.row = row;
+            this.life = 1.0;
+        }
+    }
+
     public GameViewRenderer(Pane boardPane, Pane nextBlockPane, Pane attackPane, Point boardSize, int cellSize, int previewCellSize) {
         this.boardPane = boardPane;
         this.nextBlockPane = nextBlockPane;
@@ -93,6 +131,10 @@ public class GameViewRenderer {
         if (board == null || boardGc == null)
             return;
 
+        // Apply Shake
+        boardCanvas.setTranslateX(shakeX);
+        boardCanvas.setTranslateY(shakeY);
+
         boardReset();
 
         for (int r = 0; r < boardSize.r; r++) {
@@ -122,6 +164,100 @@ public class GameViewRenderer {
                         fill,
                         flashingThisCell);
             }
+        }
+
+        // Render Effects (Particles & Bursts)
+        if (!particles.isEmpty() || !lineBursts.isEmpty()) {
+            renderEffects();
+        }
+    }
+
+    private void renderEffects() {
+        // Draw Line Bursts
+        boardGc.setGlobalBlendMode(javafx.scene.effect.BlendMode.ADD);
+        try {
+            for (LineBurst burst : lineBursts) {
+                double opacity = burst.life;
+                boardGc.setFill(Color.rgb(255, 255, 255, opacity * 0.5));
+                double y = burst.row * cellSize;
+                boardGc.fillRect(0, y, boardCanvas.getWidth(), cellSize);
+                
+                // Center bright line
+                boardGc.setFill(Color.rgb(255, 255, 200, opacity));
+                boardGc.fillRect(0, y + cellSize * 0.4, boardCanvas.getWidth(), cellSize * 0.2);
+            }
+        } finally {
+            boardGc.setGlobalBlendMode(javafx.scene.effect.BlendMode.SRC_OVER);
+        }
+
+        // Draw Particles
+        try {
+            for (Particle p : particles) {
+                boardGc.setGlobalAlpha(p.life);
+                boardGc.setFill(p.color);
+                boardGc.fillOval(p.x, p.y, p.size, p.size);
+            }
+        } finally {
+            boardGc.setGlobalAlpha(1.0);
+        }
+    }
+
+    public void updateEffects(long now) {
+        // Update Shake
+        if (shakeIntensity > 0) {
+            shakeX = (Math.random() - 0.5) * shakeIntensity;
+            shakeY = (Math.random() - 0.5) * shakeIntensity;
+            shakeIntensity *= 0.9; // Decay
+            if (shakeIntensity < 0.5) {
+                shakeIntensity = 0;
+                shakeX = 0;
+                shakeY = 0;
+            }
+        }
+
+        // Update Particles
+        java.util.Iterator<Particle> pIt = particles.iterator();
+        while (pIt.hasNext()) {
+            Particle p = pIt.next();
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.05;
+            if (p.life <= 0) {
+                pIt.remove();
+            }
+        }
+
+        // Update Line Bursts
+        java.util.Iterator<LineBurst> bIt = lineBursts.iterator();
+        while (bIt.hasNext()) {
+            LineBurst b = bIt.next();
+            b.life -= 0.1;
+            if (b.life <= 0) {
+                bIt.remove();
+            }
+        }
+    }
+
+    public void triggerHardDropEffect() {
+        this.shakeIntensity = 5.0;
+        // Flash effect on canvas
+        javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(javafx.util.Duration.millis(50), boardCanvas);
+        flash.setFromValue(1.0);
+        flash.setToValue(0.6);
+        flash.setCycleCount(2);
+        flash.setAutoReverse(true);
+        flash.play();
+    }
+
+    public void triggerLineClearEffect(int row) {
+        lineBursts.add(new LineBurst(row));
+        
+        // Spawn particles across the row
+        for (int i = 0; i < 20; i++) {
+            double x = Math.random() * boardCanvas.getWidth();
+            double y = row * cellSize + Math.random() * cellSize;
+            particles.add(new Particle(x, y, Color.GOLD));
+            particles.add(new Particle(x, y, Color.WHITE));
         }
     }
 
