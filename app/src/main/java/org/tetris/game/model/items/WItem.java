@@ -16,7 +16,7 @@ public class WItem extends Item {
     }
 
     @Override
-    public Block getItemBlock(Block block) {
+    public Block getItemBlock(Block block, java.util.Random _random) {
         int[][] shape = W_SHAPE;
         Point pivot = new Point(1, 1);
         itemBlock = block.reShape(shape, pivot);

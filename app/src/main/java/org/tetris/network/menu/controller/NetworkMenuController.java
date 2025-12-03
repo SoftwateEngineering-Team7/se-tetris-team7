@@ -2,6 +2,7 @@ package org.tetris.network.menu.controller;
 
 import org.tetris.Router;
 import org.tetris.game.model.GameMode;
+import org.tetris.menu.setting.model.Setting;
 import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.network.comand.GameMenuCommandExecutor;
@@ -24,6 +25,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         implements RouterAware, GameMenuCommandExecutor {
 
     private Router router;
+    private Setting routerSetting;
     private final GameClient client;
     private boolean isHost;  // 기본값 제거 - Model에서 동기화
     private boolean shouldReleaseResources;
@@ -69,6 +71,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     @Override
     public void setRouter(Router router) {
         this.router = router;
+        routerSetting = router.getSetting();
     }
 
     @Override
@@ -131,7 +134,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
                 autoCreateHost();
             } else {
                 readyButton.setDisable(true);
-                ipField.clear();
+                ipField.setText(routerSetting.getLastVisitedIP());
             }
         });
     }
@@ -276,8 +279,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     @Override
     public void gameStart(MatchSettings settings) {
-        Platform.runLater(
-                () -> router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings));
+        Platform.runLater(() -> {
+            routerSetting.setLastVisitedIP(ipField.getText().trim());
+            router.showP2PGamePlaceholder(mapGameModeLabelToGameMode(gameModeCombo.getValue()), settings);
+        });
     }
 
     @Override
