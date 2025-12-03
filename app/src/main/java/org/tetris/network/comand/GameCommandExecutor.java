@@ -21,7 +21,7 @@ public interface GameCommandExecutor {
     // 게임 상태
     void gameStart(MatchSettings settings);
 
-    void gameOver(int score);
+    void gameOver(int score, java.util.List<int[]> pendingAttacks);
 
     void onGameResult(boolean isWinner, int score);
 
@@ -34,7 +34,9 @@ public interface GameCommandExecutor {
     void onOpponentDisconnect(String reason);
 
     // 공격
-    void attack(int lines);
+    default void attack(java.util.List<int[]> attackRows) {
+        // 기본 구현: 아무 동작도 하지 않음 (서브클래스에서 오버라이드)
+    }
 
     // 기타
     void updateState(String state);
@@ -42,4 +44,7 @@ public interface GameCommandExecutor {
     void updatePing(long ping);
 
     void updateOpponentPing(long ping);
+
+    // 보드 동기화 (P2P)
+    void syncBoard(int[][] boardState, int blockCount);
 }
