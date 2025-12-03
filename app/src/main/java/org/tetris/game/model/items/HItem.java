@@ -15,7 +15,7 @@ public class HItem extends Item {
     }
 
     @Override
-    public Block getItemBlock(Block block) {
+    public Block getItemBlock(Block block, Random random) {
         Point size = block.getSize();
         int[][] shape = new int[size.r][size.c];
         
@@ -24,9 +24,8 @@ public class HItem extends Item {
         for(Point p : blockPoints){
             shape[p.r][p.c] = block.getCell(p);
         }
-
-        Random rand = new Random();
-        int itemIndex = rand.nextInt(blockPoints.size());
+        
+        int itemIndex = random.nextInt(blockPoints.size());
         Point itemPoint = blockPoints.get(itemIndex);
         shape[itemPoint.r][itemPoint.c] = itemID;
         

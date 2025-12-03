@@ -1,5 +1,7 @@
 package org.tetris.game.controller;
 
+import java.util.ArrayList;
+import java.util.Random;
 import java.util.function.Supplier;
 
 import org.tetris.game.model.Board;
@@ -7,18 +9,42 @@ import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.items.*;
 
 public class ItemController {
-    private static final int ITEM_LINE_THRESHOLD = 5;
+    private static final int ITEM_LINE_THRESHOLD = 1;
 
     private Item currentItem;
     private int lineClearedCount;
+    private Random random;
 
     public ItemController() {
         this.lineClearedCount = 0;
+        this.random = new Random();
+        resetCurrentItem();
+    }
+
+    public ItemController(long seed) {
+        this.lineClearedCount = 0;
+        this.random = new Random(seed);
+        resetCurrentItem();
+    }
+
+    /**
+     * 테스트용 생성자
+     * @param item 고정 아이템
+     * @param seed 시드
+     */
+    public ItemController(Item item, long seed) {
+        this.lineClearedCount = 0;
+        this.random = new Random(seed);
+        this.currentItem = item;
+    }
+
+    public void resetWithSeed(long seed) {
+		this.random = new Random(seed);
         resetCurrentItem();
     }
 
     private void resetCurrentItem() {
-        currentItem = ItemController.getRandomItem();
+        currentItem = getRandomItem();
     }
 
     /**
@@ -44,7 +70,7 @@ public class ItemController {
 
         resetCurrentItem();
 
-        Block itemBlock = currentItem.getItemBlock(block);
+        Block itemBlock = currentItem.getItemBlock(block, random);
         itemBlock.setIsItemBlock(true);
 
         return itemBlock;
@@ -55,23 +81,23 @@ public class ItemController {
     }
 
     // region Static Functions
-    private final static Supplier<Item>[] itemPool = new Supplier[] {
-            LItem::new,
-            BItem::new,
-            CItem::new,
-            HItem::new,
-            WItem::new,
-    };
+    private static final ArrayList<Supplier<Item>> itemPoolList = new ArrayList<Supplier<Item>>() {{
+		add(() -> new LItem());
+        add(() -> new BItem());
+        add(() -> new CItem());
+        add(() -> new HItem());
+        add(() -> new WItem());
+	}};
 
     /**
      * 랜덤 아이템 반환 메서드
      * 
      * @return 랜덤 아이템
      */
-    public static Item getRandomItem() {
-        int poolSize = itemPool.length;
-        int randomIndex = (int) (Math.random() * poolSize);
-        return itemPool[randomIndex].get();
+    public Item getRandomItem() {
+        int poolSize = itemPoolList.size();
+        int randomIndex = random.nextInt(poolSize);
+        return itemPoolList.get(randomIndex).get();
     }
     //endregion
 }

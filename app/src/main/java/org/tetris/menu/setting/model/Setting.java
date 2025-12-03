@@ -33,6 +33,8 @@ public class Setting {
     private static final String KEY_SCREEN = "screen";
     private static final String KEY_DIFFICULTY = "difficulty";
 
+    private static final String KEY_LAST_VISITED_IP = "lastVisitedIP";
+
     private final Path filePath;
     private final Properties props = new Properties();
 
@@ -115,6 +117,10 @@ public class Setting {
 
     public String getDifficulty() {
         return props.getProperty(KEY_DIFFICULTY, "EASY");
+    }
+
+    public String getLastVisitedIP() {
+        return props.getProperty(KEY_LAST_VISITED_IP, "");
     }
 
     /* --------- Setter (저장 포함) --------- */
@@ -202,6 +208,13 @@ public class Setting {
         props.setProperty(KEY_DIFFICULTY, difficulty);
         saveSettingFile();
     }
+    
+    public void setLastVisitedIP(String ip) {
+        if (ip == null)
+            return;
+        props.setProperty(KEY_LAST_VISITED_IP, ip);
+        saveSettingFile();
+    }
 
     /* --------- 내부 유틸 --------- */
 
@@ -230,6 +243,7 @@ public class Setting {
             
             props.putIfAbsent(KEY_SCREEN, "SMALL");
             props.putIfAbsent(KEY_DIFFICULTY, "EASY");
+            props.putIfAbsent(KEY_LAST_VISITED_IP, "");
 
             saveSettingFile(); // 보완된 기본값/매핑을 반영
         } else {
@@ -255,6 +269,8 @@ public class Setting {
         
         props.setProperty(KEY_SCREEN, "SMALL");
         props.setProperty(KEY_DIFFICULTY, "EASY");
+
+        props.setProperty(KEY_LAST_VISITED_IP, "");
 
         saveSettingFile();
     }

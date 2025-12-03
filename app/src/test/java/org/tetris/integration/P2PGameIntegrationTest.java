@@ -404,8 +404,8 @@ public class P2PGameIntegrationTest {
         
         TestGameCommandExecutor gameExecutor2 = new TestGameCommandExecutor() {
             @Override
-            public void updateState(int[][] board, int currentPosRow, int currentPosCol) {
-                super.updateState(board, currentPosRow, currentPosCol);
+            public void updateState(int[][] board, int currentPosRow, int currentPosCol, int score) {
+                super.updateState(board, currentPosRow, currentPosCol, score);
                 System.out.println("[CLIENT2-GAME] Received UpdateStateCommand");
                 syncLatch.countDown();
             }
@@ -434,7 +434,7 @@ public class P2PGameIntegrationTest {
         Point dummyPos = new Point(19, 0);
         
         System.out.println("\n[TEST] === Client 1 sending UpdateStateCommand (Simulating Block Lock) ===");
-        client1Thread.sendCommand(new UpdateStateCommand(dummyBoard, dummyPos.r, dummyPos.c));
+        client1Thread.sendCommand(new UpdateStateCommand(dummyBoard, dummyPos.r, dummyPos.c, 100));
 
         // 200ms 지연 시뮬레이션 (네트워크 렉)
         Thread.sleep(200);

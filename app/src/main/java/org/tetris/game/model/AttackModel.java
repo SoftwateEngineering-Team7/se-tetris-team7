@@ -1,5 +1,6 @@
 package org.tetris.game.model;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class AttackModel {
@@ -13,6 +14,12 @@ public class AttackModel {
 
     public ArrayList<int[]> getAttacks() {
         return attacks;
+    }
+
+    public ArrayList<int[]> popAttacks() {
+        ArrayList<int[]> currentAttacks = new ArrayList<>(attacks);
+        attacks.clear();
+        return currentAttacks;
     }
 
     /**

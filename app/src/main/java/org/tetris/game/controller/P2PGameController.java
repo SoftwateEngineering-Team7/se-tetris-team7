@@ -60,6 +60,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void initialize() {
         super.initialize();
+        updateControlLabels();
 
         // 연결 끊김 오버레이의 메인 메뉴 버튼 설정
         Platform.runLater(() -> {
@@ -83,6 +84,27 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      */
     private PlayerSlot getRemotePlayer() {
         return player2;
+    }
+
+    private void updateControlLabels() {
+        KeyCode leftKey = KeyLayout.getLeftKey(PlayerId.PLAYER1);
+        KeyCode rightKey = KeyLayout.getRightKey(PlayerId.PLAYER1);
+        KeyCode upKey = KeyLayout.getUpKey(PlayerId.PLAYER1);
+        KeyCode downKey = KeyLayout.getDownKey(PlayerId.PLAYER1);
+        KeyCode hardDropKey = KeyLayout.getHardDropKey(PlayerId.PLAYER1);
+
+        if (moveControlLabel1 != null) {
+            moveControlLabel1.setText("Move: " + leftKey.getName() + " / " + rightKey.getName());
+        }
+        if (rotateControlLabel1 != null) {
+            rotateControlLabel1.setText("Rotate: " + upKey.getName());
+        }
+        if (softDropControlLabel1 != null) {
+            softDropControlLabel1.setText("Down: " + downKey.getName());
+        }
+        if (hardDropControlLabel1 != null) {
+            hardDropControlLabel1.setText("Drop: " + hardDropKey.getName());
+        }
     }
 
     /**
@@ -353,10 +375,16 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     @Override
     protected void checkGameOverState() {
-        super.checkGameOverState();
-        if (player1 != null && player2 != null) {
-            if (player1.gameModel.isGameOver())
+        // 부모의 checkGameOverState()를 호출하지 않음으로써
+        // "PLAYER 2 WINS" 같은 기본 텍스트가 뜨는 것을 방지합니다.
+        // 대신 로컬 플레이어(나)의 게임오버만 감지하여 서버에 패배 사실을 알립니다.
+        if (player1 != null && player1.gameModel.isGameOver()) {
+            // 아직 게임오버 처리가 안 된 상태라면
+            if (!disconnectOverlay.isVisible() && !gameOverOverlay.isVisible()) {
+                updateUI();
+                gameOver(player1.scoreModel.getScore());
                 client.sendCommand(new GameResultCommand(true, player1.scoreModel.getScore()));
+            }
         }
     }
 
@@ -507,16 +535,23 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     public void gameOver(int score) {
         Platform.runLater(() -> {
             stopGame();
-            showGameOverDialog("Game Over", "Winner: Player 1\nScore: " + score);
+            // 로컬 플레이어(나)의 게임이 끝났으므로 패배(Defeat) 메시지 표시
+            showGameOverDialog("Defeat", "You Lost\nMy Score: " + score);
         });
     }
 
+    /**
+     * [수정됨] 서버로부터 게임 결과를 수신했을 때 (승리 또는 패배)
+     */
     @Override
     public void onGameResult(boolean isWinner, int score) {
         Platform.runLater(() -> {
             stopGame();
-            showGameOverDialog(isWinner ? "Victory!" : "Defeat",
-                    (isWinner ? "You Won!" : "You Lost") + "\nScore: " + score);
+            // 서버 결과에 따라 메시지 분기
+            String title = isWinner ? "Victory!" : "Defeat";
+            String message = (isWinner ? "You Won!" : "You Lost") + "\nOpponent Score: " + score;
+
+            showGameOverDialog(title, message);
         });
     }
 
@@ -595,7 +630,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      * (UpdateStateCommand에 의해 호출됨)
      */
     @Override
-    public void updateState(int[][] boardData, int currentPosRow, int currentPosCol) {
+    public void updateState(int[][] boardData, int currentPosRow, int currentPosCol, int score) {
         Platform.runLater(() -> {
             PlayerSlot remotePlayer = getRemotePlayer();
             if (remotePlayer != null) {
@@ -607,6 +642,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                     }
                 }
                 remotePlayer.boardModel.setCurPos(new Point(currentPosRow, currentPosCol));
+                remotePlayer.scoreModel.setScore(score);
 
                 // 수신된 보드 상태를 기반으로 로컬 시뮬레이션(Attack, Line Clear 등)을 수행
                 super.lockCurrentBlock(remotePlayer);
@@ -643,7 +679,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             Point myPos = player.boardModel.getCurPos();
 
             // 상태 전송
-            client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c));
+            client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c, player.scoreModel.getScore()));
             // System.out.println("[P2P-SYNC] Sent board state update.");
         }
     }

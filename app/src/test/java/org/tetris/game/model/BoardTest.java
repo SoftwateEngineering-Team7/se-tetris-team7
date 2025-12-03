@@ -363,51 +363,6 @@ public class BoardTest {
     }
 
     @Test
-    public void testPushUp_Success() {
-        // 5x5 보드 생성
-        Board board = new Board(5, 5);
-        int[][] boardData = board.getBoard();
-
-        // 1. 초기 상태 설정: 맨 아랫줄(4행)에 데이터 존재
-        // [0, 0, 0, 0, 0]
-        // ...
-        // [1, 1, 1, 1, 1]
-        for (int c = 0; c < 5; c++) {
-            boardData[4][c] = 1;
-        }
-
-        // 2. 새로운 줄 데이터 준비 (공격받은 줄: 9로 가득 참)
-        int[] newRow = { 9, 9, 9, 9, 9 };
-
-        // 3. pushUp 실행
-        boolean result = board.pushUp(newRow);
-
-        // 4. 검증
-        assertTrue("맨 윗줄이 비어있다면 true를 반환해야 합니다.", result);
-
-        // 기존 4행의 데이터가 3행으로 올라갔는지 확인
-        assertEquals("기존 데이터가 위로 한 칸 이동해야 합니다.", 1, boardData[3][0]);
-
-        // 4행(바닥)에 새로운 줄이 들어왔는지 확인
-        assertEquals("맨 아래에 새로운 줄이 추가되어야 합니다.", 9, boardData[4][0]);
-    }
-
-    @Test
-    public void testPushUp_GameOver_WhenTopRowNotEmpty() {
-        Board board = new Board(5, 5);
-        int[][] boardData = board.getBoard();
-
-        // 1. 맨 윗줄(0번 행)에 블럭 배치 (장애물)
-        boardData[0][2] = 1;
-
-        // 2. pushUp 실행
-        boolean result = board.pushUp(new int[] { 9, 9, 9, 9, 9 });
-
-        // 3. 검증
-        assertFalse("맨 윗줄에 블럭이 있으면 밀어올릴 공간이 없어 false(게임오버)여야 합니다.", result);
-    }
-
-    @Test
     public void testGetRowForAttack_BasicConversion() {
         Board board = new Board(5, 5);
         int[][] boardData = board.getBoard();
@@ -464,5 +419,167 @@ public class BoardTest {
 
         assertTrue("ActiveBlock이 겹치는 위치에는 구멍(0)이 뚫려야 합니다.", hasHole);
         assertTrue("ActiveBlock이 없는 나머지 부분은 회색(8)으로 변환되어야 합니다.", hasGrayBlock);
+    }
+
+    // ==================== pushUp 테스트 ====================
+
+    @Test
+    public void testPushUp_EmptyList() {
+        Board board = new Board(5, 5);
+        java.util.List<int[]> emptyRows = new java.util.ArrayList<>();
+        
+        boolean result = board.pushUp(emptyRows);
+        
+        assertTrue("빈 리스트를 전달하면 true를 반환해야 합니다.", result);
+        
+        // 보드가 변경되지 않았는지 확인
+        String expected = 
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n";
+        assertEquals(expected, board.toString());
+    }
+
+    @Test
+    public void testPushUp_SingleRow_Success() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+        
+        // 맨 아래 줄에 데이터 설정
+        for (int c = 0; c < 5; c++) {
+            boardData[4][c] = 1;
+        }
+        
+        // 새로운 줄 추가
+        java.util.List<int[]> newRows = new java.util.ArrayList<>();
+        newRows.add(new int[]{8, 0, 8, 8, 8});
+        
+        boolean result = board.pushUp(newRows);
+        
+        assertTrue("맨 윗줄이 비어있으면 true를 반환해야 합니다.", result);
+        
+        // 기존 데이터가 위로 올라가고, 새 줄이 맨 아래에 추가되었는지 확인
+        String expected = 
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n" +
+                "1 1 1 1 1 \n" +
+                "8 0 8 8 8 \n";
+        assertEquals(expected, board.toString());
+    }
+
+    @Test
+    public void testPushUp_MultipleRows_Success() {
+        Board board = new Board(5, 5);
+        
+        // 3개의 새로운 줄 추가
+        java.util.List<int[]> newRows = new java.util.ArrayList<>();
+        newRows.add(new int[]{8, 0, 8, 8, 8}); // 첫 번째로 추가됨 -> 가장 위에 위치
+        newRows.add(new int[]{8, 8, 0, 8, 8}); // 두 번째로 추가됨
+        newRows.add(new int[]{8, 8, 8, 0, 8}); // 마지막으로 추가됨 -> 맨 아래에 위치
+        
+        boolean result = board.pushUp(newRows);
+        
+        assertTrue("맨 윗줄이 비어있으면 true를 반환해야 합니다.", result);
+        
+        // 새 줄들이 아래에서부터 쌓이는지 확인
+        String expected = 
+                "0 0 0 0 0 \n" +
+                "0 0 0 0 0 \n" +
+                "8 0 8 8 8 \n" +
+                "8 8 0 8 8 \n" +
+                "8 8 8 0 8 \n";
+        assertEquals(expected, board.toString());
+    }
+
+    @Test
+    public void testPushUp_Overflow_ReturnsFalse() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+        
+        // 0번 행(맨 윗줄)에 블럭 배치
+        boardData[0][2] = 1;
+        
+        // 새로운 줄 추가
+        java.util.List<int[]> newRows = new java.util.ArrayList<>();
+        newRows.add(new int[]{8, 0, 8, 8, 8});
+        
+        boolean result = board.pushUp(newRows);
+        
+        assertFalse("맨 윗줄에 블럭이 있으면 false를 반환해야 합니다.", result);
+        
+        // 새 줄은 여전히 추가됨 (다 넣고 false 반환)
+        assertEquals(8, boardData[4][0]);
+    }
+
+    @Test
+    public void testPushUp_MultipleRows_Overflow() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+        
+        // 2번 행에 블럭 배치 (3줄 추가 시 넘침)
+        for (int c = 0; c < 5; c++) {
+            boardData[2][c] = 1;
+        }
+        
+        // 4줄 추가 시도 -> 기존 데이터가 밀려 올라가면서 넘침
+        java.util.List<int[]> newRows = new java.util.ArrayList<>();
+        newRows.add(new int[]{8, 0, 8, 8, 8});
+        newRows.add(new int[]{8, 8, 0, 8, 8});
+        newRows.add(new int[]{8, 8, 8, 0, 8});
+        newRows.add(new int[]{8, 8, 8, 8, 0});
+        
+        boolean result = board.pushUp(newRows);
+        
+        assertFalse("오버플로우 시 false를 반환해야 합니다.", result);
+        
+        // 모든 줄이 추가되었는지 확인 (다 넣고 false 반환하는 의도)
+        assertEquals(0, newRows.size()); // 리스트가 비워졌는지 확인
+    }
+
+    @Test
+    public void testPushUp_ShiftExistingBlocks() {
+        Board board = new Board(5, 5);
+        int[][] boardData = board.getBoard();
+        
+        // 3번, 4번 행에 데이터 설정
+        for (int c = 0; c < 5; c++) {
+            boardData[3][c] = 3;
+            boardData[4][c] = 4;
+        }
+        
+        // 2줄 추가
+        java.util.List<int[]> newRows = new java.util.ArrayList<>();
+        newRows.add(new int[]{9, 9, 9, 9, 9});
+        newRows.add(new int[]{7, 7, 7, 7, 7});
+        
+        boolean result = board.pushUp(newRows);
+        
+        assertTrue(result);
+        
+        // 기존 데이터가 위로 밀리고 새 줄이 아래에 추가되었는지 확인
+        String expected = 
+                "0 0 0 0 0 \n" +
+                "3 3 3 3 3 \n" +
+                "4 4 4 4 4 \n" +
+                "9 9 9 9 9 \n" +
+                "7 7 7 7 7 \n";
+        assertEquals(expected, board.toString());
+    }
+
+    // ==================== setCurPos 테스트 ====================
+
+    @Test
+    public void testSetCurPos() {
+        Board board = new Board(5, 5);
+        Block block = new IBlock();
+        board.setActiveBlock(block);
+        
+        Point newPos = new Point(2, 3);
+        board.setCurPos(newPos);
+        
+        assertEquals(newPos, board.getCurPos());
     }
 }
