@@ -9,7 +9,7 @@ import org.tetris.game.model.blocks.Block;
 import org.tetris.game.model.items.*;
 
 public class ItemController {
-    private static final int ITEM_LINE_THRESHOLD = 1;
+    private static final int ITEM_LINE_THRESHOLD = 10;
 
     private Item currentItem;
     private int lineClearedCount;
