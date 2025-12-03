@@ -2,6 +2,8 @@ package org.tetris.network.mocks;
 
 import org.tetris.game.model.blocks.Block;
 import org.tetris.network.comand.GameCommandExecutor;
+import org.tetris.network.comand.InputCommand;
+import org.tetris.network.comand.SnapshotCommand;
 import org.tetris.network.dto.MatchSettings;
 import org.util.Point;
 
@@ -107,5 +109,21 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     public void updateOpponentPing(long ping) {
         executedCommands.add("updateOpponentPing");
         this.lastPing = ping;
+    }
+
+    // 시퀀싱 시스템 메서드
+    public InputCommand lastInputCommand;
+    public SnapshotCommand lastSnapshotCommand;
+
+    @Override
+    public void executeInput(InputCommand cmd) {
+        executedCommands.add("executeInput");
+        this.lastInputCommand = cmd;
+    }
+
+    @Override
+    public void restoreSnapshot(SnapshotCommand snapshot) {
+        executedCommands.add("restoreSnapshot");
+        this.lastSnapshotCommand = snapshot;
     }
 }
