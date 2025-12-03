@@ -14,7 +14,7 @@ public class Board extends BaseModel {
 
     private int[][] board;
     public Block activeBlock;
-    private Point curPos;
+    public Point curPos;
     private Point initialPos;
 
     // Board 생성자
@@ -35,6 +35,18 @@ public class Board extends BaseModel {
 
     public int[][] getBoard() {
         return board;
+    }
+
+    /**
+     * 보드 상태를 직접 설정 (P2P 동기화용)
+     * 기존 보드를 덮어쓰고 activeBlock은 null로 설정
+     */
+    public void setBoard(int[][] newBoard) {
+        for (int r = 0; r < height; r++) {
+            if (newBoard[r] != null && newBoard[r].length == width) {
+                System.arraycopy(newBoard[r], 0, board[r], 0, width);
+            }
+        }
     }
 
     public Point getSize() {
