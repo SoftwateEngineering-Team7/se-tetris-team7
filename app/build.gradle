@@ -110,8 +110,11 @@ version = '1.0.0'
     // def packageType = 'dmg'
     
     // Windows용 설정
-    def iconFile = "src/main/resources/tetris.ico"
-    def packageType = 'exe'
+    // def iconFile = "src/main/resources/tetris.ico"
+    // def packageType = 'exe'
+    
+    // 크로스 플랫폼 JAR 빌드 (모든 OS에서 가능)
+    def packageType = 'app-image'
     
     def mainJar = "${buildDir}/libs/${project.name}-${version}.jar"
 
@@ -120,7 +123,6 @@ version = '1.0.0'
             '--input', "${buildDir}/libs",
             '--main-jar', "${project.name}-${version}.jar",
             '--main-class', 'org.tetris.App',
-            '--icon', iconFile,
             '--type', packageType,
             '--dest', outputDir,
             '--app-version', '2.0',
