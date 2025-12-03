@@ -40,8 +40,8 @@ public class StartMenuController extends BaseController<StartMenuModel> implemen
     private static final String TEXT_ITEM_SCOREBOARD = "아이템 스코어보드";
     private static final String TEXT_LOCAL_MULTI = "로컬";
     private static final String TEXT_P2P_MULTI = "P2P";
-    private static final String TEXT_P2P_HOST = "P2P (호스트)";
-    private static final String TEXT_P2P_CLIENT = "P2P (클라이언트)";
+    private static final String TEXT_P2P_HOST = "호스트";
+    private static final String TEXT_P2P_CLIENT = "클라이언트";
 
     // 메시지 텍스트 상수
     private static final String TEXT_WRONG_INPUT_Arrows = "잘못된 입력입니다.\n방향키와 Enter를 사용하세요.";
