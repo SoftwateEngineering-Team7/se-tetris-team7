@@ -117,7 +117,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     protected PlayerSlot activeItemTarget;
 
     protected Router router;
-    private AnimationTimer gameLoop;
+    protected AnimationTimer gameLoop;
 
     protected long lastUpdate = 0L;
     private static final long FRAME_TIME = 16_666_667L; // ~60 FPS (나노초)
@@ -131,7 +131,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     private static final double PREVIEW_RATIO = 0.8;
     
     private boolean isTimeAttackMode = false;
-    private boolean isGameOver = false;
+    protected boolean isGameOver = false;
     protected boolean firstTriggered = false; // 게임 초기화 후 첫 프레임 트리거 플래그 -> 블록이 미리 떨어짐을 방지
     private double playTime = 0.0;
 
@@ -444,7 +444,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         gameLoop.start();
     }
 
-    private void update(long now) {
+    protected void update(long now) {
         if (isPaused())
             return;
 
@@ -465,7 +465,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         checkGameOverState();
     }
 
-    private void handlePlayerUpdate(PlayerSlot player, long now) {
+    protected void handlePlayerUpdate(PlayerSlot player, long now) {
         GameModel gm = player.gameModel;
         if (gm.isGameOver())
             return;
@@ -489,7 +489,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
-    private void checkGameOverState() {
+    protected void checkGameOverState() {
         isGameOver = false;
 
         boolean p1Over = player1.gameModel.isGameOver();
@@ -568,7 +568,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
 
         processIncomingAttacks(player);
-        updateGameBoard(player);
+        updateUI();
         gm.spawnNewBlock();
         checkGameOverState();
     }
@@ -600,7 +600,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
-    private void processClears(PlayerSlot player) {
+    protected void processClears(PlayerSlot player) {
         GameModel gm = player.gameModel;
 
         int linesCleared = deleteCompletedRows(player);
@@ -611,21 +611,22 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         processIncomingAttacks(player);
 
         gm.spawnNewBlock();
+        updateUI();
         checkGameOverState();
     }
 
     // === 공격 로직 (PlayerSlot 활용) ===
-    private void sendAttack(PlayerSlot attackerSlot) {
+    protected void sendAttack(PlayerSlot attacker) {
         // 상대방 찾기
-        PlayerSlot targetSlot = (attackerSlot == player1) ? player2 : player1;
+        PlayerSlot target = (attacker == player1) ? player2 : player1;
 
-        for (int row : attackerSlot.clearingRows) {
-            int[] attackLine = attackerSlot.boardModel.getRowForAttack(row);
-            targetSlot.attackModel.push(attackLine);
+        for (int row : attacker.clearingRows) {
+            int[] attackLine = attacker.boardModel.getRowForAttack(row);
+            target.attackModel.push(attackLine);
         }
     }
 
-    private void processIncomingAttacks(PlayerSlot player) {
+    protected void processIncomingAttacks(PlayerSlot player) {
         while (true) {
             int[] attackLine = player.attackModel.pop();
             if (attackLine == null)
@@ -637,6 +638,14 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
                 break;
             }
         }
+    }
+
+    protected PlayerSlot getPlayer1() {
+        return player1;
+    }
+
+    protected PlayerSlot getPlayer2() {
+        return player2;
     }
 
     // === Helper Methods for Cleaning Lists ===
@@ -666,7 +675,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     // === UI 업데이트 통합 ===
-    private void updateUI() {
+    protected void updateUI() {
         updateGameBoard(player1);
         updateGameBoard(player2);
         updateScoreDisplay();
