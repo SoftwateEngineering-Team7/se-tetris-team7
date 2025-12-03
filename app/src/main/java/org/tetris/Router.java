@@ -1,5 +1,10 @@
 package org.tetris;
 
+import org.tetris.game.controller.ReplayController;
+import org.tetris.game.model.ReplayData;
+
+
+
 import org.tetris.menu.setting.model.Setting;
 import org.tetris.menu.setting.SettingMenuFactory;
 import org.tetris.menu.setting.controller.SettingMenuController;
@@ -9,6 +14,7 @@ import org.tetris.network.menu.NetworkMenuFactory;
 import org.tetris.game.DualGameFactory;
 import org.tetris.game.GameFactory;
 import org.tetris.game.P2PGameFactory;
+import org.tetris.game.ReplayGameFactory;
 import org.tetris.network.menu.controller.NetworkMenuController;
 import org.tetris.game.controller.DualGameController;
 import org.tetris.game.controller.GameController;
@@ -34,6 +40,7 @@ public final class Router {
     private final MvcFactory<ScoreBoard, ScoreBoardController> scoreBoardFactory;
     private final MvcFactory<?, ?> networkMenuFactory;
     private final MvcFactory<?, ?> p2pGameFactory;
+    private final MvcFactory<?, ?> replayGameFactory;
 
     private MvcBundle<?, ViewWrap, ?> current; // 현재 화면
 
@@ -48,6 +55,7 @@ public final class Router {
         this.networkMenuFactory = new NetworkMenuFactory();
         this.dualGameFactory = new DualGameFactory();
         this.p2pGameFactory = new P2PGameFactory();
+        this.replayGameFactory = new ReplayGameFactory();
 
         setStageSize();
         stage.setTitle("Tetris");
@@ -105,6 +113,24 @@ public final class Router {
             gameController.initialize();
             // Pass MatchSettings to start the game with correct player number
             gameController.gameStart(settings);
+        }
+    }
+
+    public void showReplay(ReplayData replayData) {
+        setStageSize(1400, 820);
+        var controller = show(replayGameFactory);
+        if (controller instanceof ReplayController replayController) {
+            replayController.setReplayData(replayData);
+            // player1, player2가 초기화된 후에 initializeReplay() 호출
+            // DualGameController.initialize()에서 Platform.runLater로 setupPlayerSlots()를 호출하므로
+            // 2단계 중첩된 Platform.runLater로 초기화 순서 보장
+            javafx.application.Platform.runLater(() -> {
+                javafx.application.Platform.runLater(() -> {
+                    javafx.application.Platform.runLater(() -> {
+                        replayController.initializeReplay();
+                    });
+                });
+            });
         }
     }
 
