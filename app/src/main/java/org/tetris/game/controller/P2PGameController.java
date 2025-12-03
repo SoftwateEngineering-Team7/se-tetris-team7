@@ -14,8 +14,6 @@ import javafx.scene.layout.HBox;
 import javafx.application.Platform;
 
 import java.util.Arrays;
-import java.util.Timer;
-import java.util.TimerTask;
 import org.tetris.network.dto.MatchSettings;
 import org.util.KeyLayout;
 import org.util.PlayerId;
@@ -45,15 +43,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     
     // 일시정지 권한 관리: 누가 일시정지했는지 추적 (0: 없음, 1: 호스트, 2: 클라이언트)
     private volatile int pauseOwner = 0;
-    
-    // 현재 게임 설정 저장 (restart용)
-    private MatchSettings currentSettings;
-    
-    // Ping 타임아웃 감지
-    private static final long PING_TIMEOUT_MS = 10000; // 10초 동안 ping 없으면 연결 끊김
-    private volatile long lastPingTime = 0;
-    private Timer pingTimeoutTimer;
-    private volatile boolean gameStarted = false;
 
     public P2PGameController(P2PGameModel model) {
         super(model);
@@ -300,51 +289,10 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     }
     
     /**
-     * Ping 타임아웃 타이머 시작
-     * 주기적으로 마지막 ping 응답 시간을 확인하여 타임아웃 감지
-     */
-    private void startPingTimeoutTimer() {
-        stopPingTimeoutTimer(); // 기존 타이머 정리
-        lastPingTime = System.currentTimeMillis(); // 초기 시간 설정
-        
-        pingTimeoutTimer = new Timer("PingTimeoutTimer", true);
-        pingTimeoutTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (!gameStarted || opponentDisconnected) {
-                    return;
-                }
-                
-                long currentTime = System.currentTimeMillis();
-                long timeSinceLastPing = currentTime - lastPingTime;
-                
-                if (timeSinceLastPing > PING_TIMEOUT_MS) {
-                    System.out.println("[P2P-CONTROLLER] Ping timeout detected! No response for " + 
-                                       timeSinceLastPing + "ms");
-                    onOpponentDisconnect("상대방과의 연결이 끊겼습니다.\n(응답 시간 초과)");
-                }
-            }
-        }, 2000, 2000); // 2초마다 체크
-    }
-    
-    /**
-     * Ping 타임아웃 타이머 정지
-     */
-    private void stopPingTimeoutTimer() {
-        if (pingTimeoutTimer != null) {
-            pingTimeoutTimer.cancel();
-            pingTimeoutTimer = null;
-        }
-    }
-    
-    /**
      * 게임 정리 (화면 전환 시 호출)
      */
     @Override
-    public void cleanup() {
-        super.cleanup();
-        stopPingTimeoutTimer();
-        gameStarted = false;
+    public void refresh() {
         cleanupNetworkResources();
     }
     
@@ -483,9 +431,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             if (player1 != null && player2 != null) {
                 System.out.println("[P2P-CONTROLLER] gameStart() received");
                 
-                // 현재 설정 저장 (restart용)
-                this.currentSettings = settings;
-                
                 // Set player number to determine local/remote mapping
                 model.setPlayerNumber(settings.getPlayerNumber());
                 
@@ -541,11 +486,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                 
                 // firstTriggered 설정 후 게임 루프 재시작
                 firstTriggered = true;
-                gameStarted = true;
                 startGameLoop();
-                
-                // Ping 타임아웃 타이머 시작
-                startPingTimeoutTimer();
                 
                 System.out.println("[P2P-CONTROLLER] Game started! Local player controls " + 
                                    (settings.getPlayerNumber() == 1 ? "left" : "right") + " screen.");
@@ -639,9 +580,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     @Override
     public void updatePing(long ping) {
-        // 마지막 ping 시간 갱신
-        lastPingTime = System.currentTimeMillis();
-        
         Platform.runLater(() -> {
             if (myPingLabel != null) {
                 myPingLabel.setText(ping + " ms");
