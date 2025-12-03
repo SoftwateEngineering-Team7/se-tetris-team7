@@ -5,7 +5,6 @@ import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.game.model.P2PGameModel;
 import org.tetris.game.model.PlayerSlot;
-import org.tetris.game.model.blocks.Block;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -109,7 +108,8 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
         // 로컬 플레이어의 입력만 처리하고 서버로 커맨드 전송
         PlayerSlot localPlayer = getLocalPlayer();
-        if (localPlayer == null || localPlayer.gameModel.isPaused() || localPlayer.gameModel.isGameOver()) {
+        if (localPlayer == null || localPlayer.gameModel.isPaused() || 
+            localPlayer.gameModel.isGameOver()) {
             return;
         }
 
@@ -120,40 +120,69 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         }
 
         KeyCode code = e.getCode();
-        GameCommand command = null;
-        boolean updateNeeded = false;
+        String action = mapKeyToAction(code);
 
-        if (code == KeyLayout.getLeftKey(PlayerId.PLAYER1)) {
-            command = new MoveLeftCommand();
-            localPlayer.boardModel.moveLeft();
-            updateNeeded = true;
-        } else if (code == KeyLayout.getRightKey(PlayerId.PLAYER1)) {
-            command = new MoveRightCommand();
-            localPlayer.boardModel.moveRight();
-            updateNeeded = true;
-        } else if (code == KeyLayout.getUpKey(PlayerId.PLAYER1)) {
-            command = new RotateCommand();
-            localPlayer.boardModel.rotate();
-            updateNeeded = true;
-        } else if (code == KeyLayout.getDownKey(PlayerId.PLAYER1)) {
-            command = new SoftDropCommand();
-            if (localPlayer.boardModel.moveDown()) {
-                localPlayer.scoreModel.softDrop(1);
+        if (action != null) {
+            // 1. 로컬 시퀀스 부여
+            long localSeq = ++localSeqCounter;
+            InputCommand cmd = new InputCommand(model.getPlayerNumber(), localSeq, action);
+
+            // 2. 서버에 전송
+            client.sendCommand(cmd);
+
+            // 3. 입력 로그에 저장
+            inputLog.addLast(cmd);
+            if (inputLog.size() > INPUT_LOG_SIZE) {
+                inputLog.removeFirst();
             }
-            updateNeeded = true;
-        } else if (code == KeyLayout.getHardDropKey(PlayerId.PLAYER1)) {
-            command = new HardDropCommand();
-            handleHardDrop(localPlayer);
-        }
 
-        if (updateNeeded) {
-            updateGameBoard(localPlayer);
-            localPlayer.renderer.renderNextBlock(localPlayer.nextBlockModel.peekNext());
-        }
+            // 4. 낙관적 로컬 적용 (즉시 반영)
+            applyInputLocally(localPlayer, action);
 
-        if (command != null) {
-            client.sendCommand(command);
+            e.consume();
         }
+    }
+
+    /**
+     * 키를 액션 문자열로 매핑
+     */
+    private String mapKeyToAction(KeyCode code) {
+        if (code == KeyLayout.getLeftKey(PlayerId.PLAYER1)) return "moveLeft";
+        if (code == KeyLayout.getRightKey(PlayerId.PLAYER1)) return "moveRight";
+        if (code == KeyLayout.getUpKey(PlayerId.PLAYER1)) return "rotate";
+        if (code == KeyLayout.getDownKey(PlayerId.PLAYER1)) return "softDrop";
+        if (code == KeyLayout.getHardDropKey(PlayerId.PLAYER1)) return "hardDrop";
+        return null;
+    }
+
+    /**
+     * 로컬 플레이어에게 입력을 즉시 적용 (낙관적 업데이트)
+     */
+    private void applyInputLocally(PlayerSlot player, String action) {
+        switch (action) {
+            case "moveLeft":
+                player.boardModel.moveLeft();
+                updateGameBoard(player);
+                break;
+            case "moveRight":
+                player.boardModel.moveRight();
+                updateGameBoard(player);
+                break;
+            case "rotate":
+                player.boardModel.rotate();
+                updateGameBoard(player);
+                break;
+            case "softDrop":
+                if (player.boardModel.moveDown()) {
+                    player.scoreModel.softDrop(1);
+                }
+                updateGameBoard(player);
+                break;
+            case "hardDrop":
+                handleHardDrop(player);
+                return; // hardDrop은 별도 처리
+        }
+        player.renderer.renderNextBlock(player.nextBlockModel.peekNext());
     }
 
     /**
@@ -634,6 +663,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     /**
      * 내 블록이 고정될 때마다 현재 상태를 상대방에게 전송합니다.
+     * 호스트인 경우 주기적으로 스냅샷도 전송합니다.
      */
     @Override
     protected void onBlockLocked(PlayerSlot player) {
@@ -644,8 +674,59 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
             // 상태 전송
             client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c));
-            // System.out.println("[P2P-SYNC] Sent board state update.");
+            
+            // 호스트인 경우: 주기적으로 스냅샷 전송
+            if (isHost()) {
+                localBlockCount++;
+                if (localBlockCount % 10 == 0) { // 10블록마다
+                    sendSnapshotToServer();
+                }
+            }
         }
+    }
+
+    /**
+     * 현재 게임 상태의 스냅샷을 서버에 전송 (호스트만)
+     */
+    private void sendSnapshotToServer() {
+        PlayerSlot local = getLocalPlayer();
+        PlayerSlot remote = getRemotePlayer();
+
+        if (local == null || remote == null) {
+            return;
+        }
+
+        // 현재 보드 상태 캡처
+        int[][] localBoard = deepCopyBoard(local.boardModel.getBoard());
+        int[][] remoteBoard = deepCopyBoard(remote.boardModel.getBoard());
+
+        // 스냅샷 생성 (player1이 로컬, player2가 원격)
+        SnapshotCommand snapshot = new SnapshotCommand(
+                lastConfirmedGlobalSeq,
+                localBoard,
+                remoteBoard,
+                local.scoreModel.getScore(),
+                remote.scoreModel.getScore(),
+                0, 0 // RNG seed는 향후 구현
+        );
+
+        client.sendCommand(snapshot);
+        System.out.println("[P2P-HOST] Sent snapshot at globalSeq=" + lastConfirmedGlobalSeq +
+                ", blockCount=" + localBlockCount);
+    }
+
+    /**
+     * 보드 배열의 깊은 복사
+     */
+    private int[][] deepCopyBoard(int[][] src) {
+        if (src == null) {
+            return null;
+        }
+        int[][] copy = new int[src.length][];
+        for (int i = 0; i < src.length; i++) {
+            copy[i] = src[i].clone();
+        }
+        return copy;
     }
 
     @Override
@@ -695,5 +776,199 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             winnerLabel.setText(message);
         }
         showGameOverlay();
+    }
+
+    // ===== 시퀀싱 시스템 필드 =====
+    private long localSeqCounter = 0; // 내가 보낸 입력의 로컬 시퀀스
+    private long lastConfirmedGlobalSeq = 0; // 마지막으로 확인된 전역 시퀀스
+
+    // 입력 로그 (최근 200개 유지)
+    private static final int INPUT_LOG_SIZE = 200;
+    private final java.util.Deque<InputCommand> inputLog = new java.util.ArrayDeque<>(INPUT_LOG_SIZE);
+
+    // 스냅샷 캐시 (가장 최근 것만 유지)
+    private SnapshotCommand lastSnapshot = null;
+
+    // 블록 고정 카운터 (호스트만 사용)
+    private int localBlockCount = 0;
+
+    /**
+     * GameCommandExecutor.executeInput() 구현
+     * 서버가 globalSeq를 부여한 InputCommand를 수신했을 때 호출됨
+     */
+    @Override
+    public void executeInput(InputCommand cmd) {
+        Platform.runLater(() -> {
+            if (cmd.getGlobalSeq() <= lastConfirmedGlobalSeq) {
+                // 이미 처리한 시퀀스 (중복 또는 롤백 후 재적용 완료)
+                return;
+            }
+
+            // 시퀀스 업데이트
+            lastConfirmedGlobalSeq = cmd.getGlobalSeq();
+
+            // 내 입력인 경우: 이미 낙관적으로 적용했으므로 확정만 함
+            if (cmd.getPlayerNumber() == model.getPlayerNumber()) {
+                System.out.println("[P2P] My input confirmed: globalSeq=" + cmd.getGlobalSeq());
+                // 입력 로그에서 globalSeq 업데이트
+                updateInputLogWithGlobalSeq(cmd);
+                return;
+            }
+
+            // 상대방 입력인 경우: 원격 플레이어에게 적용
+            PlayerSlot remotePlayer = getRemotePlayer();
+            if (remotePlayer != null) {
+                applyInputToPlayer(remotePlayer, cmd.getAction());
+            }
+        });
+    }
+
+    /**
+     * 입력 로그에서 해당 로컬 시퀀스를 찾아 globalSeq 업데이트
+     */
+    private void updateInputLogWithGlobalSeq(InputCommand confirmedCmd) {
+        for (InputCommand logged : inputLog) {
+            if (logged.getPlayerNumber() == confirmedCmd.getPlayerNumber() &&
+                    logged.getLocalSeq() == confirmedCmd.getLocalSeq()) {
+                logged.setGlobalSeq(confirmedCmd.getGlobalSeq());
+                break;
+            }
+        }
+    }
+
+    /**
+     * 특정 플레이어에게 액션 적용
+     */
+    private void applyInputToPlayer(PlayerSlot player, String action) {
+        switch (action) {
+            case "moveLeft":
+                player.boardModel.moveLeft();
+                break;
+            case "moveRight":
+                player.boardModel.moveRight();
+                break;
+            case "rotate":
+                player.boardModel.rotate();
+                break;
+            case "softDrop":
+                if (player.boardModel.moveDown()) {
+                    player.scoreModel.softDrop(1);
+                }
+                break;
+            case "hardDrop":
+                int d = player.boardModel.hardDrop();
+                player.scoreModel.add(d * 2);
+                break;
+        }
+        updateGameBoard(player);
+    }
+
+    /**
+     * GameCommandExecutor.restoreSnapshot() 구현
+     * 서버로부터 스냅샷을 받아 상태 복원 + 이후 입력 재적용
+     */
+    @Override
+    public void restoreSnapshot(SnapshotCommand snapshot) {
+        Platform.runLater(() -> {
+            System.out.println("[P2P] Received snapshot at globalSeq=" +
+                    snapshot.getAuthoritativeSeq());
+
+            // 1. 스냅샷이 현재보다 오래된 것이면 무시
+            if (snapshot.getAuthoritativeSeq() <= lastConfirmedGlobalSeq) {
+                return;
+            }
+
+            // 2. 스냅샷 캐시에 저장
+            lastSnapshot = snapshot;
+
+            // 3. 상태 복원
+            restoreGameState(snapshot);
+
+            // 4. 스냅샷 이후의 입력들을 재적용 (Rollback & Replay)
+            replayInputsAfter(snapshot.getAuthoritativeSeq());
+
+            // 5. 시퀀스 업데이트
+            lastConfirmedGlobalSeq = snapshot.getAuthoritativeSeq();
+        });
+    }
+
+    /**
+     * 스냅샷으로 게임 상태 복원
+     */
+    private void restoreGameState(SnapshotCommand snapshot) {
+        PlayerSlot localPlayer = getLocalPlayer();
+        PlayerSlot remotePlayer = getRemotePlayer();
+
+        if (localPlayer != null) {
+            // 로컬 플레이어 상태 복원
+            int[][] localBoard = (model.getPlayerNumber() == 1)
+                    ? snapshot.getPlayer1Board()
+                    : snapshot.getPlayer2Board();
+            
+            // 보드 데이터 복사
+            int[][] currentBoard = localPlayer.boardModel.getBoard();
+            for (int i = 0; i < localBoard.length && i < currentBoard.length; i++) {
+                System.arraycopy(localBoard[i], 0, currentBoard[i], 0, 
+                        Math.min(localBoard[i].length, currentBoard[i].length));
+            }
+
+            int localScore = (model.getPlayerNumber() == 1)
+                    ? snapshot.getPlayer1Score()
+                    : snapshot.getPlayer2Score();
+            localPlayer.scoreModel.setScore(localScore);
+        }
+
+        if (remotePlayer != null) {
+            // 원격 플레이어 상태 복원
+            int[][] remoteBoard = (model.getPlayerNumber() == 1)
+                    ? snapshot.getPlayer2Board()
+                    : snapshot.getPlayer1Board();
+            
+            // 보드 데이터 복사
+            int[][] currentBoard = remotePlayer.boardModel.getBoard();
+            for (int i = 0; i < remoteBoard.length && i < currentBoard.length; i++) {
+                System.arraycopy(remoteBoard[i], 0, currentBoard[i], 0,
+                        Math.min(remoteBoard[i].length, currentBoard[i].length));
+            }
+
+            int remoteScore = (model.getPlayerNumber() == 1)
+                    ? snapshot.getPlayer2Score()
+                    : snapshot.getPlayer1Score();
+            remotePlayer.scoreModel.setScore(remoteScore);
+        }
+
+        updateUI();
+    }
+
+    /**
+     * 스냅샷 이후의 입력들을 순서대로 재적용 (Replay)
+     */
+    private void replayInputsAfter(long snapshotSeq) {
+        System.out.println("[P2P] Replaying inputs after globalSeq=" + snapshotSeq);
+
+        for (InputCommand cmd : inputLog) {
+            // globalSeq가 설정되지 않았거나, 스냅샷보다 이전 것은 스킵
+            if (cmd.getGlobalSeq() <= snapshotSeq) {
+                continue;
+            }
+
+            // 내 입력인 경우: 로컬 플레이어에게 재적용
+            if (cmd.getPlayerNumber() == model.getPlayerNumber()) {
+                applyInputToPlayer(getLocalPlayer(), cmd.getAction());
+            }
+            // 상대 입력은 executeInput에서 이미 적용되었으므로 스킵
+        }
+    }
+
+    /**
+     * UI 업데이트 (양쪽 플레이어)
+     */
+    private void updateUI() {
+        if (player1 != null) {
+            updateGameBoard(player1);
+        }
+        if (player2 != null) {
+            updateGameBoard(player2);
+        }
     }
 }
