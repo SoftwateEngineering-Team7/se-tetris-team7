@@ -1,14 +1,20 @@
 package org.tetris.network.comand;
 
-public class AttackCommand implements GameCommand {
-    private final int lines;
+import java.util.List;
 
-    public AttackCommand(int lines) {
-        this.lines = lines;
+public class AttackCommand implements GameCommand {
+    private final List<int[]> attackRows;
+
+    public AttackCommand(List<int[]> attackRows) {
+        this.attackRows = attackRows;
+    }
+
+    public List<int[]> getAttackRows() {
+        return attackRows;
     }
 
     @Override
     public void execute(GameCommandExecutor executor) {
-        executor.attack(lines);
+        executor.attack(attackRows);
     }
 }
