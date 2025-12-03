@@ -610,6 +610,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                 player2.reset();
                 localBlockCount = 1;
                 remoteBlockCount = 1;
+                tempSavedBlock = null;
                 pauseOwner = 0;
                 opponentDisconnected = false;
                 player1.gameModel.setPaused(false);
