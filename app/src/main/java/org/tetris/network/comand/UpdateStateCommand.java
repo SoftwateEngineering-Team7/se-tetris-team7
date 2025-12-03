@@ -1,6 +1,5 @@
 package org.tetris.network.comand;
 
-import org.tetris.game.model.blocks.Block;
 import org.util.Point;
 
 /**
@@ -13,8 +12,9 @@ public class UpdateStateCommand implements GameCommand {
     private final int[][] board;
     private final int currentPosRow;
     private final int currentPosCol;
+    private final int score;
 
-    public UpdateStateCommand(int[][] board, int currentPosRow, int currentPosCol) {
+    public UpdateStateCommand(int[][] board, int currentPosRow, int currentPosCol, int score) {
         // 배열 깊은 복사 (Deep Copy)하여 전송 시점의 상태 보존
         this.board = new int[board.length][];
         for (int i = 0; i < board.length; i++) {
@@ -23,11 +23,12 @@ public class UpdateStateCommand implements GameCommand {
         
         this.currentPosRow = currentPosRow;
         this.currentPosCol = currentPosCol;
+        this.score = score;
     }
 
     @Override
     public void execute(GameCommandExecutor executor) {
-        executor.updateState(board, currentPosRow, currentPosCol);
+        executor.updateState(board, currentPosRow, currentPosCol, score);
     }
 
     public int[][] getBoard() {

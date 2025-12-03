@@ -595,7 +595,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      * (UpdateStateCommand에 의해 호출됨)
      */
     @Override
-    public void updateState(int[][] boardData, int currentPosRow, int currentPosCol) {
+    public void updateState(int[][] boardData, int currentPosRow, int currentPosCol, int score) {
         Platform.runLater(() -> {
             PlayerSlot remotePlayer = getRemotePlayer();
             if (remotePlayer != null) {
@@ -607,6 +607,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                     }
                 }
                 remotePlayer.boardModel.setCurPos(new Point(currentPosRow, currentPosCol));
+                remotePlayer.scoreModel.setScore(score);
 
                 // 수신된 보드 상태를 기반으로 로컬 시뮬레이션(Attack, Line Clear 등)을 수행
                 super.lockCurrentBlock(remotePlayer);
@@ -643,7 +644,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
             Point myPos = player.boardModel.getCurPos();
 
             // 상태 전송
-            client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c));
+            client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c, player.scoreModel.getScore()));
             // System.out.println("[P2P-SYNC] Sent board state update.");
         }
     }
