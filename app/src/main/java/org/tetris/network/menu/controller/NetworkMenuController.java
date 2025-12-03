@@ -79,6 +79,15 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
         if (client != null) {
             client.setMenuExecutor(this);
+            // 연결 끊김 콜백 설정 - 상대방이 나갔을 때 감지
+            client.setOnDisconnectCallback(() -> {
+                Platform.runLater(() -> {
+                    if (!shouldReleaseResources) {
+                        // 내가 직접 끊은 게 아니면 상대방이 나간 것
+                        handleOpponentDisconnected();
+                    }
+                });
+            });
         }
     }
 
@@ -241,8 +250,9 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     @FXML
     private void onBackPressed() {
-        client.disconnect();
         shouldReleaseResources = true;
+        // graceful disconnect로 상대방에게 연결 끊김 알림
+        client.disconnectGracefully();
         if (router != null)
             router.showStartMenu();
     }
