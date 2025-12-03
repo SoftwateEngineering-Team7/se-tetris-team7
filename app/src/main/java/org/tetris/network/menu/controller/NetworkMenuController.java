@@ -6,6 +6,7 @@ import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.comand.ReadyCommand;
+import org.tetris.network.comand.RequestSyncCommand;
 import org.tetris.network.dto.MatchSettings;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
@@ -106,6 +107,11 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
                 readyButton.setText(model.isReady() ? "CANCEL" : "READY");
                 ipField.setText(model.getIpAddress());
                 setMessage("연결을 유지했습니다. READY를 다시 눌러주세요.", false);
+                
+                // 게임에서 메뉴로 돌아올 때 서버에 상대방 Ready 상태 동기화 요청
+                if (client != null && client.isConnected()) {
+                    client.sendCommand(new RequestSyncCommand());
+                }
                 return;
             }
 
