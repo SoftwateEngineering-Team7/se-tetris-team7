@@ -68,6 +68,7 @@ public final class Router {
     }
 
     public void showNetworkMenu(boolean refresh) {
+        setStageSize();
         BaseController<?> controller = show(networkMenuFactory);
         if (refresh) 
             controller.refresh();
