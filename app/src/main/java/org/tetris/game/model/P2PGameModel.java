@@ -6,7 +6,7 @@ package org.tetris.game.model;
  */
 public class P2PGameModel extends DualGameModel {
 
-    private int playerNumber = 1; // 기본값: Player 1
+    private int playerNumber = 0; // 기본값: 미설정 (0), 호스트=1, 클라이언트=2
 
     public P2PGameModel() {
         super();

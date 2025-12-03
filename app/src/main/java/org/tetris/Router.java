@@ -105,10 +105,10 @@ public final class Router {
         setStageSize(1400, 820);
         var controller = show(p2pGameFactory);
         if (controller instanceof P2PGameController gameController) {
+            // playerNumber를 먼저 설정하여 isHost() 판단이 올바르게 되도록 함
+            gameController.gameStart(settings);
             gameController.setUpGameMode(mode);
             gameController.initialize();
-            // Pass MatchSettings to start the game with correct player number
-            gameController.gameStart(settings);
         }
     }
 

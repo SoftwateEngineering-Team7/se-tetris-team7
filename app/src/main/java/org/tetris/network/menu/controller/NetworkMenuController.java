@@ -77,8 +77,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         setupModelListeners();
         resetUi();
 
-        // Model에서 isHost 상태 복원 (게임 오버 후 돌아올 때 중요)
-        this.isHost = model.getIsHost();
+        // isHost는 configureRole()에서 설정됨 - 여기서는 설정하지 않음
 
         if (client != null) {
             client.setMenuExecutor(this);

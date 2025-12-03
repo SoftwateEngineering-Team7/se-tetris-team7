@@ -435,28 +435,38 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     @Override
     public void gameStart(MatchSettings settings) {
+        // playerNumber는 즉시 설정 (isHost() 판단에 필요)
+        model.setPlayerNumber(settings.getPlayerNumber());
+        System.out.println("[P2P-CONTROLLER] gameStart() - I am Player " + settings.getPlayerNumber());
+
         Platform.runLater(() -> {
+            System.out.println("[P2P-CONTROLLER] gameStart() Platform.runLater executing");
+
+            // 클라이언트인 경우 restart, resume 버튼 숨기기
+            if (settings.getPlayerNumber() == 2) {
+                if (restartButton != null) {
+                    restartButton.setVisible(false);
+                    restartButton.setManaged(false);
+                }
+                if (resumeButton != null) {
+                    resumeButton.setVisible(false);
+                    resumeButton.setManaged(false);
+                }
+            } else {
+                // 호스트인 경우 버튼 표시
+                if (restartButton != null) {
+                    restartButton.setVisible(true);
+                    restartButton.setManaged(true);
+                }
+                if (resumeButton != null) {
+                    resumeButton.setVisible(true);
+                    resumeButton.setManaged(true);
+                }
+            }
+
             if (player1 != null && player2 != null) {
-                System.out.println("[P2P-CONTROLLER] gameStart() received");
-
-                // Set player number to determine local/remote mapping
-                model.setPlayerNumber(settings.getPlayerNumber());
-
-                System.out.println("[P2P-CONTROLLER] I am Player " + settings.getPlayerNumber());
                 System.out.println("[P2P-CONTROLLER] My seed: " + settings.getMySeed() +
                         ", Other seed: " + settings.getOtherSeed());
-
-                // 클라이언트인 경우 restart, resume 버튼 숨기기
-                if (settings.getPlayerNumber() == 2) {
-                    if (restartButton != null) {
-                        restartButton.setVisible(false);
-                        restartButton.setManaged(false);
-                    }
-                    if (resumeButton != null) {
-                        resumeButton.setVisible(false);
-                        resumeButton.setManaged(false);
-                    }
-                }
 
                 // 기존 게임 루프 정리
                 stopGame();
