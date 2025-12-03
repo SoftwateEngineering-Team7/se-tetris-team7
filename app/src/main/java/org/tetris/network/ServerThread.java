@@ -130,10 +130,6 @@ public class ServerThread {
                     } else if (command instanceof ReadyCommand) {
                         ReadyCommand readyCmd = (ReadyCommand) command;
                         GameServer.getInstance().onClientReady(ServerThread.this, readyCmd.getIsReady());
-                    } else if (command instanceof GameOverCommand) {
-                        // 게임 오버 처리 - 게임 종료 상태로 변경
-                        GameServer.getInstance().endGame();
-                        GameServer.getInstance().broadcast(command); // 모두에게 알림
                     } else if (command instanceof PauseCommand) {
                         // 일시정지 커맨드는 상대방에게 릴레이
                         PauseCommand pauseCmd = (PauseCommand) command;

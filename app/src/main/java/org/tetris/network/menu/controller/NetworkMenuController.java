@@ -247,6 +247,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             return;
         }
 
+        // 호스트가 선택한 게임 모드를 서버에 설정
+        GameMode selectedMode = mapGameModeLabelToGameMode(gameModeCombo.getValue());
+        GameServer.getInstance().setGameMode(selectedMode);
+
         boolean started = GameServer.getInstance().startGameIfReady();
         setMessage(started ? "게임을 시작합니다..." : "두 플레이어가 모두 연결되어 있는지 확인해주세요.", !started);
     }

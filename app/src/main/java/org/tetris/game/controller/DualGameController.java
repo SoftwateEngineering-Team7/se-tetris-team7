@@ -724,7 +724,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             scoreLabel2.setText(player2.scoreModel.toString());
     }
 
-    private void updateTimeAttackVisibility() {
+    protected void updateTimeAttackVisibility() {
         boolean show = isTimeAttackMode;
 
         if (timeAttackBox1 != null) {
