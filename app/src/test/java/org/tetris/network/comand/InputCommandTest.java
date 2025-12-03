@@ -28,7 +28,7 @@ public class InputCommandTest {
         String action = "moveLeft";
 
         // When
-        InputCommand cmd = new InputCommand(playerNumber, localSeq, action);
+        InputCommand cmd = new InputCommand(playerNumber, localSeq, action, 0L);
 
         // Then
         assertEquals(playerNumber, cmd.getPlayerNumber());
@@ -41,7 +41,7 @@ public class InputCommandTest {
     @Test
     public void testSetGlobalSeq() {
         // Given
-        InputCommand cmd = new InputCommand(1, 10, "rotate");
+        InputCommand cmd = new InputCommand(1, 10, "rotate", 0L);
         long globalSeq = 100;
 
         // When
@@ -56,7 +56,7 @@ public class InputCommandTest {
         String[] actions = {"moveLeft", "moveRight", "rotate", "softDrop", "hardDrop"};
 
         for (String action : actions) {
-            InputCommand cmd = new InputCommand(2, 1, action);
+            InputCommand cmd = new InputCommand(2, 1, action, 0L);
             assertEquals(action, cmd.getAction());
         }
     }
@@ -64,7 +64,7 @@ public class InputCommandTest {
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         // Given
-        InputCommand original = new InputCommand(1, 42, "hardDrop");
+        InputCommand original = new InputCommand(1, 42, "hardDrop", 0L);
         original.setGlobalSeq(100);
 
         // When - 직렬화
@@ -90,7 +90,7 @@ public class InputCommandTest {
     @Test
     public void testToString() {
         // Given
-        InputCommand cmd = new InputCommand(2, 15, "softDrop");
+        InputCommand cmd = new InputCommand(2, 15, "softDrop", 0L);
         cmd.setGlobalSeq(200);
 
         // When
@@ -106,7 +106,7 @@ public class InputCommandTest {
     @Test
     public void testExecute() {
         // Given
-        InputCommand cmd = new InputCommand(1, 5, "moveRight");
+        InputCommand cmd = new InputCommand(1, 5, "moveRight", 0L);
         cmd.setGlobalSeq(50);
 
         // When
@@ -120,9 +120,9 @@ public class InputCommandTest {
     @Test
     public void testSequenceOrdering() {
         // Given
-        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft");
-        InputCommand cmd2 = new InputCommand(1, 2, "moveRight");
-        InputCommand cmd3 = new InputCommand(1, 3, "rotate");
+        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft", 0L);
+        InputCommand cmd2 = new InputCommand(1, 2, "moveRight", 0L);
+        InputCommand cmd3 = new InputCommand(1, 3, "rotate", 0L);
 
         cmd1.setGlobalSeq(10);
         cmd2.setGlobalSeq(11);
@@ -142,7 +142,7 @@ public class InputCommandTest {
         Thread.sleep(10); // 약간의 시간 차이 보장
 
         // When
-        InputCommand cmd = new InputCommand(1, 1, "moveLeft");
+        InputCommand cmd = new InputCommand(1, 1, "moveLeft", before);
 
         Thread.sleep(10);
         long after = System.currentTimeMillis();
@@ -155,20 +155,20 @@ public class InputCommandTest {
     @Test
     public void testPlayerNumberValidation() {
         // Player 1
-        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft");
+        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft", 0L);
         assertEquals(1, cmd1.getPlayerNumber());
 
         // Player 2
-        InputCommand cmd2 = new InputCommand(2, 1, "moveRight");
+        InputCommand cmd2 = new InputCommand(2, 1, "moveRight", 0L);
         assertEquals(2, cmd2.getPlayerNumber());
     }
 
     @Test
     public void testLocalSeqIncrement() {
         // Given
-        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft");
-        InputCommand cmd2 = new InputCommand(1, 2, "moveRight");
-        InputCommand cmd3 = new InputCommand(1, 3, "rotate");
+        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft", 0L);
+        InputCommand cmd2 = new InputCommand(1, 2, "moveRight", 0L);
+        InputCommand cmd3 = new InputCommand(1, 3, "rotate", 0L);
 
         // Then
         assertEquals(1, cmd1.getLocalSeq());

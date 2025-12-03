@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -89,12 +88,12 @@ public class P2PGameIntegrationTest {
         Thread.sleep(200);
 
         // When - 클라이언트1이 입력 전송
-        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft");
+        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft", 0L);
         client1.sendCommand(cmd1);
         Thread.sleep(200);
 
         // When - 클라이언트2가 입력 전송
-        InputCommand cmd2 = new InputCommand(2, 1, "moveRight");
+        InputCommand cmd2 = new InputCommand(2, 1, "moveRight", 0L);
         client2.sendCommand(cmd2);
         Thread.sleep(200);
 
@@ -142,10 +141,9 @@ public class P2PGameIntegrationTest {
 
         // When - 여러 입력을 순차적으로 전송
         List<Long> sentSequences = Collections.synchronizedList(new ArrayList<>());
-        List<Long> receivedSequences = Collections.synchronizedList(new ArrayList<>());
 
         for (int i = 1; i <= 5; i++) {
-            InputCommand cmd = new InputCommand(1, i, "moveLeft");
+            InputCommand cmd = new InputCommand(1, i, "moveLeft", 0L);
             sentSequences.add((long) i);
             client1.sendCommand(cmd);
             Thread.sleep(50); // 약간의 간격
@@ -191,7 +189,7 @@ public class P2PGameIntegrationTest {
             try {
                 startLatch.await();
                 for (int i = 1; i <= 3; i++) {
-                    client1.sendCommand(new InputCommand(1, i, "moveLeft"));
+                    client1.sendCommand(new InputCommand(1, i, "moveLeft", 0L));
                     Thread.sleep(10);
                 }
             } catch (InterruptedException e) {
@@ -205,7 +203,7 @@ public class P2PGameIntegrationTest {
             try {
                 startLatch.await();
                 for (int i = 1; i <= 3; i++) {
-                    client2.sendCommand(new InputCommand(2, i, "moveRight"));
+                    client2.sendCommand(new InputCommand(2, i, "moveRight", 0L));
                     Thread.sleep(10);
                 }
             } catch (InterruptedException e) {
@@ -298,15 +296,15 @@ public class P2PGameIntegrationTest {
         // When - 지연을 시뮬레이션하면서 입력 전송
         long startTime = System.currentTimeMillis();
 
-        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft");
+        InputCommand cmd1 = new InputCommand(1, 1, "moveLeft", 0L);
         client1.sendCommand(cmd1);
         Thread.sleep(NETWORK_DELAY_MS); // 네트워크 지연 시뮬레이션
 
-        InputCommand cmd2 = new InputCommand(1, 2, "moveRight");
+        InputCommand cmd2 = new InputCommand(1, 2, "moveRight", 0L);
         client1.sendCommand(cmd2);
         Thread.sleep(NETWORK_DELAY_MS);
 
-        InputCommand cmd3 = new InputCommand(1, 3, "rotate");
+        InputCommand cmd3 = new InputCommand(1, 3, "rotate", 0L);
         client1.sendCommand(cmd3);
 
         Thread.sleep(500); // 모든 명령이 처리될 시간
@@ -350,7 +348,7 @@ public class P2PGameIntegrationTest {
         // When - 여러 입력 전송 (일부는 의도적으로 누락 시뮬레이션)
         for (int i = 1; i <= 5; i++) {
             if (i != 3) { // 3번째 입력은 "손실" 시뮬레이션
-                InputCommand cmd = new InputCommand(1, i, "moveLeft");
+                InputCommand cmd = new InputCommand(1, i, "moveLeft", 0L);
                 client1.sendCommand(cmd);
                 Thread.sleep(50);
             }
@@ -401,7 +399,7 @@ public class P2PGameIntegrationTest {
         // When - 대량의 입력을 빠르게 전송
         int commandCount = 20;
         for (int i = 1; i <= commandCount; i++) {
-            InputCommand cmd = new InputCommand(1, i, "moveLeft");
+            InputCommand cmd = new InputCommand(1, i, "moveLeft", 0L);
             client1.sendCommand(cmd);
             Thread.sleep(10); // 매우 짧은 간격
         }
