@@ -73,7 +73,6 @@ public class ClientThread {
             System.out.println("[CLIENT-FACADE] Already connected.");
             return;
         }
-        // TODO: 연결 타임아웃 설정 (socket.connect(new InetSocketAddress(host, port), timeout))
         socket = new Socket(host, port);
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream());
@@ -188,7 +187,8 @@ public class ClientThread {
                             gameExecutor.onOpponentDisconnect("연결 시간 초과 (Timeout)");
                         }
                         
-                        disconnectGracefully(); 
+                        connected = false;
+                        disconnect(); 
                         break;
                     }
 

@@ -293,7 +293,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      */
     @Override
     public void refresh() {
-        cleanupNetworkResources();
+        
     }
     
     /**
