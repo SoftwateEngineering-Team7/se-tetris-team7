@@ -1,14 +1,19 @@
 package org.tetris.network;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Enumeration;
 
 import org.tetris.game.model.GameMode;
 import org.tetris.network.comand.Command;
 import org.tetris.network.comand.DisconnectCommand;
 import org.tetris.network.comand.GameResultCommand;
 import org.tetris.network.comand.GameStartCommand;
+import org.tetris.network.comand.PlayerConnectionCommand;
 import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.dto.MatchSettings;
 
@@ -47,9 +52,27 @@ public class GameServer {
         return instance;
     }
 
-    public java.net.InetAddress getHostIP() {
+    public InetAddress getHostIP() {
         try {
-            return java.net.InetAddress.getLocalHost();
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface ni = interfaces.nextElement();
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) {
+                    continue;
+                }
+                var addresses = ni.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    if (!(addr instanceof Inet4Address)) {
+                        continue;
+                    }
+                    if (!addr.isLoopbackAddress() && addr.isSiteLocalAddress()) {
+                        return addr; // 첫 번째 사설 IPv4 반환
+                    }
+                }
+            }
+            // 적절한 인터페이스를 못 찾으면 기본값으로 반환
+            return InetAddress.getLocalHost();
         } catch (Exception e) {
             return null;
         }
@@ -85,11 +108,16 @@ public class GameServer {
                                     + clientSocket.getInetAddress());
                             client1 = new ServerThread(clientSocket);
                             client1.start();
+                            client1Ready = false;
+                            client2Ready = false;
+                            notifyConnectionState();
                         } else if (client2 == null) {
                             System.out.println("[SERVER] Player 2 connected: "
                                     + clientSocket.getInetAddress());
                             client2 = new ServerThread(clientSocket);
                             client2.start();
+                            client2Ready = false;
+                            notifyConnectionState();
 
                         } else {
                             System.out.println("[SERVER] Connection rejected: Server is full.");
@@ -136,13 +164,18 @@ public class GameServer {
         ReadyCommand readyCmd = new ReadyCommand(isReady);
         sendToOtherClient(client, readyCmd);
 
-        // Check if both are ready
-        if (client1Ready && client2Ready) {
-            startGame();
-        }
+        // 게임 시작은 호스트가 명시적으로 호출
     }
 
-    private void startGame() {
+    public synchronized boolean startGameIfReady() {
+        if (client1 != null && client2 != null && client1Ready && client2Ready) {
+            startGame();
+            return true;
+        }
+        return false;
+    }
+
+    private synchronized void startGame() {
         System.out.println("[SERVER] Both players ready. Starting game...");
 
         long seed1 = System.currentTimeMillis();
@@ -184,6 +217,9 @@ public class GameServer {
      */
     public void stop() {
         running = false;
+        client1Ready = false;
+        client2Ready = false;
+        gameInProgress = false;
 
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
@@ -246,6 +282,8 @@ public class GameServer {
             // 게임 종료 상태로 변경
             gameInProgress = false;
         }
+
+        notifyConnectionState();
     }
 
     /**
@@ -299,6 +337,16 @@ public class GameServer {
             Thread.sleep(100);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private synchronized void notifyConnectionState() {
+        boolean bothConnected = client1 != null && client2 != null;
+        if (client1 != null) {
+            client1.sendCommand(new PlayerConnectionCommand(bothConnected));
+        }
+        if (client2 != null) {
+            client2.sendCommand(new PlayerConnectionCommand(bothConnected));
         }
     }
 

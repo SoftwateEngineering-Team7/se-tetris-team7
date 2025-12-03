@@ -12,4 +12,6 @@ public interface GameMenuCommandExecutor {
     void gameStart(MatchSettings settings);
 
     void updatePing(long ping);
+
+    void onPlayerConnectionChanged(boolean opponentConnected);
 }
