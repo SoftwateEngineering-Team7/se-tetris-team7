@@ -5,25 +5,41 @@ package org.tetris.network.comand;
  * 모든 입력에 로컬 시퀀스와 전역 시퀀스를 부여하여 결정론적 시뮬레이션을 가능하게 합니다.
  */
 public class InputCommand implements GameCommand {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L; // relativeTimestamp 추가로 버전 업
 
     private final int playerNumber; // 1 or 2
     private final long localSeq; // 클라이언트가 부여한 로컬 시퀀스
     private long globalSeq; // 서버가 부여할 전역 시퀀스 (초기값 -1)
     private final String action; // "moveLeft", "moveRight", "rotate", "softDrop", "hardDrop"
-    private final long timestamp; // 클라이언트 타임스탬프
+    private final long timestamp; // 클라이언트 타임스탬프 (절대 시간)
+    private final long relativeTimestamp; // 게임 시작 후 경과 시간 (밀리초) - Replay용
 
     /**
-     * InputCommand 생성자
+     * InputCommand 생성자 (기존 - 하위 호환성 유지)
      * @param playerNumber 플레이어 번호 (1 or 2)
      * @param localSeq 클라이언트가 부여한 로컬 시퀀스
      * @param action 입력 종류 ("moveLeft", "moveRight", "rotate", "softDrop", "hardDrop")
+     * @deprecated Replay 기능을 위해 gameStartTime을 받는 생성자 사용 권장
      */
+    @Deprecated
     public InputCommand(int playerNumber, long localSeq, String action) {
+        this(playerNumber, localSeq, action, 0L);
+    }
+
+    /**
+     * InputCommand 생성자 (Replay 지원)
+     * @param playerNumber 플레이어 번호 (1 or 2)
+     * @param localSeq 클라이언트가 부여한 로컬 시퀀스
+     * @param action 입력 종류 ("moveLeft", "moveRight", "rotate", "softDrop", "hardDrop")
+     * @param gameStartTime 게임 시작 시간 (밀리초) - 0이면 relativeTimestamp는 0으로 설정
+     */
+    public InputCommand(int playerNumber, long localSeq, String action, long gameStartTime) {
         this.playerNumber = playerNumber;
         this.localSeq = localSeq;
         this.action = action;
         this.timestamp = System.currentTimeMillis();
+        this.relativeTimestamp = gameStartTime > 0 ? 
+                                 (this.timestamp - gameStartTime) : 0L;
         this.globalSeq = -1; // 서버가 설정하기 전
     }
 
@@ -46,6 +62,10 @@ public class InputCommand implements GameCommand {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public long getRelativeTimestamp() {
+        return relativeTimestamp;
     }
 
     /**
