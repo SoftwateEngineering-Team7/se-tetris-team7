@@ -12,6 +12,7 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     public int lastScore;
     public boolean lastIsWinner;
     public int lastAttackLines;
+    public List<int[]> lastPendingAttacks;
     public String lastState;
     public long lastPing;
     public boolean isPaused;
@@ -49,9 +50,10 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     }
 
     @Override
-    public void gameOver(int score) {
+    public void gameOver(int score, java.util.List<int[]> pendingAttacks) {
         executedCommands.add("gameOver");
         this.lastScore = score;
+        this.lastPendingAttacks = pendingAttacks;
     }
 
     @Override
@@ -80,9 +82,9 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     }
 
     @Override
-    public void attack(int lines) {
+    public void attack(java.util.List<int[]> attackRows) {
         executedCommands.add("attack");
-        this.lastAttackLines = lines;
+        this.lastAttackLines = attackRows != null ? attackRows.size() : 0;
     }
 
     @Override
@@ -101,5 +103,10 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     public void updateOpponentPing(long ping) {
         executedCommands.add("updateOpponentPing");
         this.lastPing = ping;
+    }
+
+    @Override
+    public void syncBoard(int[][] boardState, int blockCount) {
+        executedCommands.add("syncBoard");
     }
 }

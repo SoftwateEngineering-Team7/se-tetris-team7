@@ -227,13 +227,13 @@ public class P2PGameIntegrationTest {
             public void hardDrop() {}
 
             @Override
-            public void attack(int lines) {}
+            public void attack(java.util.List<int[]> attackRows) {}
 
             @Override
             public void gameStart(MatchSettings settings) {}
 
             @Override
-            public void gameOver(int score) {}
+            public void gameOver(int score, java.util.List<int[]> pendingAttacks) {}
 
             @Override
             public void onGameResult(boolean isWinner, int score) {}
@@ -255,6 +255,9 @@ public class P2PGameIntegrationTest {
 
             @Override
             public void updateOpponentPing(long ping) {}
+
+            @Override
+            public void syncBoard(int[][] boardState, int blockCount) {}
         };
 
         // 클라이언트 2 설정
@@ -293,13 +296,13 @@ public class P2PGameIntegrationTest {
             public void hardDrop() {}
 
             @Override
-            public void attack(int lines) {}
+            public void attack(java.util.List<int[]> attackRows) {}
 
             @Override
             public void gameStart(MatchSettings settings) {}
 
             @Override
-            public void gameOver(int score) {}
+            public void gameOver(int score, java.util.List<int[]> pendingAttacks) {}
 
             @Override
             public void onGameResult(boolean isWinner, int score) {}
@@ -321,6 +324,9 @@ public class P2PGameIntegrationTest {
 
             @Override
             public void updateOpponentPing(long ping) {}
+
+            @Override
+            public void syncBoard(int[][] boardState, int blockCount) {}
         };
 
         // 연결 및 Ready
@@ -446,9 +452,9 @@ public class P2PGameIntegrationTest {
             @Override public void rotate() {}
             @Override public void softDrop() {}
             @Override public void hardDrop() {}
-            @Override public void attack(int lines) {}
+            @Override public void attack(java.util.List<int[]> attackRows) {}
             @Override public void gameStart(MatchSettings settings) {}
-            @Override public void gameOver(int score) {
+            @Override public void gameOver(int score, java.util.List<int[]> pendingAttacks) {
                 // 자신이 보낸 게임오버는 받을 수도 있고 안 받을 수도 있음 (서버 구현에 따라 다름)
                 // 여기서는 상대방의 게임오버 수신을 테스트하므로 패스
             }
@@ -459,6 +465,7 @@ public class P2PGameIntegrationTest {
             @Override public void updateState(String state) {}
             @Override public void updatePing(long ping) {}
             @Override public void updateOpponentPing(long ping) {}
+            @Override public void syncBoard(int[][] boardState, int blockCount) {}
         };
 
         // 클라이언트 2 설정 (피해자 & 게임오버 발생자)
@@ -474,13 +481,14 @@ public class P2PGameIntegrationTest {
             @Override public void rotate() {}
             @Override public void softDrop() {}
             @Override public void hardDrop() {}
-            @Override public void attack(int lines) {
-                System.out.println("[CLIENT2-GAME] Received Attack: " + lines + " lines");
+            @Override public void attack(java.util.List<int[]> attackRows) {
+                int lines = (attackRows != null) ? attackRows.size() : 0;
+                System.out.println("[CLIENT2-GAME] Received Attack: " + lines + " rows");
                 receivedAttackLines.set(lines);
                 attackLatch.countDown();
             }
             @Override public void gameStart(MatchSettings settings) {}
-            @Override public void gameOver(int score) {
+            @Override public void gameOver(int score, java.util.List<int[]> pendingAttacks) {
                 System.out.println("[CLIENT2-GAME] Received GameOver: " + score);
                 receivedGameOverScore.set(score);
                 gameOverLatch.countDown();
@@ -492,6 +500,7 @@ public class P2PGameIntegrationTest {
             @Override public void updateState(String state) {}
             @Override public void updatePing(long ping) {}
             @Override public void updateOpponentPing(long ping) {}
+            @Override public void syncBoard(int[][] boardState, int blockCount) {}
         };
 
         // 연결 및 게임 시작
@@ -511,12 +520,16 @@ public class P2PGameIntegrationTest {
         Thread.sleep(200);
 
         // When 1: Client 1 attacks Client 2
-        System.out.println("\n[TEST] === Client 1 sending Attack(2) ===");
-        client1Thread.sendCommand(new AttackCommand(2));
+        System.out.println("\n[TEST] === Client 1 sending Attack(2 rows) ===");
+        // Create attack rows (2개의 garbage row)
+        java.util.List<int[]> attackRows = new java.util.ArrayList<>();
+        attackRows.add(new int[]{8, 8, 8, 0, 8, 8, 8, 8, 8, 8}); // 10칸 garbage row with hole at index 3
+        attackRows.add(new int[]{8, 8, 8, 8, 8, 0, 8, 8, 8, 8}); // 10칸 garbage row with hole at index 5
+        client1Thread.sendCommand(new AttackCommand(attackRows));
 
         // Then 1: Client 2 receives attack
         assertTrue("Client 2 should receive attack", attackLatch.await(3, TimeUnit.SECONDS));
-        assertEquals("Should receive 2 lines of attack", Integer.valueOf(2), receivedAttackLines.get());
+        assertEquals("Should receive 2 rows of attack", Integer.valueOf(2), receivedAttackLines.get());
 
         // When 2: Client 1 sends GameOver (Client 1 died)
         // Note: GameOverCommand is broadcasted.
