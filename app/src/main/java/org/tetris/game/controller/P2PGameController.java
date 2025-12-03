@@ -525,7 +525,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         resetGameController();
         hideGameOverlay();
         if (router != null)
-            router.showNetworkMenu(isHost(), true); // 호스트 여부 전달
+            router.showNetworkMenu(getLocalPlayer() == player1, true); // 호스트 여부 전달
     }
 
     @Override
@@ -534,7 +534,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         resetGameController();
         hideGameOverlay();
         if (router != null)
-            router.showStartMenu();
+            router.showNetworkMenu(true);
     }
 
     public void pause() {

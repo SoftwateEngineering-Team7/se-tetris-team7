@@ -83,18 +83,12 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     public void configureRole(boolean isHost, boolean preserveConnection) {
         this.isHost = isHost;
-        shouldReleaseResources = !preserveConnection;
+        shouldReleaseResources = false;
         model.clear(preserveConnection);
         Platform.runLater(() -> {
             resetUi();
             model.setIsHost(isHost);
-            if (!preserveConnection) {
-                model.resetReadyStates();
-            } else {
-                model.setIsReady(false);
-                model.setOtherIsReady(false);
-            }
-
+            model.resetReadyStates();
             roleLabel.setText(isHost ? "HOST MODE" : "CLIENT MODE");
             ipField.setEditable(!isHost);
             gameModeCombo.setDisable(!isHost);
@@ -103,23 +97,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             joinButton.setManaged(!isHost);
             joinButton.setVisible(!isHost);
             ipHintLabel.setText(isHost ? "내 IP를 공유하세요." : "호스트 IP를 입력해 접속하세요.");
-
-            // 연결을 유지한 상태로 돌아온 경우
-            if (preserveConnection && model.isConnected()) {
-                ipField.setText(model.getIpAddress());
-                readyButton.setDisable(false);
-                readyButton.setText("READY");
-                selfReadyBadge.setVisible(false);
-                opponentReadyBadge.setVisible(model.getOtherIsReady());
-                opponentStatusLabel.setText(model.isOpponentConnected() ? "접속됨" : "대기 중");
-                joinButton.setDisable(true);
-                setMessage("연결을 유지했습니다. READY를 다시 눌러주세요.", false);
-                updateConnectionState();
-                return;
-            }
-
             messageLabel.setText(isHost ? "호스트 세션을 준비 중..." : "접속할 호스트 IP를 입력하세요.");
-            if (isHost) {
+            if (isHost && !preserveConnection) {
                 autoCreateHost();
             } else {
                 readyButton.setDisable(true);
