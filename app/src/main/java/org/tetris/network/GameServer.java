@@ -1,8 +1,12 @@
 package org.tetris.network;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Enumeration;
 
 import org.tetris.game.model.GameMode;
 import org.tetris.network.comand.Command;
@@ -48,9 +52,27 @@ public class GameServer {
         return instance;
     }
 
-    public java.net.InetAddress getHostIP() {
+    public InetAddress getHostIP() {
         try {
-            return java.net.InetAddress.getLocalHost();
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface ni = interfaces.nextElement();
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) {
+                    continue;
+                }
+                var addresses = ni.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    if (!(addr instanceof Inet4Address)) {
+                        continue;
+                    }
+                    if (!addr.isLoopbackAddress() && addr.isSiteLocalAddress()) {
+                        return addr; // 첫 번째 사설 IPv4 반환
+                    }
+                }
+            }
+            // 적절한 인터페이스를 못 찾으면 기본값으로 반환
+            return InetAddress.getLocalHost();
         } catch (Exception e) {
             return null;
         }

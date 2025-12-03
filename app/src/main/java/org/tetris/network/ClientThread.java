@@ -28,6 +28,10 @@ public class ClientThread {
     private Thread receiverThread;
     private Thread pingThread;
 
+    // 타임아웃 설정
+    private static final long READ_TIMEOUT_MS = 10000; // 10초
+    private volatile long lastResponseTime = System.currentTimeMillis();
+
     // 연결 끊김 콜백
     private Runnable onDisconnectCallback;
 
@@ -69,7 +73,6 @@ public class ClientThread {
             System.out.println("[CLIENT-FACADE] Already connected.");
             return;
         }
-        // TODO: 연결 타임아웃 설정 (socket.connect(new InetSocketAddress(host, port), timeout))
         socket = new Socket(host, port);
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream());
@@ -173,6 +176,22 @@ public class ClientThread {
 
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     Thread.sleep(PING_INTERVAL);
+                    
+                    // 타임아웃 체크
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastResponseTime > READ_TIMEOUT_MS) {
+                        System.err.println("[CLIENT-THREAD] Connection timed out. No response for " + (currentTime - lastResponseTime) + "ms");
+                        
+                        // 연결 끊김 시 gameExecutor에 알림
+                        if (gameExecutor != null) {
+                            gameExecutor.onOpponentDisconnect("연결 시간 초과 (Timeout)");
+                        }
+                        
+                        connected = false;
+                        disconnect(); 
+                        break;
+                    }
+
                     if (connected) {
                         sendCommand(new PingCommand());
                     }
@@ -193,6 +212,10 @@ public class ClientThread {
                 while (connected && !Thread.currentThread().isInterrupted()) {
                     // 서버로부터 커맨드를 수신 대기합니다. (Blocking call)
                     Command command = (Command) ois.readObject();
+                    
+                    // 데이터 수신 시 마지막 응답 시간 갱신
+                    lastResponseTime = System.currentTimeMillis();
+
                     System.out.println("[CLIENT-RECEIVER] Received command from server: "
                             + command.getClass().getSimpleName());
                     // 수신된 커맨드를 로컬 게임 엔진에서 실행합니다.

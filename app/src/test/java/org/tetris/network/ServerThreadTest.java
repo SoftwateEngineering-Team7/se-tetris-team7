@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.tetris.network.comand.GameCommand;
 import org.tetris.network.comand.MoveLeftCommand;
+import org.tetris.network.comand.MoveRightCommand;
 import org.tetris.network.comand.UpdateStateCommand;
 
 import java.io.IOException;
@@ -113,7 +114,7 @@ public class ServerThreadTest {
         
         // 여러 명령 전송 시도
         GameCommand command1 = new MoveLeftCommand();
-        GameCommand command2 = new UpdateStateCommand("test state");
+        GameCommand command2 = new MoveRightCommand();
         
         try {
             serverThread.sendCommand(command1);

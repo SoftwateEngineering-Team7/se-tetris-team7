@@ -114,6 +114,10 @@ public class Board extends BaseModel {
         return curPos;
     }
 
+    public void setCurPos(Point currentPos) {
+        this.curPos = currentPos;
+    }
+
     public boolean getIsForceDown() {
         return activeBlock.isForceDown();
     }
