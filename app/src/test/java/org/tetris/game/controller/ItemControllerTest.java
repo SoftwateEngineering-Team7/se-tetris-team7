@@ -25,10 +25,10 @@ public class ItemControllerTest {
     public void testOnLineCleared() {
         itemController = new ItemController();
 
-        itemController.onLineCleared(4);
+        itemController.onLineCleared(8);
         assertFalse(itemController.canSpawnItem());
 
-        itemController.onLineCleared(2);
+        itemController.onLineCleared(4);
         assertTrue(itemController.canSpawnItem());
     }
 
@@ -37,7 +37,7 @@ public class ItemControllerTest {
     {
         itemController = new ItemController();
 
-        itemController.onLineCleared(7);
+        itemController.onLineCleared(12);
         assertTrue(itemController.canSpawnItem());
 
         Block itemBlock = new IBlock();
@@ -46,7 +46,7 @@ public class ItemControllerTest {
         assertTrue(itemBlock.isItemBlock());
         assertFalse(itemController.canSpawnItem());
 
-        itemController.onLineCleared(3);
+        itemController.onLineCleared(10);
         assertTrue(itemController.canSpawnItem());
     }
 }
