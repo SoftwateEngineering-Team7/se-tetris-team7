@@ -15,6 +15,7 @@ import org.tetris.network.comand.GameResultCommand;
 import org.tetris.network.comand.GameStartCommand;
 import org.tetris.network.comand.PlayerConnectionCommand;
 import org.tetris.network.comand.ReadyCommand;
+import org.tetris.network.comand.SyncReadyStateCommand;
 import org.tetris.network.dto.MatchSettings;
 
 /**
@@ -307,6 +308,21 @@ public class GameServer {
      */
     public synchronized boolean isHost(ServerThread client) {
         return client == client1;
+    }
+
+    /**
+     * 클라이언트에게 상대방의 Ready 상태를 동기화합니다.
+     * 게임 화면에서 메뉴로 돌아올 때 호출됩니다.
+     */
+    public synchronized void syncReadyState(ServerThread requester) {
+        boolean opponentReady;
+        if (requester == client1) {
+            opponentReady = client2Ready;
+        } else {
+            opponentReady = client1Ready;
+        }
+        System.out.println("[SERVER] Syncing ready state to client: opponentReady=" + opponentReady);
+        requester.sendCommand(new SyncReadyStateCommand(opponentReady));
     }
 
     /**

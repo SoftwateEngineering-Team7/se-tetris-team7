@@ -157,11 +157,19 @@ public class NetworkMenu extends BaseModel {
 
     public void clear() {
         clearConnections();
-        this.isHost = true;
+        // isHost는 리셋하지 않음 - configureRole()에서만 설정
         this.ipAddress = "";
         this.port = DEFAULT_PORT;
         this.isReady = false;
         this.ping.set(0);
+    }
+
+    public void clear(boolean preserveConnection) {
+        if (!preserveConnection) {
+            clear();
+            return;
+        }
+        this.isReady = false;
     }
 
     public LongProperty pingProperty() {
