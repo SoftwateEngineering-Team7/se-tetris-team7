@@ -4,12 +4,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.tetris.network.GameServer;
+import org.tetris.game.model.blocks.Block;
+import org.tetris.game.model.blocks.IBlock;
 import org.tetris.network.ClientThread;
 import org.tetris.network.comand.*;
 import org.tetris.network.dto.MatchSettings;
 
 import org.tetris.network.mocks.TestGameCommandExecutor;
 import org.tetris.network.mocks.TestGameMenuCommandExecutor;
+import org.util.Point;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -401,8 +404,8 @@ public class P2PGameIntegrationTest {
         
         TestGameCommandExecutor gameExecutor2 = new TestGameCommandExecutor() {
             @Override
-            public void updateState(int[][] board, int score) {
-                super.updateState(board, score);
+            public void updateState(int[][] board, int currentPosRow, int currentPosCol) {
+                super.updateState(board, currentPosRow, currentPosCol);
                 System.out.println("[CLIENT2-GAME] Received UpdateStateCommand");
                 syncLatch.countDown();
             }
@@ -427,10 +430,11 @@ public class P2PGameIntegrationTest {
         // When: Client 1이 블록을 고정하고 상태 전송
         int[][] dummyBoard = new int[20][10];
         dummyBoard[19][0] = 1; // 바닥에 블록 하나
-        int dummyScore = 100;
+        Block dummyBlock = new IBlock();
+        Point dummyPos = new Point(19, 0);
         
         System.out.println("\n[TEST] === Client 1 sending UpdateStateCommand (Simulating Block Lock) ===");
-        client1Thread.sendCommand(new UpdateStateCommand(dummyBoard, dummyScore));
+        client1Thread.sendCommand(new UpdateStateCommand(dummyBoard, dummyPos.r, dummyPos.c));
 
         // 200ms 지연 시뮬레이션 (네트워크 렉)
         Thread.sleep(200);
@@ -440,7 +444,6 @@ public class P2PGameIntegrationTest {
         
         // 데이터 검증
         assertNotNull("Board state should be received", gameExecutor2.lastBoardState);
-        assertEquals("Score should be synced", dummyScore, gameExecutor2.lastStateScore);
         assertEquals("Board cell should be synced", 1, gameExecutor2.lastBoardState[19][0]);
         
         System.out.println("\n[TEST] ✅ State Sync with Lag Test PASSED!");

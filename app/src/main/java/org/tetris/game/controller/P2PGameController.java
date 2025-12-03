@@ -5,6 +5,8 @@ import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.game.model.P2PGameModel;
 import org.tetris.game.model.PlayerSlot;
+import org.tetris.game.model.blocks.Block;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -17,6 +19,8 @@ import java.util.Arrays;
 import org.tetris.network.dto.MatchSettings;
 import org.util.KeyLayout;
 import org.util.PlayerId;
+import org.util.Point;
+
 import java.util.Random;
 
 public class P2PGameController extends DualGameController<P2PGameModel>
@@ -592,7 +596,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      * (UpdateStateCommand에 의해 호출됨)
      */
     @Override
-    public void updateState(int[][] boardData, int score) {
+    public void updateState(int[][] boardData, int currentPosRow, int currentPosCol) {
         Platform.runLater(() -> {
             PlayerSlot remotePlayer = getRemotePlayer();
             if (remotePlayer != null) {
@@ -603,14 +607,13 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                         System.arraycopy(boardData[i], 0, currentBoard[i], 0, boardData[i].length);
                     }
                 }
+                remotePlayer.boardModel.setCurPos(new Point(currentPosRow, currentPosCol));
                 
-                remotePlayer.scoreModel.setScore(score); 
-                
-                // remotePlayer.boardModel.removeCurrentBlock(); // 삭제 금지: 수신된 boardData에 이미 블록이 포함되어 있음
-                remotePlayer.gameModel.spawnNewBlock();
+                // 수신된 보드 상태를 기반으로 로컬 시뮬레이션(Attack, Line Clear 등)을 수행
+                super.lockCurrentBlock(remotePlayer);
 
                 // 3. 화면 갱신
-                updateGameBoard(remotePlayer);
+                // updateGameBoard(remotePlayer); // lockCurrentBlock 내부에서 수행됨
                 
                 System.out.println("[P2P-SYNC] Remote board state corrected.");
             }
@@ -638,10 +641,10 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         // 로컬 플레이어(나)의 블록이 고정된 경우에만 전송
         if (player == getLocalPlayer()) {
             int[][] myBoard = player.boardModel.getBoard();
-            int myScore = player.scoreModel.getScore();
+            Point myPos = player.boardModel.getCurPos();
             
             // 상태 전송
-            client.sendCommand(new UpdateStateCommand(myBoard, myScore));
+            client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c));
             // System.out.println("[P2P-SYNC] Sent board state update.");
         }
     }

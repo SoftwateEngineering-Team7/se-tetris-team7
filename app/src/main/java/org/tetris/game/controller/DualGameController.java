@@ -537,6 +537,9 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // === 블록 고정 및 로직 ===
     protected void lockCurrentBlock(PlayerSlot player) {
+        // 블록 고정 직후 훅 호출 (상태 동기화 등)
+        onBlockLocked(player);
+
         GameModel gm = player.gameModel;
         List<Integer> fullRows = player.boardModel.findFullRows();
         player.clearingRows.addAll(fullRows);
@@ -557,9 +560,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
                 gm.updateModels(0);
                 player.boardModel.removeCurrentBlock();
                 
-                // 블록 고정 직후 훅 호출 (강제 다운 시)
-                onBlockLocked(player);
-                
                 gm.spawnNewBlock();
                 updateGameBoard(player);
                 checkGameOverState();
@@ -574,9 +574,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
         processIncomingAttacks(player);
         updateGameBoard(player);
-        
-        // 블록 고정 및 줄 삭제 처리 완료 후 훅 호출
-        onBlockLocked(player);
         
         gm.spawnNewBlock();
         checkGameOverState();
@@ -626,9 +623,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
         gm.updateModels(linesCleared + colsCleared);
         processIncomingAttacks(player);
-
-        // 플래시 효과 후 블록 처리가 완료된 시점에도 훅 호출
-        onBlockLocked(player);
 
         gm.spawnNewBlock();
         checkGameOverState();

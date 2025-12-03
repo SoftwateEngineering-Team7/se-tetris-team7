@@ -1,6 +1,8 @@
 package org.tetris.network.comand;
 
+import org.tetris.game.model.blocks.Block;
 import org.tetris.network.dto.MatchSettings;
+import org.util.Point;
 
 /**
  * 게임 내에서 발생할 수 있는 모든 액션을 정의하는 인터페이스.
@@ -37,7 +39,7 @@ public interface GameCommandExecutor {
     void attack(int lines);
 
     // 기타
-    void updateState(int[][] board, int score);
+    void updateState(int[][] board, int currentPosRow, int currentPosCol);
 
     void updatePing(long ping);
 
