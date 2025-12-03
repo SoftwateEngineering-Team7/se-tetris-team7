@@ -410,13 +410,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     @Override
     public void hardDrop() {
-        Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            System.out.println("[P2P-CONTROLLER] hardDrop() - playerNumber=" + model.getPlayerNumber() + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
-            if (remotePlayer != null) {
-                handleHardDrop(remotePlayer);
-            }
-        });
+        
     }
 
     @Override
@@ -592,9 +586,64 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         });
     }
 
+
+    /**
+     * 상대방으로부터 수신한 보드 상태와 점수를 강제로 동기화합니다.
+     * (UpdateStateCommand에 의해 호출됨)
+     */
     @Override
-    public void updateState(String state) {
-        // Sync state if needed
+    public void updateState(int[][] boardData, int score) {
+        Platform.runLater(() -> {
+            PlayerSlot remotePlayer = getRemotePlayer();
+            if (remotePlayer != null) {
+                // 1. 보드 데이터 덮어쓰기 (Correction)
+                int[][] currentBoard = remotePlayer.boardModel.getBoard();
+                if (boardData.length == currentBoard.length && boardData[0].length == currentBoard[0].length) {
+                    for (int i = 0; i < boardData.length; i++) {
+                        System.arraycopy(boardData[i], 0, currentBoard[i], 0, boardData[i].length);
+                    }
+                }
+                
+                remotePlayer.scoreModel.setScore(score); 
+                
+                // remotePlayer.boardModel.removeCurrentBlock(); // 삭제 금지: 수신된 boardData에 이미 블록이 포함되어 있음
+                remotePlayer.gameModel.spawnNewBlock();
+
+                // 3. 화면 갱신
+                updateGameBoard(remotePlayer);
+                
+                System.out.println("[P2P-SYNC] Remote board state corrected.");
+            }
+        });
+    }
+
+    /**
+     * 블록 고정 로직 오버라이드
+     * 원격 플레이어의 경우 로컬 시뮬레이션에 의한 블록 고정을 막습니다.
+     * 오직 UpdateStateCommand 수신 시에만 블록을 고정하고 스폰합니다.
+     */
+    @Override
+    protected void lockCurrentBlock(PlayerSlot player) {
+        if (player == getRemotePlayer()) {
+            return;
+        }
+        super.lockCurrentBlock(player);
+    }
+
+    /**
+     * 내 블록이 고정될 때마다 현재 상태를 상대방에게 전송합니다.
+     */
+    @Override
+    protected void onBlockLocked(PlayerSlot player) {
+        // 로컬 플레이어(나)의 블록이 고정된 경우에만 전송
+        if (player == getLocalPlayer()) {
+            int[][] myBoard = player.boardModel.getBoard();
+            int myScore = player.scoreModel.getScore();
+            
+            // 상태 전송
+            client.sendCommand(new UpdateStateCommand(myBoard, myScore));
+            // System.out.println("[P2P-SYNC] Sent board state update.");
+        }
     }
 
     @Override

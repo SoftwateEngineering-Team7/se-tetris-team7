@@ -12,7 +12,8 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     public int lastScore;
     public boolean lastIsWinner;
     public int lastAttackLines;
-    public String lastState;
+    public int[][] lastBoardState;
+    public int lastStateScore;
     public long lastPing;
     public boolean isPaused;
     public String lastDisconnectReason;
@@ -86,9 +87,10 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     }
 
     @Override
-    public void updateState(String state) {
+    public void updateState(int[][] board, int score) {
         executedCommands.add("updateState");
-        this.lastState = state;
+        this.lastBoardState = board;
+        this.lastStateScore = score;
     }
 
     @Override

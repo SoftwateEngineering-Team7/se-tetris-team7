@@ -1,23 +1,34 @@
 package org.tetris.network.comand;
 
 /**
- * 서버가 클라이언트에게 게임 상태 업데이트를 브로드캐스트하기 위한 커맨드 객체.
- * 게임 보드의 현재 상태와 같은 정보를 포함합니다.
+ * 블록이 고정(Lock)될 때, 보드 상태와 점수를 동기화하기 위한 커맨드.
+ * 낙관적 업데이트(Optimistic Update) 후 상태 보정(Correction) 역할을 합니다.
  */
 public class UpdateStateCommand implements GameCommand {
     private static final long serialVersionUID = 1L;
-    private final String state;
+    
+    private final int[][] board;
+    private final int score;
 
-    public UpdateStateCommand(String state) {
-        this.state = state;
+    public UpdateStateCommand(int[][] board, int score) {
+        // 배열 깊은 복사 (Deep Copy)하여 전송 시점의 상태 보존
+        this.board = new int[board.length][];
+        for (int i = 0; i < board.length; i++) {
+            this.board[i] = board[i].clone();
+        }
+        this.score = score;
     }
 
     @Override
     public void execute(GameCommandExecutor executor) {
-        executor.updateState(state);
+        executor.updateState(board, score);
     }
 
-    public String getState() {
-        return state;
+    public int[][] getBoard() {
+        return board;
+    }
+
+    public int getScore() {
+        return score;
     }
 }

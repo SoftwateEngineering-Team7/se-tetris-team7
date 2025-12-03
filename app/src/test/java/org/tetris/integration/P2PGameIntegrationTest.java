@@ -372,4 +372,77 @@ public class P2PGameIntegrationTest {
 
         System.out.println("\n[TEST] ✅ Attack and GameOver Test PASSED!");
     }
+
+    @Test
+    public void testStateSyncWithLag() throws Exception {
+        // Given: 서버와 클라이언트 설정
+        server.start(TEST_PORT);
+        Thread.sleep(500);
+
+        CountDownLatch gameStartLatch = new CountDownLatch(2);
+        CountDownLatch syncLatch = new CountDownLatch(1);
+        
+        // 클라이언트 1 (Player 1) - 블록을 놓는 주체
+        TestGameMenuCommandExecutor menuExecutor1 = new TestGameMenuCommandExecutor() {
+            @Override public void gameStart(MatchSettings settings) { 
+                super.gameStart(settings);
+                gameStartLatch.countDown(); 
+            }
+        };
+        TestGameCommandExecutor gameExecutor1 = new TestGameCommandExecutor();
+
+        // 클라이언트 2 (Player 2) - 렉 걸린 상태에서 동기화 받는 주체
+        TestGameMenuCommandExecutor menuExecutor2 = new TestGameMenuCommandExecutor() {
+            @Override public void gameStart(MatchSettings settings) { 
+                super.gameStart(settings);
+                gameStartLatch.countDown(); 
+            }
+        };
+        
+        TestGameCommandExecutor gameExecutor2 = new TestGameCommandExecutor() {
+            @Override
+            public void updateState(int[][] board, int score) {
+                super.updateState(board, score);
+                System.out.println("[CLIENT2-GAME] Received UpdateStateCommand");
+                syncLatch.countDown();
+            }
+        };
+
+        // 연결 및 게임 시작
+        client1Thread.setMenuExecutor(menuExecutor1);
+        client1Thread.setGameExecutor(gameExecutor1);
+        client1Thread.connect(TEST_HOST, TEST_PORT);
+        
+        client2Thread.setMenuExecutor(menuExecutor2);
+        client2Thread.setGameExecutor(gameExecutor2);
+        client2Thread.connect(TEST_HOST, TEST_PORT);
+        Thread.sleep(300);
+
+        client1Thread.sendCommand(new ReadyCommand(true));
+        client2Thread.sendCommand(new ReadyCommand(true));
+        
+        assertTrue("Game should start", gameStartLatch.await(3, TimeUnit.SECONDS));
+        Thread.sleep(200);
+
+        // When: Client 1이 블록을 고정하고 상태 전송
+        int[][] dummyBoard = new int[20][10];
+        dummyBoard[19][0] = 1; // 바닥에 블록 하나
+        int dummyScore = 100;
+        
+        System.out.println("\n[TEST] === Client 1 sending UpdateStateCommand (Simulating Block Lock) ===");
+        client1Thread.sendCommand(new UpdateStateCommand(dummyBoard, dummyScore));
+
+        // 200ms 지연 시뮬레이션 (네트워크 렉)
+        Thread.sleep(200);
+
+        // Then: Client 2가 UpdateStateCommand를 잘 받았는지 확인
+        assertTrue("Client 2 should receive state update", syncLatch.await(3, TimeUnit.SECONDS));
+        
+        // 데이터 검증
+        assertNotNull("Board state should be received", gameExecutor2.lastBoardState);
+        assertEquals("Score should be synced", dummyScore, gameExecutor2.lastStateScore);
+        assertEquals("Board cell should be synced", 1, gameExecutor2.lastBoardState[19][0]);
+        
+        System.out.println("\n[TEST] ✅ State Sync with Lag Test PASSED!");
+    }
 }
