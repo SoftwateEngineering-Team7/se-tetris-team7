@@ -166,13 +166,12 @@ public class NetworkMenu extends BaseModel {
 
     public void clear(boolean preserveConnection) {
         if (!preserveConnection) {
-            clearConnections();
+            clear();
+            return;
         }
-        this.isHost = true;
-        this.ipAddress = "";
-        this.port = DEFAULT_PORT;
+        // 연결을 유지하는 경우에는 준비 상태만 초기화
         this.isReady = false;
-        this.ping.set(0);
+        setOtherIsReady(false);
     }
 
     public LongProperty pingProperty() {
