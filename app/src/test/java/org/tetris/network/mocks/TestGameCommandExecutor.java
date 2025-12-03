@@ -93,10 +93,11 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     }
 
     @Override
-    public void updateState(int[][] board, int currentPosRow, int currentPosCol) {
+    public void updateState(int[][] board, int currentPosRow, int currentPosCol, int score) {
         executedCommands.add("updateState");
         this.lastBoardState = board;
         this.lastCurrentPos = new Point(currentPosRow, currentPosCol);
+        this.lastStateScore = score;
     }
 
     @Override

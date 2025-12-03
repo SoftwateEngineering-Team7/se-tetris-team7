@@ -73,7 +73,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // 오버레이 & 버튼
     @FXML
-    private HBox gameOverOverlay;
+    protected HBox gameOverOverlay;
     @FXML
     protected HBox pauseOverlay;
     @FXML
@@ -581,7 +581,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
 
         processIncomingAttacks(player);
-        updateGameBoard(player);
+        updateUI();
         
         gm.spawnNewBlock();
         checkGameOverState();
@@ -648,16 +648,14 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     private void processIncomingAttacks(PlayerSlot player) {
-        while (true) {
-            int[] attackLine = player.attackModel.pop();
-            if (attackLine == null)
-                break;
-
-            boolean success = player.boardModel.pushUp(attackLine);
-            if (!success) {
-                player.gameModel.setGameOver(true);
-                break;
-            }
+        var attackRows = player.attackModel.popAttacks();
+        if(attackRows.isEmpty()){
+            return;
+        }
+        
+        boolean success = player.boardModel.pushUp(attackRows);
+        if(!success){
+            player.gameModel.setGameOver(true);
         }
     }
 
@@ -691,7 +689,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     // === UI 업데이트 통합 ===
-    private void updateUI() {
+    protected void updateUI() {
         updateGameBoard(player1);
         updateGameBoard(player2);
         updateScoreDisplay();

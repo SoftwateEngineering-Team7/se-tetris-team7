@@ -47,6 +47,7 @@ public class GameModel extends BaseModel {
         this.nextBlockSeed = nextBlockSeed;
         // 기존 NextBlockModel의 시드를 재설정 (새로 생성하지 않음)
         this.nextBlockModel.resetWithSeed(nextBlockSeed);
+        this.itemController.resetWithSeed(nextBlockSeed);
     }
 
     public Board getBoardModel() {
