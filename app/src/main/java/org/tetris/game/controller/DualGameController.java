@@ -489,7 +489,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
-    private void checkGameOverState() {
+    protected void checkGameOverState() {
         isGameOver = false;
 
         boolean p1Over = player1.gameModel.isGameOver();
@@ -518,11 +518,12 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             gameLoop.stop();
         showGameOverlay();
 
-        String result;
-        int p1Score = player1.scoreModel.getScore();
-        int p2Score = player2.scoreModel.getScore();
+        setWinnerLabel(p1Over, p2Over);
+    }
 
-        // 일반 승패 판정 (게임 오버 시)
+    private void setWinnerLabel(boolean p1Over, boolean p2Over) {
+        String result;
+
         if (p1Over && p2Over)
             result = "DRAW";
         else if (p1Over)
@@ -800,8 +801,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         if (router != null)
             router.showStartMenu();
     }
-
-    private void goToMenuFromPause() {
+    
+    protected void goToMenuFromPause() {
         goToMenu();
     }
 

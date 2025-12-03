@@ -348,6 +348,16 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         client.sendCommand(new RestartCommand());
     }
 
+    @Override
+    protected void checkGameOverState()
+    {
+        super.checkGameOverState();
+        if (player1 != null && player2 != null) {
+            if (player1.gameModel.isGameOver()) 
+                client.sendCommand(new GameResultCommand(true, player1.scoreModel.getScore()));
+        }
+    }
+
     // --- GameCommandExecutor Implementation (Remote Player Updates) ---
 
     @Override
@@ -518,6 +528,15 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         hideGameOverlay();
         if (router != null)
             router.showNetworkMenu(false);
+    }
+
+    @Override
+    protected void goToMenuFromPause() {
+        cleanupNetworkResources();
+        resetGameController();
+        hideGameOverlay();
+        if (router != null)
+            router.showNetworkMenu(true);
     }
     
     public void pause() {
