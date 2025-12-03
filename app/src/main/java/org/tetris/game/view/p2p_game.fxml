@@ -492,7 +492,7 @@
     <HBox fx:id="disconnectOverlay" alignment="CENTER"
           visible="false" managed="false"
           prefWidth="1000" prefHeight="600"
-          style="-fx-background-color: rgba(0, 0, 0, 0.85);">
+          style="-fx-background-color: rgba(0, 0, 0, 1);">
         <children>
             <VBox alignment="CENTER" spacing="20">
                 <children>
@@ -511,11 +511,6 @@
                     <Label fx:id="disconnectReasonLabel" text="상대방이 게임을 종료했습니다." textFill="white">
                         <font>
                             <Font name="Arial Bold" size="18.0" />
-                        </font>
-                    </Label>
-                    <Label text="승리!" textFill="#4CAF50">
-                        <font>
-                            <Font name="Arial Black" size="28.0" />
                         </font>
                     </Label>
                     <Button fx:id="disconnectMenuButton" text="메인 메뉴로 돌아가기"
