@@ -476,7 +476,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
                 // 기존 게임 루프 정리
                 stopGame();
-                ;
 
                 // 게임 루프 변수 리셋
                 lastUpdate = 0L;
