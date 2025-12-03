@@ -117,7 +117,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         });
 
         model.connectedProperty().addListener((obs, oldVal, newVal) -> updateConnectionState());
-        model.opponentConnectedProperty().addListener((obs, oldVal, newVal) -> updateOpponentPresence(newVal));
+        model.opponentConnectedProperty().addListener((obs, oldVal, newVal) -> {
+            updateOpponentPresence(newVal);
+            updateConnectionState();
+        });
     }
 
     private void setupGameModeCombo() {
@@ -157,7 +160,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         try {
             model.create();
             ipField.setText(model.getIpAddress());
-            readyButton.setDisable(false);
+            readyButton.setDisable(true);
             startButton.setDisable(true);
             selfStatusLabel.setText("서버 온라인");
             setMessage("서버를 열었습니다. 상대를 기다리는 중...", false);
@@ -293,8 +296,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     private void updateConnectionState() {
         boolean connected = model.isConnected();
+        boolean opponentReadyForHost = !isHost || model.isOpponentConnected();
+
         selfStatusLabel.setText(connected ? "연결됨" : "연결 대기");
-        readyButton.setDisable(!connected);
+        readyButton.setDisable(!connected || !opponentReadyForHost);
         if (!connected) {
             readyButton.setText("READY");
             selfReadyBadge.setVisible(false);
