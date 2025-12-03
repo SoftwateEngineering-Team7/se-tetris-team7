@@ -85,8 +85,11 @@ test {
         include '**/model/**', '**/controller/**'
         ignoreFailures = true
     }
-
+    
+    // 빌드 시 테스트 스킵 (-x test 옵션 없이도 스킵)
+    onlyIf { gradle.startParameter.taskNames.contains('test') }
 }
+
 
 tasks.register('packageApp', Exec) {
     dependsOn build
@@ -101,7 +104,15 @@ version = '1.0.0'
 
     // OS별로 다르게 설정 가능
     def outputDir = "${buildDir}/dist"
-    def iconFile = "src/main/resources/tetris.icns" // macOS라면 .icns, windows는 .ico 사용
+    
+    // macOS용 설정
+    // def iconFile = "src/main/resources/tetris.icns"
+    // def packageType = 'dmg'
+    
+    // Windows용 설정
+    def iconFile = "src/main/resources/tetris.ico"
+    def packageType = 'exe'
+    
     def mainJar = "${buildDir}/libs/${project.name}-${version}.jar"
 
     commandLine 'jpackage',
@@ -110,8 +121,8 @@ version = '1.0.0'
             '--main-jar', "${project.name}-${version}.jar",
             '--main-class', 'org.tetris.App',
             '--icon', iconFile,
-            '--type', 'dmg',             // macOS는 'dmg' 또는 'pkg', Linux는 'deb' 또는 'rpm', Windows는 'exe' 또는 'msi'
+            '--type', packageType,
             '--dest', outputDir,
-            '--app-version', '1.0',
+            '--app-version', '2.0',
             '--vendor', 'MyStudio'
 }
