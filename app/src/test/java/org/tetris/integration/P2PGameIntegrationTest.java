@@ -138,6 +138,10 @@ public class P2PGameIntegrationTest {
                    client1ReadyLatch.await(3, TimeUnit.SECONDS));
         assertTrue("Client 1 should know Client 2 is ready", menuExecutor1.lastIsReady);
 
+        // 서버에서 게임 시작 (호스트가 명시적으로 호출하는 것을 시뮬레이션)
+        Thread.sleep(100);
+        server.startGameIfReady();
+
         // 게임 시작 대기
         System.out.println("\n[TEST] === Waiting for GameStart ===");
         assertTrue("Both clients should receive GameStartCommand", 
@@ -230,6 +234,10 @@ public class P2PGameIntegrationTest {
         client1Thread.sendCommand(new ReadyCommand(true));
         Thread.sleep(100);
         client2Thread.sendCommand(new ReadyCommand(true));
+        Thread.sleep(100);
+        
+        // 서버에서 게임 시작
+        server.startGameIfReady();
 
         assertTrue("Both clients should start game", gameStartLatch.await(3, TimeUnit.SECONDS));
         Thread.sleep(300); // 게임 시작 후 안정화
@@ -288,6 +296,10 @@ public class P2PGameIntegrationTest {
 
         client1Thread.sendCommand(new ReadyCommand(true));
         client2Thread.sendCommand(new ReadyCommand(true));
+        Thread.sleep(100);
+        
+        // 서버에서 게임 시작
+        server.startGameIfReady();
 
         assertTrue(gameStartLatch.await(3, TimeUnit.SECONDS));
 
@@ -347,6 +359,10 @@ public class P2PGameIntegrationTest {
 
         client1Thread.sendCommand(new ReadyCommand(true));
         client2Thread.sendCommand(new ReadyCommand(true));
+        Thread.sleep(100);
+        
+        // 서버에서 게임 시작
+        server.startGameIfReady();
         
         assertTrue("Game should start", gameStartLatch.await(3, TimeUnit.SECONDS));
         Thread.sleep(200);
