@@ -39,7 +39,7 @@ public interface GameCommandExecutor {
     void attack(int lines);
 
     // 기타
-    void updateState(int[][] board, int currentPosRow, int currentPosCol);
+    void updateState(int[][] board, int currentPosRow, int currentPosCol, int score);
 
     void updatePing(long ping);
 
