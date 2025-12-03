@@ -60,6 +60,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     @Override
     public void initialize() {
         super.initialize();
+        updateControlLabels();
 
         // 연결 끊김 오버레이의 메인 메뉴 버튼 설정
         Platform.runLater(() -> {
@@ -83,6 +84,27 @@ public class P2PGameController extends DualGameController<P2PGameModel>
      */
     private PlayerSlot getRemotePlayer() {
         return player2;
+    }
+
+    private void updateControlLabels() {
+        KeyCode leftKey = KeyLayout.getLeftKey(PlayerId.PLAYER1);
+        KeyCode rightKey = KeyLayout.getRightKey(PlayerId.PLAYER1);
+        KeyCode upKey = KeyLayout.getUpKey(PlayerId.PLAYER1);
+        KeyCode downKey = KeyLayout.getDownKey(PlayerId.PLAYER1);
+        KeyCode hardDropKey = KeyLayout.getHardDropKey(PlayerId.PLAYER1);
+
+        if (moveControlLabel1 != null) {
+            moveControlLabel1.setText("Move: " + leftKey.getName() + " / " + rightKey.getName());
+        }
+        if (rotateControlLabel1 != null) {
+            rotateControlLabel1.setText("Rotate: " + upKey.getName());
+        }
+        if (softDropControlLabel1 != null) {
+            softDropControlLabel1.setText("Down: " + downKey.getName());
+        }
+        if (hardDropControlLabel1 != null) {
+            hardDropControlLabel1.setText("Drop: " + hardDropKey.getName());
+        }
     }
 
     /**
@@ -420,7 +442,7 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     @Override
     public void hardDrop() {
-        
+
     }
 
     @Override
