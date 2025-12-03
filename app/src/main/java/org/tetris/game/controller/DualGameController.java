@@ -91,13 +91,13 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // Player 1 Control Labels
     @FXML
-    private Label moveControlLabel1;
+    protected Label moveControlLabel1;
     @FXML
-    private Label rotateControlLabel1;
+    protected Label rotateControlLabel1;
     @FXML
-    private Label softDropControlLabel1;
+    protected Label softDropControlLabel1;
     @FXML
-    private Label hardDropControlLabel1;
+    protected Label hardDropControlLabel1;
 
     // Player 2 Control Labels
     @FXML
