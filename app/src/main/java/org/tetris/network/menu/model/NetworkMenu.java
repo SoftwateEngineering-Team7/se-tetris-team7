@@ -20,10 +20,13 @@ public class NetworkMenu extends BaseModel {
     private String ipAddress;
     private int port;
     private boolean isReady;
+    private boolean serverStarted;
 
     private GameClient client;
     private LongProperty ping = new SimpleLongProperty();
     private BooleanProperty otherIsReady = new SimpleBooleanProperty();
+    private BooleanProperty connected = new SimpleBooleanProperty(false);
+    private BooleanProperty opponentConnected = new SimpleBooleanProperty(false);
 
     public NetworkMenu() {
         clear();
@@ -46,6 +49,14 @@ public class NetworkMenu extends BaseModel {
         return isReady;
     }
 
+    public boolean isConnected() {
+        return connected.get();
+    }
+
+    public boolean isOpponentConnected() {
+        return opponentConnected.get();
+    }
+
     public void setIsHost(boolean isHost) {
         this.isHost = isHost;
     }
@@ -64,6 +75,14 @@ public class NetworkMenu extends BaseModel {
 
     public void setIsReady(boolean isReady) {
         this.isReady = isReady;
+    }
+
+    public void setConnected(boolean isConnected) {
+        javafx.application.Platform.runLater(() -> connected.set(isConnected));
+    }
+
+    public void setOpponentConnected(boolean isOpponentConnected) {
+        javafx.application.Platform.runLater(() -> opponentConnected.set(isOpponentConnected));
     }
 
     public boolean isValidIP(String ipString) {
@@ -90,6 +109,7 @@ public class NetworkMenu extends BaseModel {
     }
 
     public void create() {
+        clearConnections();
         if (client != null) {
             client.disconnect();
         }
@@ -102,7 +122,11 @@ public class NetworkMenu extends BaseModel {
 
         if (client != null) {
             client.connect("localhost", port);
-            this.ipAddress = GameServer.getInstance().getHostIP().getHostAddress();
+            java.net.InetAddress hostIP = GameServer.getInstance().getHostIP();
+            this.ipAddress = (hostIP != null) ? hostIP.getHostAddress() : "localhost";
+            setConnected(true);
+            setOpponentConnected(false);
+            resetReadyStates();
         } else {
             throw new IllegalStateException("GameClient 인스턴스가 null입니다. 서버에 연결할 수 없습니다.");
         }
@@ -111,7 +135,9 @@ public class NetworkMenu extends BaseModel {
     }
 
     private void startServer() throws IOException {
+        GameServer.getInstance().reset();
         GameServer.getInstance().start(port);
+        serverStarted = true;
 
         try {
             Thread.sleep(SERVER_STARTUP_DELAY_MS);
@@ -121,15 +147,16 @@ public class NetworkMenu extends BaseModel {
     }
 
     public void join() {
+        clearConnections();
         client.connect(ipAddress, port);
+        setConnected(true);
+        setOpponentConnected(true); // 호스트는 이미 연결되어 있음
+        resetReadyStates();
         System.out.println("방 참여 성공 - IP: " + ipAddress + ", 포트: " + port);
     }
 
     public void clear() {
-        if (client != null) {
-            client.disconnect();
-        }
-
+        clearConnections();
         this.isHost = true;
         this.ipAddress = "";
         this.port = DEFAULT_PORT;
@@ -161,5 +188,31 @@ public class NetworkMenu extends BaseModel {
 
     public void setOtherIsReady(boolean isReady) {
         this.otherIsReady.set(isReady);
+    }
+
+    public BooleanProperty connectedProperty() {
+        return connected;
+    }
+
+    public BooleanProperty opponentConnectedProperty() {
+        return opponentConnected;
+    }
+
+    public void resetReadyStates() {
+        setIsReady(false);
+        setOtherIsReady(false);
+    }
+
+    private void clearConnections() {
+        if (client != null) {
+            client.disconnect();
+        }
+        if (serverStarted) {
+            GameServer.getInstance().stop();
+            serverStarted = false;
+        }
+        setConnected(false);
+        setOpponentConnected(false);
+        resetReadyStates();
     }
 }

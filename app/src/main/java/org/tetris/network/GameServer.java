@@ -9,6 +9,7 @@ import org.tetris.network.comand.Command;
 import org.tetris.network.comand.DisconnectCommand;
 import org.tetris.network.comand.GameResultCommand;
 import org.tetris.network.comand.GameStartCommand;
+import org.tetris.network.comand.PlayerConnectionCommand;
 import org.tetris.network.comand.ReadyCommand;
 import org.tetris.network.dto.MatchSettings;
 
@@ -85,11 +86,16 @@ public class GameServer {
                                     + clientSocket.getInetAddress());
                             client1 = new ServerThread(clientSocket);
                             client1.start();
+                            client1Ready = false;
+                            client2Ready = false;
+                            notifyConnectionState();
                         } else if (client2 == null) {
                             System.out.println("[SERVER] Player 2 connected: "
                                     + clientSocket.getInetAddress());
                             client2 = new ServerThread(clientSocket);
                             client2.start();
+                            client2Ready = false;
+                            notifyConnectionState();
 
                         } else {
                             System.out.println("[SERVER] Connection rejected: Server is full.");
@@ -136,13 +142,18 @@ public class GameServer {
         ReadyCommand readyCmd = new ReadyCommand(isReady);
         sendToOtherClient(client, readyCmd);
 
-        // Check if both are ready
-        if (client1Ready && client2Ready) {
-            startGame();
-        }
+        // 게임 시작은 호스트가 명시적으로 호출
     }
 
-    private void startGame() {
+    public synchronized boolean startGameIfReady() {
+        if (client1 != null && client2 != null && client1Ready && client2Ready) {
+            startGame();
+            return true;
+        }
+        return false;
+    }
+
+    private synchronized void startGame() {
         System.out.println("[SERVER] Both players ready. Starting game...");
 
         long seed1 = System.currentTimeMillis();
@@ -184,6 +195,9 @@ public class GameServer {
      */
     public void stop() {
         running = false;
+        client1Ready = false;
+        client2Ready = false;
+        gameInProgress = false;
 
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
@@ -246,6 +260,8 @@ public class GameServer {
             // 게임 종료 상태로 변경
             gameInProgress = false;
         }
+
+        notifyConnectionState();
     }
 
     /**
@@ -299,6 +315,16 @@ public class GameServer {
             Thread.sleep(100);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private synchronized void notifyConnectionState() {
+        boolean bothConnected = client1 != null && client2 != null;
+        if (client1 != null) {
+            client1.sendCommand(new PlayerConnectionCommand(bothConnected));
+        }
+        if (client2 != null) {
+            client2.sendCommand(new PlayerConnectionCommand(bothConnected));
         }
     }
 
