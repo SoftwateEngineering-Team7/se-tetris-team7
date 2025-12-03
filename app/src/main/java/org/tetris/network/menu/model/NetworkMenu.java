@@ -164,6 +164,14 @@ public class NetworkMenu extends BaseModel {
         this.ping.set(0);
     }
 
+    public void clear(boolean preserveConnection) {
+        if (!preserveConnection) {
+            clear();
+            return;
+        }
+        this.isReady = false;
+    }
+
     public LongProperty pingProperty() {
         return ping;
     }

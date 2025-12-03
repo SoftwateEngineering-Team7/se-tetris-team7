@@ -7,6 +7,7 @@ import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.network.comand.GameMenuCommandExecutor;
 import org.tetris.network.comand.ReadyCommand;
+import org.tetris.network.comand.RequestSyncCommand;
 import org.tetris.network.dto.MatchSettings;
 import org.tetris.network.menu.model.NetworkMenu;
 import org.tetris.shared.BaseController;
@@ -81,17 +82,27 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
         if (client != null) {
             client.setMenuExecutor(this);
+            // 연결 끊김 콜백 설정 - 상대방이 나갔을 때 감지
+            client.setOnDisconnectCallback(() -> {
+                Platform.runLater(() -> {
+                    if (!shouldReleaseResources) {
+                        // 내가 직접 끊은 게 아니면 상대방이 나간 것
+                        handleOpponentDisconnected();
+                    }
+                });
+            });
         }
     }
 
-    public void configureRole(boolean isHost) {
+    public void configureRole(boolean isHost, boolean preserveConnection) {
         this.isHost = isHost;
         shouldReleaseResources = false;
-        model.clear();
+        model.clear(preserveConnection);
         Platform.runLater(() -> {
             resetUi();
             model.setIsHost(isHost);
             model.resetReadyStates();
+
             roleLabel.setText(isHost ? "HOST MODE" : "CLIENT MODE");
             ipField.setEditable(!isHost);
             gameModeCombo.setDisable(!isHost);
@@ -100,6 +111,22 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             joinButton.setManaged(!isHost);
             joinButton.setVisible(!isHost);
             ipHintLabel.setText(isHost ? "내 IP를 공유하세요." : "호스트 IP를 입력해 접속하세요.");
+
+            if (preserveConnection) {
+                model.setConnected(true);
+                joinButton.setDisable(true);
+                readyButton.setDisable(false);
+                readyButton.setText(model.isReady() ? "CANCEL" : "READY");
+                ipField.setText(model.getIpAddress());
+                setMessage("연결을 유지했습니다. READY를 다시 눌러주세요.", false);
+                
+                // 게임에서 메뉴로 돌아올 때 서버에 상대방 Ready 상태 동기화 요청
+                if (client != null && client.isConnected()) {
+                    client.sendCommand(new RequestSyncCommand());
+                }
+                return;
+            }
+
             messageLabel.setText(isHost ? "호스트 세션을 준비 중..." : "접속할 호스트 IP를 입력하세요.");
             if (isHost) {
                 autoCreateHost();
@@ -111,18 +138,17 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     }
 
     private void setupModelListeners() {
-        model.pingProperty().addListener((observable, oldValue, newValue) -> {
-            updatePingLabel(newValue.longValue());
+        model.pingProperty().addListener((obs, o, n) -> updatePingLabel(n.longValue()));
+        model.otherIsReadyProperty().addListener((obs, o, n) -> {
+            updateOpponentReady(n);
+            updateStartButtonState();
         });
-
-        model.otherIsReadyProperty().addListener((observable, oldValue, newValue) -> {
-            updateOpponentReady(newValue);
-        });
-
-        model.connectedProperty().addListener((obs, oldVal, newVal) -> updateConnectionState());
-        model.opponentConnectedProperty().addListener((obs, oldVal, newVal) -> {
-            updateOpponentPresence(newVal);
+        model.connectedProperty().addListener((obs, o, n) -> updateConnectionState());
+        model.opponentConnectedProperty().addListener((obs, o, n) -> {
+            updateOpponentPresence(n);
             updateConnectionState();
+            if (!n)
+                handleOpponentDisconnected();
         });
     }
 
@@ -130,31 +156,23 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         gameModeCombo.getItems().addAll("일반 모드", "아이템 모드", "타임어택 모드");
         gameModeCombo.setValue("일반 모드");
         gameModeCombo.setStyle(
-                "-fx-background-color: #0b2451; -fx-text-fill: white; -fx-border-color: #274690; -fx-border-radius: 10; -fx-background-radius: 10; -fx-prompt-text-fill: white;");
+                "-fx-background-color: #0b2451; -fx-text-fill: white; -fx-border-color: #274690; " +
+                        "-fx-border-radius: 10; -fx-background-radius: 10; -fx-prompt-text-fill: white;");
 
-        gameModeCombo.setCellFactory(listView -> new javafx.scene.control.ListCell<String>() {
+        gameModeCombo.setCellFactory(listView -> new javafx.scene.control.ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item);
-                    setStyle("-fx-text-fill: white; -fx-background-color: #0b2451;");
-                }
+                setText(empty ? null : item);
+                setStyle("-fx-text-fill: white; -fx-background-color: #0b2451;");
             }
         });
-
-        gameModeCombo.setButtonCell(new javafx.scene.control.ListCell<String>() {
+        gameModeCombo.setButtonCell(new javafx.scene.control.ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item);
-                    setStyle("-fx-text-fill: white;");
-                }
+                setText(empty ? null : item);
+                setStyle("-fx-text-fill: white;");
             }
         });
     }
@@ -221,9 +239,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     @FXML
     private void onStartPressed() {
-        if (!isHost) {
+        if (!isHost)
             return;
-        }
 
         if (!model.isReady() || !model.getOtherIsReady()) {
             setMessage("양쪽 모두 READY 상태여야 시작할 수 있습니다.", true);
@@ -231,19 +248,16 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         }
 
         boolean started = GameServer.getInstance().startGameIfReady();
-        if (!started) {
-            setMessage("두 플레이어가 모두 연결되어 있는지 확인해주세요.", true);
-        } else {
-            setMessage("게임을 시작합니다...", false);
-        }
+        setMessage(started ? "게임을 시작합니다..." : "두 플레이어가 모두 연결되어 있는지 확인해주세요.", !started);
     }
 
     @FXML
     private void onBackPressed() {
         shouldReleaseResources = true;
-        if (router != null) {
+        // graceful disconnect로 상대방에게 연결 끊김 알림
+        client.disconnectGracefully();
+        if (router != null)
             router.showStartMenu();
-        }
     }
 
     @Override
@@ -258,15 +272,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     @Override
     public void onPlayerConnectionChanged(boolean opponentConnected) {
-        Platform.runLater(() -> {
-            model.setOpponentConnected(opponentConnected);
-            updateOpponentPresence(opponentConnected);
-            if (!opponentConnected) {
-                model.setOtherIsReady(false);
-                updateOpponentReady(false);
-            }
-            updateStartButtonState();
-        });
+        Platform.runLater(() -> model.setOpponentConnected(opponentConnected));
     }
 
     @Override
@@ -279,9 +285,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     @Override
     public synchronized void updatePing(long ping) {
-        if (model != null) {
+        if (model != null)
             model.setPing(ping);
-        }
     }
 
     @Override
@@ -300,10 +305,8 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
 
     private void updateConnectionState() {
         boolean connected = model.isConnected();
-        boolean opponentReadyForHost = !isHost || model.isOpponentConnected();
-
         selfStatusLabel.setText(connected ? "연결됨" : "연결 대기");
-        readyButton.setDisable(!connected || !opponentReadyForHost);
+        readyButton.setDisable(!connected || !model.isOpponentConnected());
         if (!connected) {
             readyButton.setText("READY");
             selfReadyBadge.setVisible(false);
@@ -314,21 +317,47 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
     private void updateOpponentPresence(boolean connected) {
         opponentCard.setOpacity(connected ? 1.0 : 0.6);
         opponentStatusLabel.setText(connected ? "접속됨" : "대기 중");
-        if (!connected) {
+        if (!connected)
             opponentReadyBadge.setVisible(false);
-        }
     }
 
     private void updateStartButtonState() {
-        boolean readyToStart = isHost && model.isConnected() && model.isOpponentConnected()
-                && model.isReady() && model.getOtherIsReady();
+        boolean readyToStart = isHost && model.isConnected() &&
+                model.isOpponentConnected() && model.isReady() && model.getOtherIsReady();
         startButton.setDisable(!readyToStart);
     }
 
-    private void updatePingLabel(long ping) {
-        if (pingLabel != null) {
-            pingLabel.setText("Ping: " + ping + " ms");
+    private void handleOpponentDisconnected() {
+        model.setOtherIsReady(false);
+        updateOpponentReady(false);
+        opponentReadyBadge.setVisible(false);
+
+        model.setIsReady(false);
+        selfReadyBadge.setVisible(false);
+        readyButton.setText("READY");
+        readyButton.setDisable(true);
+
+        if (isHost) {
+            selfStatusLabel.setText("서버 온라인");
+            opponentStatusLabel.setText("대기 중");
+            setMessage("상대가 나갔습니다. 새로운 플레이어를 기다리는 중...", false);
+        } else {
+            model.setConnected(false);
+            selfStatusLabel.setText("연결 대기");
+            opponentStatusLabel.setText("대기 중");
+
+            joinButton.setDisable(false);
+            joinButton.setVisible(true);
+            joinButton.setManaged(true);
+            ipField.setEditable(true);
+            setMessage("호스트와의 연결이 끊어졌습니다. 다시 접속해 주세요.", true);
         }
+        updateStartButtonState();
+    }
+
+    private void updatePingLabel(long ping) {
+        if (pingLabel != null)
+            pingLabel.setText("Ping: " + ping + " ms");
     }
 
     private void resetUi() {
@@ -336,22 +365,18 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             messageLabel.setText("역할을 선택하세요.");
             messageLabel.setStyle("-fx-text-fill: #e4e9ff;");
         }
-        if (pingLabel != null) {
+        if (pingLabel != null)
             pingLabel.setText("Ping: -- ms");
-        }
-        if (selfReadyBadge != null) {
+        if (selfReadyBadge != null)
             selfReadyBadge.setVisible(false);
-        }
-        if (opponentReadyBadge != null) {
+        if (opponentReadyBadge != null)
             opponentReadyBadge.setVisible(false);
-        }
         if (readyButton != null) {
             readyButton.setText("READY");
             readyButton.setDisable(true);
         }
-        if (startButton != null) {
+        if (startButton != null)
             startButton.setDisable(true);
-        }
         if (joinButton != null) {
             joinButton.setDisable(false);
             joinButton.setVisible(true);
