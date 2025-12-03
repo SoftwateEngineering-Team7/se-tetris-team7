@@ -126,7 +126,7 @@ tasks.register('packageApp', Exec) {
     
     // Windows용 설정 (Windows에서 빌드 시 아래 주석 해제)
     // def iconFile = "src/main/resources/tetris.ico"
-    // def packageType = 'exe'
+    // def packageType = 'app-image'
 
     commandLine 'jpackage',
             '--name', 'Team7 Tetris',
