@@ -33,7 +33,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // === FXML 바인딩 ===
     @FXML
-    private BorderPane root;
+    protected BorderPane root;
 
     // Player 1 (왼쪽)
     @FXML
@@ -117,7 +117,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     protected PlayerSlot activeItemTarget;
 
     protected Router router;
-    private AnimationTimer gameLoop;
+    protected AnimationTimer gameLoop;
 
     protected long lastUpdate = 0L;
     private static final long FRAME_TIME = 16_666_667L; // ~60 FPS (나노초)
@@ -131,7 +131,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     private static final double PREVIEW_RATIO = 0.8;
     
     private boolean isTimeAttackMode = false;
-    private boolean isGameOver = false;
+    protected boolean isGameOver = false;
     protected boolean firstTriggered = false; // 게임 초기화 후 첫 프레임 트리거 플래그 -> 블록이 미리 떨어짐을 방지
     private double playTime = 0.0;
 
@@ -273,14 +273,14 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         if (hardDropControlLabel1 != null) {
             hardDropControlLabel1.setText("Drop: " + hardDropKey1.getName());
         }
-
-        // Player 2 키 설정
-        KeyCode leftKey2 = KeyLayout.getLeftKey(PlayerId.PLAYER2);
-        KeyCode rightKey2 = KeyLayout.getRightKey(PlayerId.PLAYER2);
-        KeyCode upKey2 = KeyLayout.getUpKey(PlayerId.PLAYER2);
-        KeyCode downKey2 = KeyLayout.getDownKey(PlayerId.PLAYER2);
-        KeyCode hardDropKey2 = KeyLayout.getHardDropKey(PlayerId.PLAYER2);
-
+ 
+         // Player 2 키 설정
+         KeyCode leftKey2 = KeyLayout.getLeftKey(PlayerId.PLAYER2);
+         KeyCode rightKey2 = KeyLayout.getRightKey(PlayerId.PLAYER2);
+         KeyCode upKey2 = KeyLayout.getUpKey(PlayerId.PLAYER2);
+         KeyCode downKey2 = KeyLayout.getDownKey(PlayerId.PLAYER2);
+         KeyCode hardDropKey2 = KeyLayout.getHardDropKey(PlayerId.PLAYER2);
+ 
         if (moveControlLabel2 != null) {
             moveControlLabel2.setText("Move: " + leftKey2.getName() + " / " + rightKey2.getName());
         }
@@ -295,7 +295,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
-    private void setupEventHandlers() {
+    protected void setupEventHandlers() {
         if (root.getScene() == null) {
             root.sceneProperty().addListener((obs, oldScene, newScene) -> {
                 if (newScene != null)
@@ -404,7 +404,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         lockCurrentBlock(player);
     }
 
-    private boolean isPaused() {
+    protected boolean isPaused() {
         return player1.gameModel.isPaused() || player2.gameModel.isPaused();
     }
 
@@ -697,14 +697,14 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         updateScoreDisplay();
 
         if (player1 != null) {
-            levelLabel1.setText(String.valueOf(player1.gameModel.getLevel()));
-            linesLabel1.setText(String.valueOf(player1.gameModel.getTotalLinesCleared()));
+            if (levelLabel1 != null) levelLabel1.setText(String.valueOf(player1.gameModel.getLevel()));
+            if (linesLabel1 != null) linesLabel1.setText(String.valueOf(player1.gameModel.getTotalLinesCleared()));
             player1.renderer.renderNextBlock(player1.nextBlockModel.peekNext());
             player1.renderer.renderAttackBoard(player1.attackModel.getAttacks());
         }
         if (player2 != null) {
-            levelLabel2.setText(String.valueOf(player2.gameModel.getLevel()));
-            linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
+            if (levelLabel2 != null) levelLabel2.setText(String.valueOf(player2.gameModel.getLevel()));
+            if (linesLabel2 != null) linesLabel2.setText(String.valueOf(player2.gameModel.getTotalLinesCleared()));
             player2.renderer.renderNextBlock(player2.nextBlockModel.peekNext());
             player2.renderer.renderAttackBoard(player2.attackModel.getAttacks());
         }
@@ -720,9 +720,9 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     }
 
     private void updateScoreDisplay() {
-        if (player1 != null)
+        if (player1 != null && scoreLabel1 != null)
             scoreLabel1.setText(player1.scoreModel.toString());
-        if (player2 != null)
+        if (player2 != null && scoreLabel2 != null)
             scoreLabel2.setText(player2.scoreModel.toString());
     }
 
