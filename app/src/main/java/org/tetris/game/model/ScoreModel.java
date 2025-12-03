@@ -24,12 +24,6 @@ public class ScoreModel {
         return score;
     }
 
-    public void setScore(int score) {
-        if (score >= 0) {
-            this.score = score;
-        }
-    }
-
     public void add(int amount)
     {
         if (amount > 0) {

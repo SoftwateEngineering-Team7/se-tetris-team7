@@ -11,7 +11,6 @@ public class TestGameMenuCommandExecutor implements GameMenuCommandExecutor {
     public boolean lastIsReady;
     public long lastPing;
     public MatchSettings lastSettings;
-    public boolean lastOpponentConnected;
 
     @Override
     public void onReady(boolean isReady) {
@@ -29,11 +28,5 @@ public class TestGameMenuCommandExecutor implements GameMenuCommandExecutor {
     public void gameStart(MatchSettings settings) {
         executedCommands.add("gameStart");
         this.lastSettings = settings;
-    }
-
-    @Override
-    public void onPlayerConnectionChanged(boolean opponentConnected) {
-        executedCommands.add("onPlayerConnectionChanged");
-        this.lastOpponentConnected = opponentConnected;
     }
 }

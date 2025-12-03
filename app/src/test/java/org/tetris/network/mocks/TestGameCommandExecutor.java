@@ -1,9 +1,7 @@
 package org.tetris.network.mocks;
 
-import org.tetris.game.model.blocks.Block;
 import org.tetris.network.comand.GameCommandExecutor;
 import org.tetris.network.dto.MatchSettings;
-import org.util.Point;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,13 +12,10 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     public int lastScore;
     public boolean lastIsWinner;
     public int lastAttackLines;
-    public int[][] lastBoardState;
-    public int lastStateScore;
+    public String lastState;
     public long lastPing;
     public boolean isPaused;
     public String lastDisconnectReason;
-    public Block lastCurrentBlock;
-    public Point lastCurrentPos;
 
     @Override
     public void moveLeft() {
@@ -91,10 +86,9 @@ public class TestGameCommandExecutor implements GameCommandExecutor {
     }
 
     @Override
-    public void updateState(int[][] board, int currentPosRow, int currentPosCol) {
+    public void updateState(String state) {
         executedCommands.add("updateState");
-        this.lastBoardState = board;
-        this.lastCurrentPos = new Point(currentPosRow, currentPosCol);
+        this.lastState = state;
     }
 
     @Override

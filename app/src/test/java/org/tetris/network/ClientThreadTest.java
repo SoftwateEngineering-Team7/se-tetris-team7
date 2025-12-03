@@ -253,31 +253,4 @@ public class ClientThreadTest {
         // Then - 예외 없이 통과
         assertFalse(clientThread.isConnected());
     }
-
-    @Test
-    public void testPingTimeout() throws Exception {
-        // Mock server that accepts connection but doesn't send any data
-        serverAcceptThread = new Thread(() -> {
-            try {
-                Socket socket = mockServerSocket.accept();
-                new ObjectOutputStream(socket.getOutputStream()).flush();
-                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-                // Don't send any response - simulate timeout
-                Thread.sleep(15000); // Wait longer than READ_TIMEOUT_MS
-            } catch (Exception e) {
-                // Expected
-            }
-        });
-        serverAcceptThread.start();
-        
-        TestGameCommandExecutor executor = new TestGameCommandExecutor();
-        clientThread.setGameExecutor(executor);
-        clientThread.connect("localhost", mockServerSocket.getLocalPort());
-        
-        // Wait for timeout to occur
-        Thread.sleep(11000); // Just over READ_TIMEOUT_MS
-
-        // Then
-        assertFalse("Ping timeout 후에는 연결이 끊어져야 합니다", clientThread.isConnected());
-    }
 }

@@ -4,18 +4,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.tetris.network.GameServer;
-import org.tetris.game.model.blocks.Block;
-import org.tetris.game.model.blocks.IBlock;
 import org.tetris.network.ClientThread;
 import org.tetris.network.comand.*;
 import org.tetris.network.dto.MatchSettings;
 
-import org.tetris.network.mocks.TestGameCommandExecutor;
-import org.tetris.network.mocks.TestGameMenuCommandExecutor;
-import org.util.Point;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
@@ -71,12 +67,17 @@ public class P2PGameIntegrationTest {
         CountDownLatch client2ReadyLatch = new CountDownLatch(1);
         CountDownLatch gameStartLatch = new CountDownLatch(2);
 
+        AtomicReference<MatchSettings> client1Settings = new AtomicReference<>();
+        AtomicReference<MatchSettings> client2Settings = new AtomicReference<>();
+        AtomicBoolean client1OtherReady = new AtomicBoolean(false);
+        AtomicBoolean client2OtherReady = new AtomicBoolean(false);
+
         // 클라이언트 1 Executor
-        TestGameMenuCommandExecutor menuExecutor1 = new TestGameMenuCommandExecutor() {
+        GameMenuCommandExecutor menuExecutor1 = new GameMenuCommandExecutor() {
             @Override
             public void onReady(boolean isReady) {
-                super.onReady(isReady);
                 System.out.println("[CLIENT1-MENU] Other player ready: " + isReady);
+                client1OtherReady.set(isReady);
                 if (isReady) {
                     client1ReadyLatch.countDown();
                 }
@@ -84,20 +85,25 @@ public class P2PGameIntegrationTest {
 
             @Override
             public void gameStart(MatchSettings settings) {
-                super.gameStart(settings);
                 System.out.println("[CLIENT1-MENU] Game starting - Player " + settings.getPlayerNumber());
                 System.out.println("[CLIENT1-MENU] MySeed: " + settings.getMySeed() + 
                                    ", OtherSeed: " + settings.getOtherSeed());
+                client1Settings.set(settings);
                 gameStartLatch.countDown();
+            }
+
+            @Override
+            public void updatePing(long ping) {
+                // Ignore ping
             }
         };
 
         // 클라이언트 2 Executor
-        TestGameMenuCommandExecutor menuExecutor2 = new TestGameMenuCommandExecutor() {
+        GameMenuCommandExecutor menuExecutor2 = new GameMenuCommandExecutor() {
             @Override
             public void onReady(boolean isReady) {
-                super.onReady(isReady);
                 System.out.println("[CLIENT2-MENU] Other player ready: " + isReady);
+                client2OtherReady.set(isReady);
                 if (isReady) {
                     client2ReadyLatch.countDown();
                 }
@@ -105,11 +111,16 @@ public class P2PGameIntegrationTest {
 
             @Override
             public void gameStart(MatchSettings settings) {
-                super.gameStart(settings);
                 System.out.println("[CLIENT2-MENU] Game starting - Player " + settings.getPlayerNumber());
                 System.out.println("[CLIENT2-MENU] MySeed: " + settings.getMySeed() + 
                                    ", OtherSeed: " + settings.getOtherSeed());
+                client2Settings.set(settings);
                 gameStartLatch.countDown();
+            }
+
+            @Override
+            public void updatePing(long ping) {
+                // Ignore ping
             }
         };
 
@@ -128,7 +139,7 @@ public class P2PGameIntegrationTest {
         
         assertTrue("Client 2 should receive ready notification from Client 1", 
                    client2ReadyLatch.await(3, TimeUnit.SECONDS));
-        assertTrue("Client 2 should know Client 1 is ready", menuExecutor2.lastIsReady);
+        assertTrue("Client 2 should know Client 1 is ready", client2OtherReady.get());
 
         // 클라이언트 2 Ready
         System.out.println("\n[TEST] === Client 2 sending Ready ===");
@@ -136,7 +147,7 @@ public class P2PGameIntegrationTest {
 
         assertTrue("Client 1 should receive ready notification from Client 2", 
                    client1ReadyLatch.await(3, TimeUnit.SECONDS));
-        assertTrue("Client 1 should know Client 2 is ready", menuExecutor1.lastIsReady);
+        assertTrue("Client 1 should know Client 2 is ready", client1OtherReady.get());
 
         // 게임 시작 대기
         System.out.println("\n[TEST] === Waiting for GameStart ===");
@@ -144,11 +155,11 @@ public class P2PGameIntegrationTest {
                    gameStartLatch.await(3, TimeUnit.SECONDS));
 
         // Then: MatchSettings 검증
-        assertNotNull("Client 1 should receive MatchSettings", menuExecutor1.lastSettings);
-        assertNotNull("Client 2 should receive MatchSettings", menuExecutor2.lastSettings);
+        assertNotNull("Client 1 should receive MatchSettings", client1Settings.get());
+        assertNotNull("Client 2 should receive MatchSettings", client2Settings.get());
 
-        MatchSettings settings1 = menuExecutor1.lastSettings;
-        MatchSettings settings2 = menuExecutor2.lastSettings;
+        MatchSettings settings1 = client1Settings.get();
+        MatchSettings settings2 = client2Settings.get();
 
         // 플레이어 번호 검증
         assertEquals("Client 1 should be assigned as Player 1", 1, settings1.getPlayerNumber());
@@ -177,43 +188,139 @@ public class P2PGameIntegrationTest {
         CountDownLatch gameStartLatch = new CountDownLatch(2);
         CountDownLatch moveLeftLatch = new CountDownLatch(1);
         CountDownLatch moveRightLatch = new CountDownLatch(1);
+        AtomicBoolean client2ReceivedMoveLeft = new AtomicBoolean(false);
+        AtomicBoolean client1ReceivedMoveRight = new AtomicBoolean(false);
 
         // 클라이언트 1 설정
-        TestGameMenuCommandExecutor menuExecutor1 = new TestGameMenuCommandExecutor() {
+        GameMenuCommandExecutor menuExecutor1 = new GameMenuCommandExecutor() {
+            @Override
+            public void onReady(boolean isReady) {}
+
             @Override
             public void gameStart(MatchSettings settings) {
-                super.gameStart(settings);
                 System.out.println("[CLIENT1] Game started as Player " + settings.getPlayerNumber());
                 gameStartLatch.countDown();
             }
+
+            @Override
+            public void updatePing(long ping) {}
         };
 
-        TestGameCommandExecutor gameExecutor1 = new TestGameCommandExecutor() {
+        GameCommandExecutor gameExecutor1 = new GameCommandExecutor() {
+            @Override
+            public void moveLeft() {}
+
             @Override
             public void moveRight() {
-                super.moveRight();
                 System.out.println("[CLIENT1-GAME] Received MoveRightCommand from Client 2");
+                client1ReceivedMoveRight.set(true);
                 moveRightLatch.countDown();
             }
+
+            @Override
+            public void rotate() {}
+
+            @Override
+            public void softDrop() {}
+
+            @Override
+            public void hardDrop() {}
+
+            @Override
+            public void attack(int lines) {}
+
+            @Override
+            public void gameStart(MatchSettings settings) {}
+
+            @Override
+            public void gameOver(int score) {}
+
+            @Override
+            public void onGameResult(boolean isWinner, int score) {}
+
+            @Override
+            public void pause() {}
+
+            @Override
+            public void resume() {}
+
+            @Override
+            public void onOpponentDisconnect(String reason) {}
+
+            @Override
+            public void updateState(String state) {}
+
+            @Override
+            public void updatePing(long ping) {}
+
+            @Override
+            public void updateOpponentPing(long ping) {}
         };
 
         // 클라이언트 2 설정
-        TestGameMenuCommandExecutor menuExecutor2 = new TestGameMenuCommandExecutor() {
+        GameMenuCommandExecutor menuExecutor2 = new GameMenuCommandExecutor() {
+            @Override
+            public void onReady(boolean isReady) {}
+
             @Override
             public void gameStart(MatchSettings settings) {
-                super.gameStart(settings);
                 System.out.println("[CLIENT2] Game started as Player " + settings.getPlayerNumber());
                 gameStartLatch.countDown();
             }
+
+            @Override
+            public void updatePing(long ping) {}
         };
 
-        TestGameCommandExecutor gameExecutor2 = new TestGameCommandExecutor() {
+        GameCommandExecutor gameExecutor2 = new GameCommandExecutor() {
             @Override
             public void moveLeft() {
-                super.moveLeft();
                 System.out.println("[CLIENT2-GAME] Received MoveLeftCommand from Client 1");
+                client2ReceivedMoveLeft.set(true);
                 moveLeftLatch.countDown();
             }
+
+            @Override
+            public void moveRight() {}
+
+            @Override
+            public void rotate() {}
+
+            @Override
+            public void softDrop() {}
+
+            @Override
+            public void hardDrop() {}
+
+            @Override
+            public void attack(int lines) {}
+
+            @Override
+            public void gameStart(MatchSettings settings) {}
+
+            @Override
+            public void gameOver(int score) {}
+
+            @Override
+            public void onGameResult(boolean isWinner, int score) {}
+
+            @Override
+            public void pause() {}
+
+            @Override
+            public void resume() {}
+
+            @Override
+            public void onOpponentDisconnect(String reason) {}
+
+            @Override
+            public void updateState(String state) {}
+
+            @Override
+            public void updatePing(long ping) {}
+
+            @Override
+            public void updateOpponentPing(long ping) {}
         };
 
         // 연결 및 Ready
@@ -247,8 +354,8 @@ public class P2PGameIntegrationTest {
         assertTrue("Client 1 should receive MoveRightCommand from Client 2", 
                    moveRightLatch.await(3, TimeUnit.SECONDS));
 
-        assertTrue("Client 2 should have processed MoveLeftCommand", gameExecutor2.executedCommands.contains("moveLeft"));
-        assertTrue("Client 1 should have processed MoveRightCommand", gameExecutor1.executedCommands.contains("moveRight"));
+        assertTrue("Client 2 should have processed MoveLeftCommand", client2ReceivedMoveLeft.get());
+        assertTrue("Client 1 should have processed MoveRightCommand", client1ReceivedMoveRight.get());
 
         System.out.println("\n[TEST] ✅ P2P Command Relay Test PASSED!");
     }
@@ -260,21 +367,35 @@ public class P2PGameIntegrationTest {
         Thread.sleep(500);
 
         CountDownLatch gameStartLatch = new CountDownLatch(2);
+        AtomicReference<Integer> player1Number = new AtomicReference<>();
+        AtomicReference<Integer> player2Number = new AtomicReference<>();
 
-        TestGameMenuCommandExecutor executor1 = new TestGameMenuCommandExecutor() {
+        GameMenuCommandExecutor executor1 = new GameMenuCommandExecutor() {
+            @Override
+            public void onReady(boolean isReady) {}
+
             @Override
             public void gameStart(MatchSettings settings) {
-                super.gameStart(settings);
+                player1Number.set(settings.getPlayerNumber());
                 gameStartLatch.countDown();
             }
+
+            @Override
+            public void updatePing(long ping) {}
         };
 
-        TestGameMenuCommandExecutor executor2 = new TestGameMenuCommandExecutor() {
+        GameMenuCommandExecutor executor2 = new GameMenuCommandExecutor() {
+            @Override
+            public void onReady(boolean isReady) {}
+
             @Override
             public void gameStart(MatchSettings settings) {
-                super.gameStart(settings);
+                player2Number.set(settings.getPlayerNumber());
                 gameStartLatch.countDown();
             }
+
+            @Override
+            public void updatePing(long ping) {}
         };
 
         // When
@@ -292,10 +413,10 @@ public class P2PGameIntegrationTest {
         assertTrue(gameStartLatch.await(3, TimeUnit.SECONDS));
 
         // Then
-        assertNotNull("Player 1 should receive player number", executor1.lastSettings);
-        assertNotNull("Player 2 should receive player number", executor2.lastSettings);
-        assertEquals("First client should be Player 1", 1, executor1.lastSettings.getPlayerNumber());
-        assertEquals("Second client should be Player 2", 2, executor2.lastSettings.getPlayerNumber());
+        assertNotNull("Player 1 should receive player number", player1Number.get());
+        assertNotNull("Player 2 should receive player number", player2Number.get());
+        assertEquals("First client should be Player 1", Integer.valueOf(1), player1Number.get());
+        assertEquals("Second client should be Player 2", Integer.valueOf(2), player2Number.get());
 
         System.out.println("\n[TEST] ✅ Player Number Assignment Test PASSED!");
     }
@@ -309,35 +430,68 @@ public class P2PGameIntegrationTest {
         CountDownLatch attackLatch = new CountDownLatch(1);
         CountDownLatch gameOverLatch = new CountDownLatch(1);
         
+        AtomicReference<Integer> receivedAttackLines = new AtomicReference<>();
+        AtomicReference<Integer> receivedGameOverScore = new AtomicReference<>();
+
         // 클라이언트 1 설정 (공격자)
-        TestGameMenuCommandExecutor menuExecutor1 = new TestGameMenuCommandExecutor() {
-            @Override public void gameStart(MatchSettings settings) { 
-                super.gameStart(settings);
-                gameStartLatch.countDown(); 
-            }
+        GameMenuCommandExecutor menuExecutor1 = new GameMenuCommandExecutor() {
+            @Override public void onReady(boolean isReady) {}
+            @Override public void gameStart(MatchSettings settings) { gameStartLatch.countDown(); }
+            @Override public void updatePing(long ping) {}
         };
 
-        TestGameCommandExecutor gameExecutor1 = new TestGameCommandExecutor();
+        GameCommandExecutor gameExecutor1 = new GameCommandExecutor() {
+            @Override public void moveLeft() {}
+            @Override public void moveRight() {}
+            @Override public void rotate() {}
+            @Override public void softDrop() {}
+            @Override public void hardDrop() {}
+            @Override public void attack(int lines) {}
+            @Override public void gameStart(MatchSettings settings) {}
+            @Override public void gameOver(int score) {
+                // 자신이 보낸 게임오버는 받을 수도 있고 안 받을 수도 있음 (서버 구현에 따라 다름)
+                // 여기서는 상대방의 게임오버 수신을 테스트하므로 패스
+            }
+            @Override public void onGameResult(boolean isWinner, int score) {}
+            @Override public void pause() {}
+            @Override public void resume() {}
+            @Override public void onOpponentDisconnect(String reason) {}
+            @Override public void updateState(String state) {}
+            @Override public void updatePing(long ping) {}
+            @Override public void updateOpponentPing(long ping) {}
+        };
 
         // 클라이언트 2 설정 (피해자 & 게임오버 발생자)
-        TestGameMenuCommandExecutor menuExecutor2 = new TestGameMenuCommandExecutor() {
-            @Override public void gameStart(MatchSettings settings) { 
-                super.gameStart(settings);
-                gameStartLatch.countDown(); 
-            }
+        GameMenuCommandExecutor menuExecutor2 = new GameMenuCommandExecutor() {
+            @Override public void onReady(boolean isReady) {}
+            @Override public void gameStart(MatchSettings settings) { gameStartLatch.countDown(); }
+            @Override public void updatePing(long ping) {}
         };
 
-        TestGameCommandExecutor gameExecutor2 = new TestGameCommandExecutor() {
+        GameCommandExecutor gameExecutor2 = new GameCommandExecutor() {
+            @Override public void moveLeft() {}
+            @Override public void moveRight() {}
+            @Override public void rotate() {}
+            @Override public void softDrop() {}
+            @Override public void hardDrop() {}
             @Override public void attack(int lines) {
-                super.attack(lines);
                 System.out.println("[CLIENT2-GAME] Received Attack: " + lines + " lines");
+                receivedAttackLines.set(lines);
                 attackLatch.countDown();
             }
+            @Override public void gameStart(MatchSettings settings) {}
             @Override public void gameOver(int score) {
-                super.gameOver(score);
                 System.out.println("[CLIENT2-GAME] Received GameOver: " + score);
+                receivedGameOverScore.set(score);
                 gameOverLatch.countDown();
             }
+            @Override public void onGameResult(boolean isWinner, int score) {}
+            @Override public void pause() {}
+            @Override public void resume() {}
+            @Override public void onOpponentDisconnect(String reason) {}
+            @Override public void updateState(String state) {}
+            @Override public void updatePing(long ping) {}
+            @Override public void updateOpponentPing(long ping) {}
         };
 
         // 연결 및 게임 시작
@@ -362,7 +516,7 @@ public class P2PGameIntegrationTest {
 
         // Then 1: Client 2 receives attack
         assertTrue("Client 2 should receive attack", attackLatch.await(3, TimeUnit.SECONDS));
-        assertEquals("Should receive 2 lines of attack", 2, gameExecutor2.lastAttackLines);
+        assertEquals("Should receive 2 lines of attack", Integer.valueOf(2), receivedAttackLines.get());
 
         // When 2: Client 1 sends GameOver (Client 1 died)
         // Note: GameOverCommand is broadcasted.
@@ -371,81 +525,8 @@ public class P2PGameIntegrationTest {
 
         // Then 2: Client 2 receives GameOver
         assertTrue("Client 2 should receive game over", gameOverLatch.await(3, TimeUnit.SECONDS));
-        assertEquals("Should receive score 500", 500, gameExecutor2.lastScore);
+        assertEquals("Should receive score 500", Integer.valueOf(500), receivedGameOverScore.get());
 
         System.out.println("\n[TEST] ✅ Attack and GameOver Test PASSED!");
-    }
-
-    @Test
-    public void testStateSyncWithLag() throws Exception {
-        // Given: 서버와 클라이언트 설정
-        server.start(TEST_PORT);
-        Thread.sleep(500);
-
-        CountDownLatch gameStartLatch = new CountDownLatch(2);
-        CountDownLatch syncLatch = new CountDownLatch(1);
-        
-        // 클라이언트 1 (Player 1) - 블록을 놓는 주체
-        TestGameMenuCommandExecutor menuExecutor1 = new TestGameMenuCommandExecutor() {
-            @Override public void gameStart(MatchSettings settings) { 
-                super.gameStart(settings);
-                gameStartLatch.countDown(); 
-            }
-        };
-        TestGameCommandExecutor gameExecutor1 = new TestGameCommandExecutor();
-
-        // 클라이언트 2 (Player 2) - 렉 걸린 상태에서 동기화 받는 주체
-        TestGameMenuCommandExecutor menuExecutor2 = new TestGameMenuCommandExecutor() {
-            @Override public void gameStart(MatchSettings settings) { 
-                super.gameStart(settings);
-                gameStartLatch.countDown(); 
-            }
-        };
-        
-        TestGameCommandExecutor gameExecutor2 = new TestGameCommandExecutor() {
-            @Override
-            public void updateState(int[][] board, int currentPosRow, int currentPosCol) {
-                super.updateState(board, currentPosRow, currentPosCol);
-                System.out.println("[CLIENT2-GAME] Received UpdateStateCommand");
-                syncLatch.countDown();
-            }
-        };
-
-        // 연결 및 게임 시작
-        client1Thread.setMenuExecutor(menuExecutor1);
-        client1Thread.setGameExecutor(gameExecutor1);
-        client1Thread.connect(TEST_HOST, TEST_PORT);
-        
-        client2Thread.setMenuExecutor(menuExecutor2);
-        client2Thread.setGameExecutor(gameExecutor2);
-        client2Thread.connect(TEST_HOST, TEST_PORT);
-        Thread.sleep(300);
-
-        client1Thread.sendCommand(new ReadyCommand(true));
-        client2Thread.sendCommand(new ReadyCommand(true));
-        
-        assertTrue("Game should start", gameStartLatch.await(3, TimeUnit.SECONDS));
-        Thread.sleep(200);
-
-        // When: Client 1이 블록을 고정하고 상태 전송
-        int[][] dummyBoard = new int[20][10];
-        dummyBoard[19][0] = 1; // 바닥에 블록 하나
-        Block dummyBlock = new IBlock();
-        Point dummyPos = new Point(19, 0);
-        
-        System.out.println("\n[TEST] === Client 1 sending UpdateStateCommand (Simulating Block Lock) ===");
-        client1Thread.sendCommand(new UpdateStateCommand(dummyBoard, dummyPos.r, dummyPos.c));
-
-        // 200ms 지연 시뮬레이션 (네트워크 렉)
-        Thread.sleep(200);
-
-        // Then: Client 2가 UpdateStateCommand를 잘 받았는지 확인
-        assertTrue("Client 2 should receive state update", syncLatch.await(3, TimeUnit.SECONDS));
-        
-        // 데이터 검증
-        assertNotNull("Board state should be received", gameExecutor2.lastBoardState);
-        assertEquals("Board cell should be synced", 1, gameExecutor2.lastBoardState[19][0]);
-        
-        System.out.println("\n[TEST] ✅ State Sync with Lag Test PASSED!");
     }
 }

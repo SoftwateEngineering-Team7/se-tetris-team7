@@ -69,7 +69,6 @@ public final class Router {
     }
 
     public void showNetworkMenu() {
-        setStageSize();
         showNetworkMenu(true);
     }
 

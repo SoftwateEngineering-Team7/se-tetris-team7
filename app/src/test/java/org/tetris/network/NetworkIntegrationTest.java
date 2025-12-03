@@ -225,7 +225,7 @@ public class NetworkIntegrationTest {
         Thread.sleep(200);
 
         // 클라이언트1에서 명령 전송
-        MoveLeftCommand command = new MoveLeftCommand();
+        UpdateStateCommand command = new UpdateStateCommand("Test State from Client 1");
         client1.sendCommand(command);
 
         // 브로드캐스트가 처리될 시간을 줌

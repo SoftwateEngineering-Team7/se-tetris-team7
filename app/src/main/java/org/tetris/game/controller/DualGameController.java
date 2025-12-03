@@ -397,10 +397,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         player.scoreModel.add(dropDistance * 2);
 
         player.lastDropTime = System.nanoTime();
-        
-        // Trigger Hard Drop Effect
-        player.renderer.triggerHardDropEffect();
-        
         lockCurrentBlock(player);
     }
 
@@ -462,10 +458,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         if (player1 == null || player2 == null)
             return;
 
-        // Update Effects Animation
-        player1.renderer.updateEffects(now);
-        player2.renderer.updateEffects(now);
-
         handlePlayerUpdate(player1, now);
         handlePlayerUpdate(player2, now);
 
@@ -497,7 +489,7 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         }
     }
 
-    protected void checkGameOverState() {
+    private void checkGameOverState() {
         isGameOver = false;
 
         boolean p1Over = player1.gameModel.isGameOver();
@@ -526,12 +518,11 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             gameLoop.stop();
         showGameOverlay();
 
-        setWinnerLabel(p1Over, p2Over);
-    }
-
-    private void setWinnerLabel(boolean p1Over, boolean p2Over) {
         String result;
+        int p1Score = player1.scoreModel.getScore();
+        int p2Score = player2.scoreModel.getScore();
 
+        // 일반 승패 판정 (게임 오버 시)
         if (p1Over && p2Over)
             result = "DRAW";
         else if (p1Over)
@@ -545,9 +536,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // === 블록 고정 및 로직 ===
     protected void lockCurrentBlock(PlayerSlot player) {
-        // 블록 고정 직후 훅 호출 (상태 동기화 등)
-        onBlockLocked(player);
-
         GameModel gm = player.gameModel;
         List<Integer> fullRows = player.boardModel.findFullRows();
         player.clearingRows.addAll(fullRows);
@@ -567,7 +555,6 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
             if (!moved) {
                 gm.updateModels(0);
                 player.boardModel.removeCurrentBlock();
-                
                 gm.spawnNewBlock();
                 updateGameBoard(player);
                 checkGameOverState();
@@ -582,17 +569,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
         processIncomingAttacks(player);
         updateGameBoard(player);
-        
         gm.spawnNewBlock();
         checkGameOverState();
-    }
-
-    /**
-     * 블록이 바닥에 고정되고, 줄 삭제 등의 처리가 끝난 직후 호출됩니다.
-     * P2P 모드에서 상태 동기화를 위해 오버라이드합니다.
-     */
-    protected void onBlockLocked(PlayerSlot player) {
-        
     }
 
     private void beginFlash(PlayerSlot player, long now) {
@@ -663,11 +641,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
 
     // === Helper Methods for Cleaning Lists ===
     private int deleteCompletedRows(PlayerSlot player) {
-        for (int r : player.clearingRows) {
+        for (int r : player.clearingRows)
             player.boardModel.clearRow(r);
-            // Trigger Line Clear Effect per row
-            player.renderer.triggerLineClearEffect(r);
-        }
         int count = player.clearingRows.size();
         player.clearingRows.clear();
         return count;
@@ -825,8 +800,8 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
         if (router != null)
             router.showStartMenu();
     }
-    
-    protected void goToMenuFromPause() {
+
+    private void goToMenuFromPause() {
         goToMenu();
     }
 

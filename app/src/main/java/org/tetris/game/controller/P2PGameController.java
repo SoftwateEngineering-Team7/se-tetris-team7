@@ -5,8 +5,6 @@ import org.tetris.network.GameClient;
 import org.tetris.network.GameServer;
 import org.tetris.game.model.P2PGameModel;
 import org.tetris.game.model.PlayerSlot;
-import org.tetris.game.model.blocks.Block;
-
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -16,11 +14,11 @@ import javafx.scene.layout.HBox;
 import javafx.application.Platform;
 
 import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
 import org.tetris.network.dto.MatchSettings;
 import org.util.KeyLayout;
 import org.util.PlayerId;
-import org.util.Point;
-
 import java.util.Random;
 
 public class P2PGameController extends DualGameController<P2PGameModel>
@@ -47,6 +45,15 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     
     // 일시정지 권한 관리: 누가 일시정지했는지 추적 (0: 없음, 1: 호스트, 2: 클라이언트)
     private volatile int pauseOwner = 0;
+    
+    // 현재 게임 설정 저장 (restart용)
+    private MatchSettings currentSettings;
+    
+    // Ping 타임아웃 감지
+    private static final long PING_TIMEOUT_MS = 10000; // 10초 동안 ping 없으면 연결 끊김
+    private volatile long lastPingTime = 0;
+    private Timer pingTimeoutTimer;
+    private volatile boolean gameStarted = false;
 
     public P2PGameController(P2PGameModel model) {
         super(model);
@@ -293,11 +300,52 @@ public class P2PGameController extends DualGameController<P2PGameModel>
     }
     
     /**
+     * Ping 타임아웃 타이머 시작
+     * 주기적으로 마지막 ping 응답 시간을 확인하여 타임아웃 감지
+     */
+    private void startPingTimeoutTimer() {
+        stopPingTimeoutTimer(); // 기존 타이머 정리
+        lastPingTime = System.currentTimeMillis(); // 초기 시간 설정
+        
+        pingTimeoutTimer = new Timer("PingTimeoutTimer", true);
+        pingTimeoutTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (!gameStarted || opponentDisconnected) {
+                    return;
+                }
+                
+                long currentTime = System.currentTimeMillis();
+                long timeSinceLastPing = currentTime - lastPingTime;
+                
+                if (timeSinceLastPing > PING_TIMEOUT_MS) {
+                    System.out.println("[P2P-CONTROLLER] Ping timeout detected! No response for " + 
+                                       timeSinceLastPing + "ms");
+                    onOpponentDisconnect("상대방과의 연결이 끊겼습니다.\n(응답 시간 초과)");
+                }
+            }
+        }, 2000, 2000); // 2초마다 체크
+    }
+    
+    /**
+     * Ping 타임아웃 타이머 정지
+     */
+    private void stopPingTimeoutTimer() {
+        if (pingTimeoutTimer != null) {
+            pingTimeoutTimer.cancel();
+            pingTimeoutTimer = null;
+        }
+    }
+    
+    /**
      * 게임 정리 (화면 전환 시 호출)
      */
     @Override
-    public void refresh() {
-        
+    public void cleanup() {
+        super.cleanup();
+        stopPingTimeoutTimer();
+        gameStarted = false;
+        cleanupNetworkResources();
     }
     
     /**
@@ -352,16 +400,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         client.sendCommand(new RestartCommand());
     }
 
-    @Override
-    protected void checkGameOverState()
-    {
-        super.checkGameOverState();
-        if (player1 != null && player2 != null) {
-            if (player1.gameModel.isGameOver()) 
-                client.sendCommand(new GameResultCommand(true, player1.scoreModel.getScore()));
-        }
-    }
-
     // --- GameCommandExecutor Implementation (Remote Player Updates) ---
 
     @Override
@@ -414,7 +452,13 @@ public class P2PGameController extends DualGameController<P2PGameModel>
 
     @Override
     public void hardDrop() {
-        
+        Platform.runLater(() -> {
+            PlayerSlot remotePlayer = getRemotePlayer();
+            System.out.println("[P2P-CONTROLLER] hardDrop() - playerNumber=" + model.getPlayerNumber() + ", remotePlayer=" + (remotePlayer != null ? "exists" : "null"));
+            if (remotePlayer != null) {
+                handleHardDrop(remotePlayer);
+            }
+        });
     }
 
     @Override
@@ -438,6 +482,9 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         Platform.runLater(() -> {
             if (player1 != null && player2 != null) {
                 System.out.println("[P2P-CONTROLLER] gameStart() received");
+                
+                // 현재 설정 저장 (restart용)
+                this.currentSettings = settings;
                 
                 // Set player number to determine local/remote mapping
                 model.setPlayerNumber(settings.getPlayerNumber());
@@ -494,7 +541,11 @@ public class P2PGameController extends DualGameController<P2PGameModel>
                 
                 // firstTriggered 설정 후 게임 루프 재시작
                 firstTriggered = true;
+                gameStarted = true;
                 startGameLoop();
+                
+                // Ping 타임아웃 타이머 시작
+                startPingTimeoutTimer();
                 
                 System.out.println("[P2P-CONTROLLER] Game started! Local player controls " + 
                                    (settings.getPlayerNumber() == 1 ? "left" : "right") + " screen.");
@@ -526,15 +577,6 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         hideGameOverlay();
         if (router != null)
             router.showNetworkMenu(false);
-    }
-
-    @Override
-    protected void goToMenuFromPause() {
-        cleanupNetworkResources();
-        resetGameController();
-        hideGameOverlay();
-        if (router != null)
-            router.showNetworkMenu(true);
     }
     
     public void pause() {
@@ -590,67 +632,16 @@ public class P2PGameController extends DualGameController<P2PGameModel>
         });
     }
 
-
-    /**
-     * 상대방으로부터 수신한 보드 상태와 점수를 강제로 동기화합니다.
-     * (UpdateStateCommand에 의해 호출됨)
-     */
     @Override
-    public void updateState(int[][] boardData, int currentPosRow, int currentPosCol) {
-        Platform.runLater(() -> {
-            PlayerSlot remotePlayer = getRemotePlayer();
-            if (remotePlayer != null) {
-                // 1. 보드 데이터 덮어쓰기 (Correction)
-                int[][] currentBoard = remotePlayer.boardModel.getBoard();
-                if (boardData.length == currentBoard.length && boardData[0].length == currentBoard[0].length) {
-                    for (int i = 0; i < boardData.length; i++) {
-                        System.arraycopy(boardData[i], 0, currentBoard[i], 0, boardData[i].length);
-                    }
-                }
-                remotePlayer.boardModel.setCurPos(new Point(currentPosRow, currentPosCol));
-                
-                // 수신된 보드 상태를 기반으로 로컬 시뮬레이션(Attack, Line Clear 등)을 수행
-                super.lockCurrentBlock(remotePlayer);
-
-                // 3. 화면 갱신
-                // updateGameBoard(remotePlayer); // lockCurrentBlock 내부에서 수행됨
-                
-                System.out.println("[P2P-SYNC] Remote board state corrected.");
-            }
-        });
-    }
-
-    /**
-     * 블록 고정 로직 오버라이드
-     * 원격 플레이어의 경우 로컬 시뮬레이션에 의한 블록 고정을 막습니다.
-     * 오직 UpdateStateCommand 수신 시에만 블록을 고정하고 스폰합니다.
-     */
-    @Override
-    protected void lockCurrentBlock(PlayerSlot player) {
-        if (player == getRemotePlayer()) {
-            return;
-        }
-        super.lockCurrentBlock(player);
-    }
-
-    /**
-     * 내 블록이 고정될 때마다 현재 상태를 상대방에게 전송합니다.
-     */
-    @Override
-    protected void onBlockLocked(PlayerSlot player) {
-        // 로컬 플레이어(나)의 블록이 고정된 경우에만 전송
-        if (player == getLocalPlayer()) {
-            int[][] myBoard = player.boardModel.getBoard();
-            Point myPos = player.boardModel.getCurPos();
-            
-            // 상태 전송
-            client.sendCommand(new UpdateStateCommand(myBoard, myPos.r, myPos.c));
-            // System.out.println("[P2P-SYNC] Sent board state update.");
-        }
+    public void updateState(String state) {
+        // Sync state if needed
     }
 
     @Override
     public void updatePing(long ping) {
+        // 마지막 ping 시간 갱신
+        lastPingTime = System.currentTimeMillis();
+        
         Platform.runLater(() -> {
             if (myPingLabel != null) {
                 myPingLabel.setText(ping + " ms");
