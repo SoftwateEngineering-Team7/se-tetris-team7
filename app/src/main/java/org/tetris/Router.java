@@ -68,15 +68,19 @@ public final class Router {
         }
     }
 
-    public void showNetworkMenu() {
-        setStageSize();
-        showNetworkMenu(true);
-    }
-
     public void showNetworkMenu(boolean isHost) {
+        setStageSize();
         var controller = show(networkMenuFactory);
         if (controller instanceof NetworkMenuController networkMenuController) {
-            networkMenuController.configureRole(isHost);
+            networkMenuController.configureRole(isHost, false);
+        }
+    }
+
+    public void showNetworkMenu(boolean isHost, boolean preserveConnection) {
+        setStageSize();
+        var controller = show(networkMenuFactory);
+        if (controller instanceof NetworkMenuController networkMenuController) {
+            networkMenuController.configureRole(isHost, preserveConnection);
         }
     }
 

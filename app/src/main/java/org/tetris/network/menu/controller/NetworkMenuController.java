@@ -81,10 +81,10 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
         }
     }
 
-    public void configureRole(boolean isHost) {
+    public void configureRole(boolean isHost, boolean preserveConnection) {
         this.isHost = isHost;
         shouldReleaseResources = false;
-        model.clear();
+        model.clear(preserveConnection);
         Platform.runLater(() -> {
             resetUi();
             model.setIsHost(isHost);
@@ -98,7 +98,7 @@ public class NetworkMenuController extends BaseController<NetworkMenu>
             joinButton.setVisible(!isHost);
             ipHintLabel.setText(isHost ? "내 IP를 공유하세요." : "호스트 IP를 입력해 접속하세요.");
             messageLabel.setText(isHost ? "호스트 세션을 준비 중..." : "접속할 호스트 IP를 입력하세요.");
-            if (isHost) {
+            if (isHost && !preserveConnection) {
                 autoCreateHost();
             } else {
                 readyButton.setDisable(true);
