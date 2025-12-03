@@ -102,6 +102,23 @@ public class ReplayController extends DualGameController<DualGameModel> {
             exitReplayButton.setOnAction(e -> exitReplay());
         }
 
+        // 부모 클래스의 버튼 바인딩 (setupEventHandlers를 오버라이드했으므로 여기서 수동 바인딩)
+        if (menuButton != null) {
+            menuButton.setOnAction(e -> goToMenu());
+        }
+        if (resumeButton != null) {
+            resumeButton.setOnAction(e -> onResumeButtonClicked());
+        }
+        if (pauseMenuButton != null) {
+            pauseMenuButton.setOnAction(e -> goToMenuFromPause());
+        }
+        if (restartButton != null) {
+            restartButton.setOnAction(e -> onRestartButtonClicked());
+        }
+        if (pauseButton != null) {
+            pauseButton.setOnAction(e -> togglePause());
+        }
+
         updateSpeedLabel();
 
         // 게임 오버 오버레이 숨기기

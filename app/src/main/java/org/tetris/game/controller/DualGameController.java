@@ -77,15 +77,15 @@ public class DualGameController<M extends DualGameModel> extends BaseController<
     @FXML
     protected HBox pauseOverlay;
     @FXML
-    private Button pauseButton;
+    protected Button pauseButton;
     @FXML
     protected Button restartButton;
     @FXML
-    private Button menuButton;
+    protected Button menuButton;
     @FXML
     protected Button resumeButton;
     @FXML
-    private Button pauseMenuButton;
+    protected Button pauseMenuButton;
     @FXML
     protected Label winnerLabel;
 

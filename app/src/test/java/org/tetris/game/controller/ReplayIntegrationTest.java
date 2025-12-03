@@ -103,4 +103,41 @@ public class ReplayIntegrationTest {
         
         assertTrue("Timeout waiting for input blocking test", latch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testMenuButtonBinding() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        
+        Platform.runLater(() -> {
+            try {
+                // Inject mock button
+                javafx.scene.control.Button mockMenuButton = new javafx.scene.control.Button();
+                controller.menuButton = mockMenuButton;
+                
+                // Inject root to avoid NPE in setupEventHandlers if accessed
+                controller.root = new javafx.scene.layout.BorderPane();
+                
+                // Call initialize() which triggers setupReplayUI()
+                controller.initialize();
+                
+                // setupReplayUI is run via Platform.runLater inside initialize, so we need to wait
+                Platform.runLater(() -> {
+                    try {
+                        assertNotNull("Menu button action should be bound", mockMenuButton.getOnAction());
+                    } catch (AssertionError e) {
+                        throw e;
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                latch.countDown(); // Ensure latch is counted down on error
+                fail("Exception during menu button binding test: " + e.getMessage());
+            }
+        });
+        
+        assertTrue("Timeout waiting for menu button binding test", latch.await(5, TimeUnit.SECONDS));
+    }
 }
