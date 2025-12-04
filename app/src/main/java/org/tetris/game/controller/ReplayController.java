@@ -15,18 +15,12 @@ import javafx.scene.layout.HBox;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.LinkedList;
 
 /**
  * Replay 전용 게임 컨트롤러
  * - 키보드 입력 차단 (P키 제외 - 일시정지만 허용)
- * - 저장된 입력 로그를 순서대로 재생 (순서 기반)
- * - 재생 속도 조절 가능 (0.5x, 1x, 2x, 4x)
- * 
- * 순서 기반 리플레이:
- * - 매 프레임마다 일정 개수의 입력을 소비 (배속에 비례)
- * - 시간 기반이 아닌 입력 순서대로 진행하여 결정론적 재생 보장
+ * - 저장된 입력 로그를 순서대로 재생
+ * - 재생 속도 조절 가능 (1x, 2x, 4x)
  */
 public class ReplayController extends DualGameController<DualGameModel> {
 
@@ -42,20 +36,15 @@ public class ReplayController extends DualGameController<DualGameModel> {
     private Button exitReplayButton;
 
     private ReplayData replayData;
-    
-    // 순서 기반 입력 큐
-    private Queue<InputCommand> player1InputQueue;
-    private Queue<InputCommand> player2InputQueue;
+    private Iterator<InputCommand> player1InputIterator;
+    private Iterator<InputCommand> player2InputIterator;
+    private InputCommand nextP1Input;
+    private InputCommand nextP2Input;
 
+    private long replayStartTime;
+    private long accumulatedGameTime = 0; // 배속 변경을 위한 누적 게임 시간
     private double replaySpeedMultiplier = 1.0; // 0.5x, 1x, 2x, 4x
     private boolean replayFinished = false;
-    
-    // 프레임당 입력 처리를 위한 누적기
-    private double p1InputAccumulator = 0.0;
-    private double p2InputAccumulator = 0.0;
-    
-    // 기본 입력 처리 속도 (프레임당)
-    private static final double BASE_INPUTS_PER_FRAME = 0.5; // 2프레임당 1입력
 
     public ReplayController(DualGameModel model) {
         super(model);
@@ -164,22 +153,25 @@ public class ReplayController extends DualGameController<DualGameModel> {
         player1.reset();
         player2.reset();
 
-        // 순서 기반 입력 큐 초기화
+        // 입력 이터레이터 초기화
         List<InputCommand> p1Inputs = replayData.getPlayer1Inputs();
         List<InputCommand> p2Inputs = replayData.getPlayer2Inputs();
 
-        player1InputQueue = new LinkedList<>(p1Inputs);
-        player2InputQueue = new LinkedList<>(p2Inputs);
+        player1InputIterator = p1Inputs.iterator();
+        player2InputIterator = p2Inputs.iterator();
 
-        // 누적기 초기화
-        p1InputAccumulator = 0.0;
-        p2InputAccumulator = 0.0;
-        
+        nextP1Input = player1InputIterator.hasNext() ? player1InputIterator.next() : null;
+        nextP2Input = player2InputIterator.hasNext() ? player2InputIterator.next() : null;
+
+        replayStartTime = System.currentTimeMillis();
+        accumulatedGameTime = 0; // 누적 시간 초기화
         replaySpeedMultiplier = 1.0; // 배속 초기화
         replayFinished = false;
 
         System.out.println("[REPLAY] Initialized with " + p1Inputs.size() + " P1 inputs, " +
-                p2Inputs.size() + " P2 inputs (순서 기반 재생)");
+                p2Inputs.size() + " P2 inputs");
+        System.out.println("[REPLAY] First P1 input: " + nextP1Input);
+        System.out.println("[REPLAY] First P2 input: " + nextP2Input);
         
         updateSpeedLabel();
     }
@@ -426,44 +418,30 @@ public class ReplayController extends DualGameController<DualGameModel> {
             return;
         }
 
-        // 순서 기반 입력 재생: 배속에 따라 프레임당 처리할 입력 수 결정
-        double inputsThisFrame = BASE_INPUTS_PER_FRAME * replaySpeedMultiplier;
-        
-        // Player 1 입력 처리
-        p1InputAccumulator += inputsThisFrame;
-        while (p1InputAccumulator >= 1.0 && !player1InputQueue.isEmpty()) {
-            InputCommand cmd = player1InputQueue.poll();
-            if (cmd != null) {
-                applyReplayInput(player1, cmd);
-            }
-            p1InputAccumulator -= 1.0;
+        // 경과 시간 계산 (누적 게임 시간 + 현재 세그먼트의 경과 시간)
+        long elapsedReal = System.currentTimeMillis() - replayStartTime;
+        long elapsedGame = accumulatedGameTime + (long)(elapsedReal * replaySpeedMultiplier);
+
+        // Player 1 입력 재생 (relativeTimestamp 사용)
+        while (nextP1Input != null && nextP1Input.getRelativeTimestamp() <= elapsedGame) {
+            applyReplayInput(player1, nextP1Input);
+            nextP1Input = player1InputIterator.hasNext() ? player1InputIterator.next() : null;
         }
 
-        // Player 2 입력 처리
-        p2InputAccumulator += inputsThisFrame;
-        while (p2InputAccumulator >= 1.0 && !player2InputQueue.isEmpty()) {
-            InputCommand cmd = player2InputQueue.poll();
-            if (cmd != null) {
-                applyReplayInput(player2, cmd);
-            }
-            p2InputAccumulator -= 1.0;
+        // Player 2 입력 재생 (relativeTimestamp 사용)
+        while (nextP2Input != null && nextP2Input.getRelativeTimestamp() <= elapsedGame) {
+            applyReplayInput(player2, nextP2Input);
+            nextP2Input = player2InputIterator.hasNext() ? player2InputIterator.next() : null;
         }
 
-        // Replay 종료 확인 (모든 입력이 소비되었을 때)
-        if (player1InputQueue.isEmpty() && player2InputQueue.isEmpty() && !replayFinished) {
-            // 마지막 입력 후 약간의 추가 프레임 대기 (60프레임 = 약 1초)
-            if (replayEndDelayFrames < 0) {
-                replayEndDelayFrames = 60;
-            } else if (replayEndDelayFrames == 0) {
+        // Replay 종료 확인
+        if (nextP1Input == null && nextP2Input == null && !replayFinished) {
+            // 약간의 지연 후 종료 (마지막 동작 보여주기 위해)
+            if (elapsedGame > replayData.getGameDurationMs() + 1000) {
                 onReplayFinished();
-            } else {
-                replayEndDelayFrames--;
             }
         }
     }
-    
-    // 리플레이 종료 전 대기 프레임 (-1: 미시작)
-    private int replayEndDelayFrames = -1;
 
     /**
      * Replay 입력을 실제 플레이어에게 적용
@@ -516,20 +494,32 @@ public class ReplayController extends DualGameController<DualGameModel> {
     }
 
     /**
-     * 재생 속도 조절 (순서 기반에서는 입력 처리 속도만 변경)
+     * 재생 속도 조절
      */
     private void adjustSpeed(boolean increase) {
         if (increase) {
             if (replaySpeedMultiplier < 4.0) {
+                // 배속 변경 전 현재까지의 게임 시간 누적
+                long now = System.currentTimeMillis();
+                long elapsedReal = now - replayStartTime;
+                accumulatedGameTime += (long)(elapsedReal * replaySpeedMultiplier);
+                replayStartTime = now;
+                
                 replaySpeedMultiplier *= 2.0;
             }
         } else {
             if (replaySpeedMultiplier > 0.5) {
+                // 배속 변경 전 현재까지의 게임 시간 누적
+                long now = System.currentTimeMillis();
+                long elapsedReal = now - replayStartTime;
+                accumulatedGameTime += (long)(elapsedReal * replaySpeedMultiplier);
+                replayStartTime = now;
+                
                 replaySpeedMultiplier /= 2.0;
             }
         }
         updateSpeedLabel();
-        System.out.println("[REPLAY] Speed adjusted to " + replaySpeedMultiplier + "x (순서 기반)");
+        System.out.println("[REPLAY] Speed adjusted to " + replaySpeedMultiplier + "x, accumulatedTime=" + accumulatedGameTime + "ms");
     }
 
     private void updateSpeedLabel() {
@@ -609,7 +599,6 @@ public class ReplayController extends DualGameController<DualGameModel> {
     @Override
     protected void onRestartButtonClicked() {
         // Replay 재시작
-        replayEndDelayFrames = -1; // 종료 대기 프레임 리셋
         initializeReplay();
         hideGameOverlay();
         startGameLoop();
