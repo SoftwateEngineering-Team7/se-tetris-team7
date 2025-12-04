@@ -206,20 +206,11 @@
             <HBox fx:id="replayControlOverlay" alignment="CENTER" spacing="20"
                   style="-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 15;">
                 <children>
-                    <Label text="SPEED:" textFill="white">
+                    <Label text="REPLAY - Press P to Pause" textFill="white">
                         <font>
                             <Font name="Arial Bold" size="14.0" />
                         </font>
                     </Label>
-                    <Button fx:id="speedDownButton" text="&lt;&lt;" 
-                            style="-fx-background-color: #533483; -fx-text-fill: white; -fx-font-weight: bold;"/>
-                    <Label fx:id="replaySpeedLabel" text="1.0x" textFill="#e94560" minWidth="50" alignment="CENTER">
-                        <font>
-                            <Font name="Consolas Bold" size="18.0" />
-                        </font>
-                    </Label>
-                    <Button fx:id="speedUpButton" text="&gt;&gt;" 
-                            style="-fx-background-color: #533483; -fx-text-fill: white; -fx-font-weight: bold;"/>
                     
                     <Pane HBox.hgrow="ALWAYS" /> <!-- Spacer -->
                     

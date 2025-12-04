@@ -1,0 +1,16 @@
+#Tetris Settings
+#Thu Dec 04 11:13:19 KST 2025
+difficulty=EASY
+isColorBlind=false
+keyDown=DOWN
+keyDown2=S
+keyHardDrop=SPACE
+keyHardDrop2=SHIFT
+keyLeft=LEFT
+keyLeft2=A
+keyRight=RIGHT
+keyRight2=D
+keyUp=UP
+keyUp2=W
+lastVisitedIP=10.50.97.101
+screen=SMALL
