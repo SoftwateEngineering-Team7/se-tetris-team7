@@ -33,12 +33,6 @@ public class ReplayController extends DualGameController<DualGameModel> {
     @FXML
     private HBox replayControlOverlay; // Replay 전용 컨트롤 UI
     @FXML
-    private Label replaySpeedLabel;
-    @FXML
-    private Button speedUpButton;
-    @FXML
-    private Button speedDownButton;
-    @FXML
     private Button exitReplayButton;
 
     private ReplayData replayData;
@@ -47,15 +41,14 @@ public class ReplayController extends DualGameController<DualGameModel> {
     private Queue<InputCommand> player1InputQueue;
     private Queue<InputCommand> player2InputQueue;
 
-    private double replaySpeedMultiplier = 1.0; // 0.5x, 1x, 2x, 4x
     private boolean replayFinished = false;
     
     // 프레임당 입력 처리를 위한 누적기
     private double p1InputAccumulator = 0.0;
     private double p2InputAccumulator = 0.0;
     
-    // 기본 입력 처리 속도 (프레임당)
-    private static final double BASE_INPUTS_PER_FRAME = 0.5; // 2프레임당 1입력
+    // 기본 입력 처리 속도 (프레임당) - 1배속 고정
+    private static final double INPUTS_PER_FRAME = 0.5; // 2프레임당 1입력
 
     public ReplayController(DualGameModel model) {
         super(model);
@@ -102,13 +95,7 @@ public class ReplayController extends DualGameController<DualGameModel> {
             replayControlOverlay.setManaged(true);
         }
 
-        // 속도 조절 버튼
-        if (speedUpButton != null) {
-            speedUpButton.setOnAction(e -> adjustSpeed(true));
-        }
-        if (speedDownButton != null) {
-            speedDownButton.setOnAction(e -> adjustSpeed(false));
-        }
+        // Exit 버튼
         if (exitReplayButton != null) {
             exitReplayButton.setOnAction(e -> exitReplay());
         }
@@ -129,8 +116,6 @@ public class ReplayController extends DualGameController<DualGameModel> {
         if (pauseButton != null) {
             pauseButton.setOnAction(e -> togglePause());
         }
-
-        updateSpeedLabel();
 
         // 게임 오버 오버레이 숨기기
         hideGameOverlay();
@@ -174,14 +159,10 @@ public class ReplayController extends DualGameController<DualGameModel> {
         // 누적기 초기화
         p1InputAccumulator = 0.0;
         p2InputAccumulator = 0.0;
-        
-        replaySpeedMultiplier = 1.0; // 배속 초기화
         replayFinished = false;
 
         System.out.println("[REPLAY] Initialized with " + p1Inputs.size() + " P1 inputs, " +
-                p2Inputs.size() + " P2 inputs (순서 기반 재생)");
-        
-        updateSpeedLabel();
+                p2Inputs.size() + " P2 inputs (순서 기반 재생, 1배속 고정)");
     }
 
     @Override
@@ -307,8 +288,8 @@ public class ReplayController extends DualGameController<DualGameModel> {
             return;
         }
         
-        // 플래시 간격 (재생 속도 반영)
-        long flashInterval = (long)(100_000_000L / replaySpeedMultiplier); // 100ms 기본
+        // 플래시 간격 (1배속 고정)
+        long flashInterval = 100_000_000L; // 100ms
         
         if (now < player.nextFlashAt) {
             return;
@@ -376,11 +357,8 @@ public class ReplayController extends DualGameController<DualGameModel> {
 
         int dropIntervalFrames = player.gameModel.getDropInterval();
         long dropIntervalNanos = dropIntervalFrames * 16_666_667L;
-        
-        // 재생 속도 반영
-        long adjustedInterval = (long)(dropIntervalNanos / replaySpeedMultiplier);
 
-        if (now - player.lastDropTime >= adjustedInterval) {
+        if (now - player.lastDropTime >= dropIntervalNanos) {
             boolean moved = player.boardModel.moveDown();
             if (!moved) {
                 // 블록 고정 처리 (간소화된 버전)
@@ -426,8 +404,8 @@ public class ReplayController extends DualGameController<DualGameModel> {
             return;
         }
 
-        // 순서 기반 입력 재생: 배속에 따라 프레임당 처리할 입력 수 결정
-        double inputsThisFrame = BASE_INPUTS_PER_FRAME * replaySpeedMultiplier;
+        // 순서 기반 입력 재생 (1배속 고정)
+        double inputsThisFrame = INPUTS_PER_FRAME;
         
         // Player 1 입력 처리
         p1InputAccumulator += inputsThisFrame;
@@ -515,28 +493,7 @@ public class ReplayController extends DualGameController<DualGameModel> {
         updateGameBoard(player);
     }
 
-    /**
-     * 재생 속도 조절 (순서 기반에서는 입력 처리 속도만 변경)
-     */
-    private void adjustSpeed(boolean increase) {
-        if (increase) {
-            if (replaySpeedMultiplier < 4.0) {
-                replaySpeedMultiplier *= 2.0;
-            }
-        } else {
-            if (replaySpeedMultiplier > 0.5) {
-                replaySpeedMultiplier /= 2.0;
-            }
-        }
-        updateSpeedLabel();
-        System.out.println("[REPLAY] Speed adjusted to " + replaySpeedMultiplier + "x (순서 기반)");
-    }
 
-    private void updateSpeedLabel() {
-        if (replaySpeedLabel != null) {
-            replaySpeedLabel.setText(String.format("%.1fx", replaySpeedMultiplier));
-        }
-    }
 
     /**
      * Replay 종료 처리
