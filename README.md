@@ -24,6 +24,9 @@ JavaFX 기반의 모던한 테트리스 게임입니다. MVC 아키텍처 패턴
 | 김민석 | [@김민석](https://github.com/김민석) |
 | 박재홍 | [@박재홍](https://github.com/박재홍) |
 
+태스크 관리 기록
+[노션 태스크 관리](https://lively-cuticle-191.notion.site/272bc165c69381c69fb2cbf9aa005360?v=272bc165c6938118be03000cd7fdcb81&source=copy_link)
+
 ## ✨ 주요 기능
 
 ### 게임 모드
